@@ -18,35 +18,35 @@ outputDir = Config.paths['passiveOpto_output_folder']
 datafrac = 0.3
 iterations = 1000
 ref = 'COMBINED'
-limb = 'homologous0'
-pct_text = 'speed percentile'
+limb = 'homolateral0'
 
 appdx_dict = {2: '', 3: '_incline'}
-sample_nums = {'_incline': 9605, '': 10453}
+sample_nums = {'_incline': 9280, '': 10453}
 
-ylim = (-0.5*np.pi-0.3,np.pi)
-yticks = [-0.5*np.pi,0,0.5*np.pi,np.pi]
-yticklabels = ["-0.5π", "0","0.5π", "π"] 
+ylim = (0.3*np.pi,1.5*np.pi)
+yticks = [0.5*np.pi,np.pi,1.5*np.pi]
+yticklabels = ["0.5π", "π", "1.5π"]  
 
 legend_colours = [[],[]]
 legend_linestyles = [[],[]]
 
 fig, ax = plt.subplots(1,1,figsize = (1.55,1.5), sharey = True) #1.6,1.4 for 4figs S2 bottom row
 
-predictors = ['speed', 'snoutBodyAngle', 'incline']
-param_col = 'snoutBodyAngle'
+predictors = ['speed', 'snoutBodyAngle']
+param_col = 'speed'
 interaction = 'TRUE'
-clrs = 'homologous'
-tlt = 'Slope trials'
+clrs = 'homolateral'
+tlt = 'Head height trials'
+pct_text = 'speed percentile'
     
 sBA_split_str = 'FALSE'
     
 appdx = appdx_dict[len(predictors)]
 samples = sample_nums[appdx]
       
-beta1path = Path(outputDir) / f"{yyyymmdd}_beta1_{limb}_ref{ref}_{predictors[0]}_{predictors[1]}_{predictors[2]}_refLimb_interaction{interaction}_continuous_randMouse_sBAsplit{sBA_split_str}_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
-beta2path = Path(outputDir) / f"{yyyymmdd}_beta2_{limb}_ref{ref}_{predictors[0]}_{predictors[1]}_{predictors[2]}_refLimb_interaction{interaction}_continuous_randMouse_sBAsplit{sBA_split_str}_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
-statspath = Path(outputDir) / f"{yyyymmdd}_coefCircCategorical_{limb}_refCOMBINED_{predictors[0]}_{predictors[1]}_{predictors[2]}_refLimb_interaction{interaction}_continuous_randMouse_sBAsplitFALSE_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
+beta1path = Path(outputDir) / f"{yyyymmdd}_beta1_{limb}_ref{ref}_{predictors[0]}_{predictors[1]}_refLimb_interaction{interaction}_continuous_randMouse_sBAsplitFALSE_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
+beta2path = Path(outputDir) / f"{yyyymmdd}_beta2_{limb}_ref{ref}_{predictors[0]}_{predictors[1]}_refLimb_interaction{interaction}_continuous_randMouse_sBAsplitFALSE_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
+statspath = Path(outputDir) / f"{yyyymmdd}_coefCircCategorical_{limb}_ref{ref}_{predictors[0]}_{predictors[1]}_refLimb_interaction{interaction}_continuous_randMouse_sBAsplitFALSE_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
 
 beta1 = pd.read_csv(beta1path)
 beta2 = pd.read_csv(beta2path)
@@ -56,17 +56,14 @@ datafull = data_loader.load_processed_data(dataToLoad = 'strideParams',
                                            yyyymmdd = yyyymmdd,
                                            limb = ref, 
                                            appdx = appdx)[0]
-
-if 'deg' in datafull['headLVL'][0]:
-    datafull['incline'] = [-int(x[3:]) for x in datafull['headLVL']]
     
-predictor = 'incline'
-pred = 'pred3' #snoutBodyAngle
-nonpred = 'pred2'
-xlim = (-41,45)
-ax.set_xlim(xlim[0], xlim[1])
-ax.set_xticks([-40,-20,0,20,40])
-ax.set_xlabel('Incline (deg)')
+predictor = 'snoutBodyAngle'
+pred = 'pred2'
+nonpred = 'pred3' #not used in head height trials
+xlim = (140,180)
+ax.set_xlim(xlim[0],xlim[1])
+ax.set_xticks([140,150,160,170,180])
+ax.set_xlabel('Snout-hump angle (deg)')
 
 y_tr_list = np.empty((0)) # 5 percentiles to plot = 5 pairs to compare!
 x_tr_list = np.empty((0))
@@ -77,21 +74,14 @@ y_delta_list = np.empty((0))
 pred2_relevant = utils_processing.remove_outliers(datafull[predictor]) 
 pred2_centred = pred2_relevant - np.nanmean(pred2_relevant) #centering
 pred2_range = np.linspace(pred2_centred.min(), pred2_centred.max(), num = 100)
-
-# speed_relevant = utils_processing.remove_outliers(datafull['speed'])
-# speed = np.percentile(speed_relevant, 50) - np.nanmean(speed_relevant)
-
-unique_traces = np.empty((0))
-
+    
 prcnts = [20,50,80]
 prcnts_d = [-0.2,0,0.2]
-# find median param (excluding outliers)   
 
-for iprcnt, prcnt in enumerate(prcnts): 
+for iprcnt, prcnt in enumerate(prcnts):
+    # find median param (excluding outliers)    
     param_relevant = utils_processing.remove_outliers(datafull[param_col])
-    param = np.percentile(param_relevant, 50) - np.nanmean(param_relevant)
-    speed_relevant = utils_processing.remove_outliers(datafull["speed"])
-    speed = np.percentile(speed_relevant, prcnt) - np.nanmean(speed_relevant)
+    param = np.percentile(param_relevant, prcnt) - np.nanmean(param_relevant)
     
     # initialise arrays
     phase2_preds = np.empty((beta1.shape[0], pred2_range.shape[0]))
@@ -100,9 +90,9 @@ for iprcnt, prcnt in enumerate(prcnts):
     unique_traces = np.empty((0))
     refLimb = ''
     lnst = 'solid'
-        
-    mu1 = np.asarray(beta1['(Intercept)']).reshape(-1,1) + np.asarray(beta1['pred1']).reshape(-1,1) * speed + np.asarray(beta1[pred]).reshape(-1,1) @ pred2_range.reshape(-1,1).T + np.asarray(beta1[nonpred]).reshape(-1,1) * param + np.asarray(beta1["pred1:pred2"]).reshape(-1,1) * speed *param #the mean of the third predictor (if present) is zero because it was centred before modelling
-    mu2 = np.asarray(beta2['(Intercept)']).reshape(-1,1) + np.asarray(beta2['pred1']).reshape(-1,1) * speed + np.asarray(beta2[pred]).reshape(-1,1) @ pred2_range.reshape(-1,1).T + np.asarray(beta2[nonpred]).reshape(-1,1) * param + np.asarray(beta2["pred1:pred2"]).reshape(-1,1) * speed *param
+            
+    mu1 = np.asarray(beta1['(Intercept)']).reshape(-1,1) + np.asarray(beta1['pred1']).reshape(-1,1) * param + np.asarray(beta1[pred]).reshape(-1,1) @ pred2_range.reshape(-1,1).T + np.asarray(beta1["pred1:pred2"]).reshape(-1,1) @ (pred2_range.reshape(-1,1).T *param) #the mean of the third predictor (if present) is zero because it was centred before modelling
+    mu2 = np.asarray(beta2['(Intercept)']).reshape(-1,1) + np.asarray(beta2['pred1']).reshape(-1,1) * param + np.asarray(beta2[pred]).reshape(-1,1) @ (pred2_range.reshape(-1,1).T) + np.asarray(beta2["pred1:pred2"]).reshape(-1,1) @ (pred2_range.reshape(-1,1).T *param)
     phase2_preds[:,:] = np.arctan2(mu2, mu1)
     
     # compute and plot mean phases for three circular ranges so that the plots look nice and do not have lines connecting 2pi to 0
@@ -138,24 +128,39 @@ for iprcnt, prcnt in enumerate(prcnts):
                     linewidth = 1, 
                     linestyle = lnst, 
                     )
-        print(prcnt, trace[-1]) 
-    ax.text(np.mean(xlim)+((xlim[1]-xlim[0])*0.75/4)*(iprcnt-1), 0.8*np.pi, f"{prcnt}", ha = 'center', color = FigConfig.colour_config[clrs][iprcnt*2])  
-    
+        print(prcnt, trace[-1])
+            
+    ax.text(np.mean(xlim)+((xlim[1]-xlim[0])*0.75/4)*(iprcnt-1), 1.3*np.pi, f"{prcnt}", ha = 'center', color = FigConfig.colour_config[clrs][iprcnt*2])
+         
+# y_tr_spread = np.median(y_tr_list) + prcnts_d # empirically determined that 0.2 is sufficient separation on my axis
+# for isp in range(len(y_tr_spread)):
+#     ax.text(x_tr_list[isp], 
+#                   y_tr_spread[isp],# + y_delta_list[isp], 
+#                   p_tr_list[isp])
 
-ax.text(np.mean(xlim), np.pi, pct_text, color = FigConfig.colour_config[clrs][0], ha = 'center')
+ax.text(np.mean(xlim), 1.41*np.pi, pct_text, color = FigConfig.colour_config[clrs][0], ha = 'center')
 
 # axes 
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_yticks(yticks)
 ax.set_yticklabels(yticklabels)
-ax.set_title(tlt, pad = 10)
+ax.set_title(tlt, pad = 2)
     
-ax.set_ylabel('Homologous phase,\npelvic girdle (rad)')
+ax.set_ylabel('Homolateral phase (rad)')
 
+# lgd = fig.legend([(legend_colours[0],legend_linestyles[0]), 
+#                   (legend_colours[1],legend_linestyles[1])], 
+#                 ['left hind ref', 'right hind ref'],
+#                 handler_map={tuple: AnyObjectHandlerDouble()}, loc = 'lower left',
+#                 # bbox_to_anchor=(0.25,0.95,0.65,0.3), 
+#                 bbox_to_anchor=(0.3,0.7,0.6,0.3), 
+#                 mode="expand", borderaxespad=0.1,
+#                 # title = "Reference limb", 
+#                 ncol = 1)
 
 plt.tight_layout(w_pad = 3)
 
-figtitle = f"MS3_{yyyymmdd}_homolateral_sBA_speeds.svg"
+figtitle = f"MS3_{yyyymmdd}_homolateral_speeds.svg"
 plt.savefig(os.path.join(FigConfig.paths['savefig_folder'], figtitle), 
             dpi = 300, 
             )

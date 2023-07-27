@@ -8,8 +8,8 @@ from matplotlib import pyplot as plt
 
 sys.path.append(r"C:\Users\MurrayLab\sensoryDependentGait")
 
-from preprocessing import data_loader, utils_processing,forceplate_data_manager
-from preprocessing.data_config import Config
+from processing import data_loader, utils_processing,forceplate_data_manager
+from processing.data_config import Config
 
 def get_angles_vs_param(outputDir=Config.paths["forceplate_output_folder"], param = 'headHW', yyyymmdd = None):
     """

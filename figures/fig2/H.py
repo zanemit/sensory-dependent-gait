@@ -12,14 +12,17 @@ from processing import data_loader, utils_processing
 from processing.data_config import Config
 from figures.fig_config import Config as FigConfig
 
-fig, ax = plt.subplots(1,1, figsize = (1.5,1.7))
+fig, ax = plt.subplots(1,1, figsize = (0.9,1.15))
 
 limb = 'lF0'#,'rF0','rH0']
 refLimb = 'lH1'
 iters = 1000
 yyyymmdd = '2022-08-18'
 
-u = 1    
+u = 1 
+lw = 1.5  
+
+tsize = 6
 
 # CoMy vs snoutBodyAngle regression (none of the mice of interest, so use the average)
 CoMy_snoutBodyAngle_path = os.path.join(Config.paths["forceplate_output_folder"],"2021-10-26_mixedEffectsModel_linear_COMy_snoutBodyAngle.csv")
@@ -69,7 +72,10 @@ phase1_hhT_sBA = []
 phase2_hhT_sBA = []
 # bad mice FAA1034949 and FAA1034942! (no incline effect)
 
-for m in mice:
+pred_num = 100
+phase_preds_across_mice = np.empty((mice.shape[0], pred_num, 3))
+
+for im, m in enumerate(mice):
     # subset dataframe
     datafull_sub1 = datafull1[datafull1['mouseID'] == m]
     datafull_sub2 = datafull2[datafull2['mouseID'] == m]
@@ -93,7 +99,7 @@ for m in mice:
     # compute the snoutBodyAngle range in incline trials
     sBA_min = np.nanmin(datafull_sub1['snoutBodyAngle']) #- np.nanmean(datafull1['snoutBodyAngle'])
     sBA_max = np.nanmax(datafull_sub1['snoutBodyAngle']) #- np.nanmean(datafull1['snoutBodyAngle'])
-    sBA_range = np.linspace(sBA_min, sBA_max, 100, endpoint = True)
+    sBA_range = np.linspace(sBA_min, sBA_max, pred_num, endpoint = True)
     
     # compute the corresponding CoMy change (adding means to de-center CoMy) -> CoMy is as in the Fig1 plot
     CoMy_sBAmin = (CoMy_snoutBodyAngle_intercept + (sBA_min - np.nanmean(datafp1['param'])) * CoMy_snoutBodyAngle_slope) + np.nanmean(datafp1['CoMy_mean'])
@@ -102,7 +108,7 @@ for m in mice:
     # find the corresponding inclines (add the dataset mean to de-center the values)
     incline_sBAmin = ((CoMy_sBAmin - np.nanmean(datafp2['CoMy_mean']) - CoMy_incline_intercept) / CoMy_incline_slope) + np.nanmean(datafp2['param'])
     incline_sBAmax = ((CoMy_sBAmax - np.nanmean(datafp2['CoMy_mean']) - CoMy_incline_intercept) / CoMy_incline_slope) + np.nanmean(datafp2['param'])
-    incline_range = np.linspace(incline_sBAmin, incline_sBAmax, 100, endpoint= True)
+    incline_range = np.linspace(incline_sBAmin, incline_sBAmax, pred_num, endpoint= True)
     
     for i, (phaselist1, phaselist2, title) in enumerate(zip([phase1_incT_sBA,phase1_incT_inc, phase1_hhT_sBA], 
                                                             [phase2_incT_sBA, phase2_incT_inc, phase2_hhT_sBA], 
@@ -149,79 +155,72 @@ for m in mice:
         if np.any(abs(np.diff(mean_phase))>5):
             phase_preds[phase_preds<0] = phase_preds[phase_preds<0]+2*np.pi
             mean_phase = scipy.stats.circmean(phase_preds, high = 2*np.pi, low = 0, axis=0)
-       
-        phaselist1.append(mean_phase[0])   
-        phaselist2.append(mean_phase[-1]) 
         
-df = pd.DataFrame(zip(mice, phase1_incT_sBA, phase2_incT_sBA, phase1_incT_inc, phase2_incT_inc, phase1_hhT_sBA, phase2_hhT_sBA), 
-             columns = ['mouseID', 'phase1_incT_sBA', 'phase2_incT_sBA', 'phase1_incT_inc', 'phase2_incT_inc', 'phase1_hhT_sBA', 'phase2_hhT_sBA'])
+        phase_preds_across_mice[im, :, i] = mean_phase
+        # phaselist1.append(mean_phase[0])   
+        # phaselist2.append(mean_phase[-1]) 
 
-df['incT_inc'] = df['phase2_incT_inc'] - df['phase1_incT_inc']
-df['incT_sBA'] = df['phase2_incT_sBA'] - df['phase1_incT_sBA']  
-df['hhT_sBA'] = df['phase2_hhT_sBA'] - df['phase1_hhT_sBA'] 
-df['incT_total'] = df['incT_sBA'] + df['incT_inc']
+phase_preds_across_mice = phase_preds_across_mice - phase_preds_across_mice[:, 0, :].reshape(12,1,3)
+phase_preds_sum = np.empty((mice.shape[0], pred_num, 2))
+phase_preds_sum[:,:,1] =  phase_preds_across_mice[:,:,2]
+phase_preds_sum[:,:,0] =  phase_preds_across_mice[:,:,0] + phase_preds_across_mice[:,:,1]
 
+stds = np.nanstd(phase_preds_sum, axis = 0)
 
-if 'l' in refLimb:
-    dataLabelDict = {'lF0': 'homolateral', 'rF0': 'diagonal', 'rH0': 'homologous'}
-elif 'r' in refLimb:
-    dataLabelDict = {'rF0': 'homolateral', 'lF0': 'diagonal', 'lH0': 'homologous'}
-clr = FigConfig.colour_config[dataLabelDict[limb]][2]
-
-clrs = [ FigConfig.colour_config[dataLabelDict[limb]][2],
-        FigConfig.colour_config[dataLabelDict[limb]][2],
-        FigConfig.colour_config['greys'][2],
-        FigConfig.colour_config[dataLabelDict[limb]][0]]
-
-for i, (colnum, xpos) in enumerate(zip([-4,-3,-2,-1], [u+0.3, u+1+0.3, u+2+0.3, u+3+0.3])):   
-    ax.boxplot([df.iloc[:,colnum]], positions = [xpos], medianprops = dict(color = clrs[i], linewidth = 1, alpha = 0.6),
-                boxprops = dict(color = clrs[i], linewidth = 1, alpha = 0.6), capprops = dict(color = clrs[i], linewidth = 1, alpha = 0.6),
-                whiskerprops = dict(color = clrs[i], linewidth = 1, alpha = 0.6), flierprops = dict(mec = clrs[i], linewidth = 1, alpha = 0.6, ms=2))
-  
-    ax.set_xlim(0,5)#*limblen+3)
-    ax.set_ylim(-1.5*np.pi,np.pi)
-    ax.set_yticks([-1.5*np.pi,-np.pi,-0.5*np.pi,0,0.5*np.pi,np.pi])
-    ax.set_yticklabels(["-1.5π", "-π", "-0.5π", "0", "0.5π", "π"])
-    ax.set_xticks([1,2,3,4])#,4,5,7,8])
-# ax.set_xticklabels(["incline (I)", "body tilt (I)", "body tilt (H)", "incline (I) +\nbody tilt (I)"], rotation = 45, ha = 'right')
-ax.set_xticklabels([])
-for xpos, text in zip([-0.3,0.5,1.4,2.7],
-                      ["incline (S)", "body angle (S)", "body angle (H)", "incline (S) +\nbody angle (S)"]):
-    ax.text(xpos, -5.3, text, rotation = 45, va = 'top')
-
-ax.set_ylabel("Homolateral phase\nshift (rad)")
-
-# stats
-_, p1 = scipy.stats.ttest_rel(df['incT_sBA'], df['incT_inc'])
-print(f"Slope trials, {limb}: p-val {p1}")
-_, p2 = scipy.stats.ttest_rel(df['incT_sBA'], df['hhT_sBA'])
-print(f"Slope trials, {limb}: p-val {p2}")
-_, p3 = scipy.stats.ttest_rel(df['hhT_sBA'], df['incT_total'])
-print(f"Head height vs total incline, {limb}: p-val {p3}")
-
-ptext = []
-for i, (p, pos) in enumerate(zip([p1,p2,p3], [1.5,2.5,3.5])):
-    if (p < FigConfig.p_thresholds).sum() == 0:
-        ptext.append( "n.s." )    
-        ydelta = 0.1
-    else:
-        ptext.append('*' * (p < FigConfig.p_thresholds).sum())
-        ydelta = 0
-    ax.text(pos,0.9*np.pi+ydelta,ptext[i], ha = 'center')
-    # ax[i].set_title(tlt)
-
-for i in range(df.shape[0]):
-    ax.plot([u, u+1], df.iloc[i,-4:-2], linewidth = 0.5, color = clrs[0], alpha = 0.2)
-    ax.scatter([u, u+1], df.iloc[i,-4:-2], color =  clrs[0], alpha = 0.4, s = 2)
+CoMy_range = np.linspace(CoMy_sBAmin, CoMy_sBAmax, pred_num)
+meds = []
+for i, (clr, lbl) in enumerate(zip([FigConfig.colour_config['homolateral'][0], FigConfig.colour_config['greys'][2]],
+                                 [ 'Surface slope', 'Head height'])): #iterate over conditions
+    med = np.nanmedian(phase_preds_sum[:,:,i], axis=0)
+    meds.append(med[-1])
+    ax.fill_between(CoMy_range,
+                    med+stds[:,i], 
+                    med-stds[:,i],
+                    alpha = 0.2, 
+                    facecolor = clr)
+    ax.plot(CoMy_range,
+            med, 
+            color = clr,
+            lw = 1.5,
+            label = lbl)
     
-    ax.plot([u+1, u+2], df.iloc[i,-3:-1], linewidth = 0.5, color = clrs[2], alpha = 0.2)
-    ax.scatter(u+2, df.iloc[i,-2], color =  clrs[2], alpha = 0.4, s = 2)
-    
-    ax.plot([u+2, u+3], df.iloc[i,-2:], linewidth = 0.5, color = clrs[3], alpha = 0.2)
-    ax.scatter(u+3, df.iloc[i,-1], color =  clrs[3], alpha = 0.4, s = 2)
+    ax.hlines(y = med[-1], 
+                    xmin = CoMy_range[-1] -0.01, 
+                    xmax = CoMy_range[-1] -0.02, 
+                    linewidth = 0.5, 
+                    color = 'black',
+                    )
+        
+ax.set_xlim(-0.05, -0.5)    
+ax.set_xticks(np.linspace(-0.1,-0.5,5)[[0,2,4]] )
+ax.tick_params(axis = 'both', which = 'major', labelsize = tsize) 
+ax.set_ylim(-np.pi,0.5*np.pi)
+ax.set_yticks([-np.pi,-0.5*np.pi,0,0.5*np.pi])
+ax.set_yticklabels(["-π", "-0.5π", "0", "0.5π"], size = tsize)
 
-plt.tight_layout()    
-fig.savefig(Path(FigConfig.paths['savefig_folder']) / f"MS3_{yyyymmdd}_mouseComparisonIncline_interaction2_{limb}_ref{refLimb}.svg", dpi=300)
+ax.set_ylabel("Homolateral phase\nshift (rad)", size = tsize)
+ax.set_xlabel("Anteroposterior CoP\nshift (cm)", size = tsize)
+
+ax.vlines(x = CoMy_range[-1]-0.02, 
+                ymin = meds[0], 
+                ymax = meds[1], 
+                linewidth = 0.5, 
+                color = 'black'
+                ) 
+ax.text(CoMy_range[-1]-0.03, np.mean(meds)-0.1,"n.s.", ha = 'left', size = tsize) 
+lgd = plt.legend(bbox_to_anchor=(0.05,0.8,1.2,0.3), 
+            mode="expand", borderaxespad=0.1, 
+            # title = 'Modulated parameter',
+            fontsize =tsize,
+            # title_fontsize = tsize
+            )
+# plt.tight_layout()
+fig.savefig(Path(FigConfig.paths['savefig_folder']) / f"MS3_{yyyymmdd}_mouseComparisonIncline_interaction2_{limb}_LINEPLOT_FOR_BRISTOL.svg", 
+            dpi=300,
+            bbox_extra_artists = (lgd, ), 
+            bbox_inches = 'tight'
+            )
+
 
 
 

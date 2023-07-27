@@ -3,7 +3,7 @@ import pickle
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from preprocessing.data_config import Config
+from processing.data_config import Config
 
 def load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"],  
                         dataToLoad = 'passiveOptoData', 
@@ -52,6 +52,7 @@ def load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"],
         mtOtherData (mtTreadmill)
         mouseSpeed (mtTreadmill)
         movementDict (mtTreadmill)
+        bodyHeight (mtTreadmill)
               
 
     """
@@ -387,7 +388,7 @@ def load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"],
             data = pd.read_csv(path, header = [0,1,2,3,4,5,6], index_col = 0)
             return data, yyyymmdd
         elif dataToLoad == 'mouseSpeed':
-            print("Loading body angles...")
+            print("Loading mouse speed...")
             if yyyymmdd == None:
                 fileDates = [f[:10] for f in os.listdir(outputDir) if f.endswith('.csv') and 'mouseSpeed' in f]
                 yyyymmdd = input(fileDates)
@@ -401,5 +402,24 @@ def load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"],
                 yyyymmdd = input(fileDates)
             path = outputDir / (yyyymmdd + '_movementDict.pkl')
             data = pickle.load(open(path, "rb" ))
+            return data, yyyymmdd
+        elif dataToLoad == 'bodyHeight':
+            print("Loading body heights...")
+            if yyyymmdd == None:
+                fileDates = [f[:10] for f in os.listdir(outputDir) if f.endswith('.csv') and 'bodyHeight' in f]
+                yyyymmdd = input(fileDates)
+            path = outputDir / (yyyymmdd + '_bodyHeight.csv')
+            if '2021' in yyyymmdd:
+                data = pd.read_csv(path, header = [0,1,2,3], index_col = 0)
+            else:
+                data = pd.read_csv(path, header = [0,1,2,3,4], index_col = 0)
+            return data, yyyymmdd
+        elif dataToLoad == 'limbX_bodyHeights_rel':
+            print("Loading array of limb x coordinates...")
+            if yyyymmdd == None:
+                fileDates = [f[:10] for f in os.listdir(outputDir) if f.endswith('.npy') and f'limbX_bodyHeights_rel{appdx}' in f]
+                yyyymmdd = input(fileDates)
+            path = outputDir / (yyyymmdd + f'_limbX_bodyHeights_rel{appdx}.npy')
+            data = np.load(path)
             return data, yyyymmdd
         

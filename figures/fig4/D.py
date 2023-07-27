@@ -1,161 +1,155 @@
 import sys
 from pathlib import Path
-import os
 import pandas as pd
+import os
 import numpy as np
+import scipy.stats
 from matplotlib import pyplot as plt
 
-sys.path.append(r"C:\Users\MurrayLab\sensoryDependentGait")
+sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
-from preprocessing import data_loader
-from preprocessing.data_config import Config
+from processing import data_loader, utils_processing, utils_math
+from processing.data_config import Config
 from figures.fig_config import Config as FigConfig
-from figures.fig_config import AnyObjectHandler
-
-fig, ax = plt.subplots(1,1,figsize = (1.2,1.3))
-
-traces_ends = {}
-
-# add forceplate data
-df_fp, _ = data_loader.load_processed_data(outputDir = Config.paths["forceplate_output_folder"], 
-                                               dataToLoad="forceplateAngleParams", 
-                                               yyyymmdd = '2022-04-04', 
-                                               appdx = '_levels')
-modLIN = pd.read_csv(Path(Config.paths["forceplate_output_folder"])/"2022-04-04_mixedEffectsModel_linear_snoutBodyAngle_headLVL.csv")
-x_centered = np.asarray(df_fp['headLVL'])-np.nanmean(df_fp['headLVL'])
-x_pred = np.linspace(x_centered.min(), x_centered.max(), 100)
-y_predLIN = modLIN['Estimate'][0] + modLIN['Estimate'][1]*x_pred + np.nanmean(df_fp['snoutBodyAngle'])
-x_pred += np.nanmean(df_fp['headLVL'])
-ax.plot(x_pred, 
-        y_predLIN, 
-        linewidth=1, 
-        color=FigConfig.colour_config['main'], 
-        linestyle = 'dashed',
-        label = 'force sensors')
-traces_ends[0] = y_predLIN[-1]
+from figures.fig_config import AnyObjectHandlerDouble
 
 yyyymmdd = '2022-08-18'
-mod = pd.read_csv(Path(Config.paths["passiveOpto_output_folder"])/f"{yyyymmdd}_mixedEffectsModel_quadratic_preOpto_vs_locom_bodyAngles_incline.csv")
+outputDir = Config.paths['passiveOpto_output_folder']
+datafrac = 0.3
+iterations = 1000
+ref = 'COMBINED_FORE'
+limb = 'homologous0'
+pct_text = 'speed percentile'
 
-modLINinc = pd.read_csv(Path(Config.paths["passiveOpto_output_folder"])/f"{yyyymmdd}_mixedEffectsModel_linear_snoutBodyAngle_vs_incline_FP_TRDMlocom_TRDMstat_COMPARISON.csv")
-modLINinc2 = pd.read_csv(Path(Config.paths["passiveOpto_output_folder"])/f"{yyyymmdd}_mixedEffectsModel_linear_snoutBodyAngle_vs_incline_TRDMlocom_FP_TRDMstat_COMPARISON.csv")
+appdx_dict = {2: '', 3: '_incline'}
+sample_nums = {'_incline': 9605, '': 10462}
 
-for i, (lnst, data_str, data_col, data_type, lbl) in enumerate((zip(['dotted', 'solid'], 
-                                                               ['bodyAngles', 'locomParams'], 
-                                                               [0, 'snoutBodyAngle'],
-                                                               ['stationary', 'locomoting'],
-                                                               ['treadmill stationary', 'treadmill locomoting']
-                                                               ))):
-    df, yyyymmdd = data_loader.load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"], 
-                                                       dataToLoad = data_str, 
-                                                       yyyymmdd = yyyymmdd, 
-                                                       appdx = "_incline")
+ylim = (-0.3,1.5*np.pi)
+yticks = [0,0.5*np.pi,np.pi, 1.5*np.pi]
+yticklabels = ["0","0.5π", "π", "1.5π"] 
+legend_colours = [[],[]]
+legend_linestyles = [[],[]]
+
+fig, ax = plt.subplots(1,1,figsize = (1.55,1.5), sharey = True) #1.6,1.4 for 4figs S2 bottom row
+
+predictors = ['speed', 'headHW']
+param_col = 'speed'
+interaction = 'TRUE'
+clrs = 'diagonal'
+tlt = 'Head height trials'
     
-    if data_str == 'bodyAngles':
-        preOptoAngles = df.loc[:200, (slice(None), slice(None), slice(None), slice(None), 'snoutBody')].mean(axis=0) 
-        df = preOptoAngles.reset_index() 
+sBA_split_str = 'FALSE'
+    
+appdx = appdx_dict[len(predictors)]
+samples = sample_nums[appdx]
+      
+beta1path = Path(outputDir) / f"{yyyymmdd}_beta1_{limb}_ref{ref}_{predictors[0]}_{predictors[1]}_refLimb_interaction{interaction}_continuous_randMouse_sBAsplit{sBA_split_str}_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
+beta2path = Path(outputDir) / f"{yyyymmdd}_beta2_{limb}_ref{ref}_{predictors[0]}_{predictors[1]}_refLimb_interaction{interaction}_continuous_randMouse_sBAsplit{sBA_split_str}_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
+statspath = Path(outputDir) / f"{yyyymmdd}_coefCircCategorical_{limb}_ref{ref}_{predictors[0]}_{predictors[1]}_refLimb_interaction{interaction}_continuous_randMouse_sBAsplitFALSE_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
+
+beta1 = pd.read_csv(beta1path)
+beta2 = pd.read_csv(beta2path)
+stats = pd.read_csv(statspath)
+
+datafull = data_loader.load_processed_data(dataToLoad = 'strideParams', 
+                                           yyyymmdd = yyyymmdd,
+                                           limb = ref, 
+                                           appdx = appdx)[0]
+    
+predictor = 'headHW'
+pred = 'pred2' #snoutBodyAngle
+nonpred = 'pred3'
+xlim = (0,1.1)
+ax.set_xlim(xlim[0],xlim[1])
+# ax.set_xticks([140,150,160,170,180])
+ax.set_xlabel('Weight-adjusted\nhead height')
+
+y_tr_list = np.empty((0)) # 5 percentiles to plot = 5 pairs to compare!
+x_tr_list = np.empty((0))
+p_tr_list = np.empty((0))
+y_delta_list = np.empty((0))
+    
+# define the range of snout-hump angles or inclines (x axis predictor)
+pred2_relevant = utils_processing.remove_outliers(datafull[predictor]) 
+pred2_centred = pred2_relevant - np.nanmean(pred2_relevant) #centering
+pred2_range = np.linspace(pred2_centred.min(), pred2_centred.max(), num = 100)
+
+# speed_relevant = utils_processing.remove_outliers(datafull['speed'])
+# speed = np.percentile(speed_relevant, 50) - np.nanmean(speed_relevant)
+
+unique_traces = np.empty((0))
+
+prcnts = [20,50,80]
+prcnts_d = [-0.2,0,0.2]
+# find median param (excluding outliers)   
+
+for iprcnt, (prcnt, iclr) in enumerate(zip(prcnts, [0,2,3])):
+    param_relevant = utils_processing.remove_outliers(datafull[param_col])
+    param = np.percentile(param_relevant, 50) - np.nanmean(param_relevant)
+    
+    # initialise arrays
+    phase2_preds = np.empty((beta1.shape[0], pred2_range.shape[0]))
+    phase2_preds[:] = np.nan
+    
+    unique_traces = np.empty((0))
+    refLimb = ''
+    lnst = 'solid'
         
-    df['headLVL'] = [-int(x[3:]) for x in df['headLVL']] # ensures that "negative" inclines in metadata represent negative slopes
-
-    mice = np.unique(df['mouseID'])
-
-    for m in mice:
-        df_sub = df[df['mouseID']==m]
-        angles = []
-        levels = np.unique(df_sub["headLVL"])
-        for lvl in levels:
-            angles.append(np.nanmean(df_sub[df_sub["headLVL"] == lvl][data_col]))
-        ax.plot(levels, 
-                angles, 
-                color = FigConfig.colour_config['headbars'], 
-                alpha = 0.4, 
-                linewidth = 0.5, 
-                linestyle = lnst)   
-
-    x_centered = np.asarray(df['headLVL'])-np.nanmean(df['headLVL'])
-    x_pred = np.linspace(x_centered.min(), x_centered.max(), endpoint = True)
-    if data_type == 'locomoting':
-        y_pred = mod['Estimate'][0] + mod['Estimate'][1]*x_pred + mod['Estimate'][2]*x_pred**2 + np.nanmean(df[data_col]) 
-    else:
-        y_pred = mod['Estimate'][0] + mod['Estimate'][1]*x_pred + mod['Estimate'][2]*x_pred**2 + mod['Estimate'][3] + np.nanmean(df[data_col]) 
-    x_pred += np.nanmean(df['headLVL'])
-    ax.plot(x_pred, 
-            y_pred, 
-            linewidth = 1, 
-            color = FigConfig.colour_config['headbars'],
-            label = lbl,
-            linestyle = lnst)
-    traces_ends[i+1] = y_pred[-1]
+    mu1 = np.asarray(beta1['(Intercept)']).reshape(-1,1) + np.asarray(beta1['pred1']).reshape(-1,1) * param + np.asarray(beta1[pred]).reshape(-1,1) @ pred2_range.reshape(-1,1).T + np.asarray(beta1["pred1:pred2"]).reshape(-1,1) @ (pred2_range.reshape(-1,1).T *param)  #the mean of the third predictor (if present) is zero because it was centred before modelling
+    mu2 = np.asarray(beta2['(Intercept)']).reshape(-1,1) + np.asarray(beta2['pred1']).reshape(-1,1) * param + np.asarray(beta2[pred]).reshape(-1,1) @ pred2_range.reshape(-1,1).T + np.asarray(beta2["pred1:pred2"]).reshape(-1,1) @ (pred2_range.reshape(-1,1).T *param) 
+    phase2_preds[:,:] = np.arctan2(mu2, mu1)
     
-p_texts = {} #setupFP_setupTRDMlocom, setupTRDMlocom_setupTRDMstat, setupFP_setupTRDMstat, headHW
-p_thresholds = np.asarray(FigConfig.p_thresholds)/3 # pairwise comparison correction
-for i, (mod, est) in enumerate(zip(
-        [modLINinc, modLINinc2, modLINinc],
-        ['setupTRDMlocom', 'setupReleveledTRDMstat', 'setupTRDMstat'])):
-    pval = float(mod[mod['Unnamed: 0'] == est]['Pr(>|t|)'])
-    if (pval < p_thresholds).sum() != 0:
-            p_texts[i] = '*' * (pval < p_thresholds).sum()
-    else:
-            p_texts[i] = "n.s."
-            
-stat_dist = [1, 2, 3, 1, 2, 0, 0 ] # x0 : distance from the traces
-                                            # x1-x0 : length of first horizontal line
-                                            # x2-x1 : length of second horizontal line
-                                            # x3 : extension of horizontal lines
-                                            # x4 : distance from second horiz line to text
-                                            # x5, x6 : y length
-p_y_dist = [0.5, 0.5, 0.5]                                    
-for iy, y_tr in enumerate(traces_ends.values()):
-    if iy < len(traces_ends)-1:
-        ax.hlines(y_tr, xmin = x_pred[-1]+stat_dist[0], xmax = x_pred[-1]+stat_dist[1], linewidth = 0.5, color = 'black')
-        ax.vlines(x_pred[-1]+stat_dist[1], ymin = traces_ends[iy], ymax = traces_ends[iy+1], linewidth = 0.5, color = 'black')
-        ax.hlines(np.mean((traces_ends[iy], traces_ends[iy+1])), xmin = x_pred[-1]+stat_dist[1], xmax = x_pred[-1]+stat_dist[2], linewidth = 0.5, color = 'black')
-        ax.vlines(x_pred[-1]+stat_dist[2], ymin = np.mean((traces_ends[iy], traces_ends[iy+1])), ymax = np.mean((traces_ends[iy], traces_ends[iy+1]))+stat_dist[iy+5], linewidth = 0.5, color = 'black')
-        ax.hlines(np.mean((traces_ends[iy], traces_ends[iy+1]))+stat_dist[iy+5], xmin = x_pred[-1]+stat_dist[2], xmax = x_pred[-1]+stat_dist[2]+stat_dist[1]-stat_dist[0], linewidth = 0.5, color = 'black')
-        ax.text(x_pred[-1]+stat_dist[2]+stat_dist[1], np.mean((traces_ends[iy], traces_ends[iy+1]))+stat_dist[iy+5]-p_y_dist[iy], p_texts[iy])
-    else:
-        ax.hlines(y_tr, xmin = x_pred[-1]+stat_dist[0], xmax = x_pred[-1]+stat_dist[1], linewidth = 0.5, color = 'black', linestyle = 'solid')
-        ax.hlines(y_tr, xmin = x_pred[-1]+stat_dist[3], xmax = x_pred[-1]+stat_dist[1]+stat_dist[3], linewidth = 0.5, color = 'black', linestyle = 'dashed')
-        ax.hlines(traces_ends[0], xmin = x_pred[-1]+stat_dist[3], xmax = x_pred[-1]+stat_dist[1]+stat_dist[3], linewidth = 0.5, color = 'black', linestyle = 'dashed')
-        ax.vlines(x_pred[-1]+stat_dist[1]+stat_dist[3], ymin = traces_ends[iy], ymax = traces_ends[0], linewidth = 0.5, color = 'black', linestyle = 'dashed')
-        ax.hlines(np.mean((traces_ends[iy], traces_ends[0])), xmin = x_pred[-1]+stat_dist[1]+stat_dist[3], xmax = x_pred[-1]+stat_dist[2]+stat_dist[3], linewidth = 0.5, color = 'black', linestyle = 'dashed')
-        ax.text(x_pred[-1]+stat_dist[2]+stat_dist[3]+stat_dist[4], np.mean((traces_ends[iy], traces_ends[0]))-0.3, p_texts[iy])
-    
-    
+    # compute and plot mean phases for three circular ranges so that the plots look nice and do not have lines connecting 2pi to 0
+    for k, (lo, hi) in enumerate(zip([-np.pi, 0, np.pi] , [np.pi, 2*np.pi, 3*np.pi])):
+        print(f"{refLimb}: working on data range {k}...")
+        if k == 1:
+            phase2_preds[phase2_preds<0] = phase2_preds[phase2_preds<0]+2*np.pi
+        if k == 2:
+            phase2_preds[phase2_preds<np.pi] = phase2_preds[phase2_preds<np.pi]+2*np.pi
+            legend_colours.append(FigConfig.colour_config[clrs][iprcnt*2])
+            legend_linestyles.append(lnst)
+        
+        trace = scipy.stats.circmean(phase2_preds[:,:],high = hi, low = lo, axis = 0)
+        lower = np.zeros_like(trace); higher = np.zeros_like(trace)
+        for x in range(lower.shape[0]):
+            lower[x], higher[x] =  utils_math.hpd_circular(phase2_preds[:,x], 
+                                                            mass_frac = 0.95, 
+                                                            high = hi, 
+                                                            low = lo) #% (np.pi*2)
+        
+        if round(trace[-1],6) not in unique_traces and not np.any(abs(np.diff(trace))>5):
+            unique_traces = np.append(unique_traces, round(trace[-1],6))
+            print('plotting...')    
+            ax.fill_between(pred2_range + np.nanmean(pred2_relevant), 
+                                  lower, 
+                                  higher, 
+                                  alpha = 0.2, 
+                                  facecolor = FigConfig.colour_config[clrs][iclr]
+                                    )
+            ax.plot((pred2_range + np.nanmean(pred2_relevant)), 
+                    trace, 
+                    color = FigConfig.colour_config[clrs][iclr], 
+                    linewidth = 1, 
+                    linestyle = lnst, 
+                    )
+        print(prcnt, trace[-1]) 
+    ax.text(np.mean(xlim)+((xlim[1]-xlim[0])*0.75/4)*(iprcnt-1), 1.3*np.pi, f"{prcnt}", ha = 'center', color = FigConfig.colour_config[clrs][iclr])  
     
 
-ax.set_xlim(-42,45)
-ax.set_ylim(140,180)
-ax.set_ylabel('Snout-body angle (deg)')
-ax.set_xlabel('Incline (deg)')
-# ax.set_title('Unconstrained foot placement')
-ax.set_xticks([-40,-20,0,20,40])
-ax.set_yticks([140,150,160,170,180])
+ax.text(np.mean(xlim), 1.5*np.pi, pct_text, color = FigConfig.colour_config[clrs][0], ha = 'center')
 
-p_text = ('*' * (mod['Pr(>|t|)'][1] < FigConfig.p_thresholds).sum())
-if (mod['Pr(>|t|)'][1] < FigConfig.p_thresholds).sum() == 0:
-    p_text += "n.s."
-ax.text(0,180, f"incline {p_text}", ha = 'center', color = FigConfig.colour_config['headbars'])
+# axes 
+ax.set_ylim(ylim[0], ylim[1])
+ax.set_yticks(yticks)
+ax.set_yticklabels(yticklabels)
+ax.set_title(tlt, pad = 10)
+    
+ax.set_ylabel('Homologous phase,\nshoulder girdle (rad)')
 
-p_text_lgdn = ('*' * (mod['Pr(>|t|)'][3] < FigConfig.p_thresholds).sum())
-if (mod['Pr(>|t|)'][3] < FigConfig.p_thresholds).sum() == 0:
-    p_text_lgdn += "n.s."
 
-# lgd = ax.legend([([FigConfig.colour_config['headbars']],"solid"), 
-#                   ([FigConfig.colour_config['headbars']],"dotted")], ['stationary', "locomoting"],
-#             handler_map={tuple: AnyObjectHandler()}, loc = 'upper center',
-#             bbox_to_anchor=(0.05,-0.5,0.9,0.2), mode="expand", borderaxespad=0,
-#             title = f'Data type ({p_text_lgdn})', ncol = 1)
+plt.tight_layout(w_pad = 3)
 
-lgd = ax.legend(loc = 'upper center',
-                bbox_to_anchor=(-0.2,-0.5,1.2,0.2), #0.055
-                mode="expand", 
-                borderaxespad=0,
-                borderpad = 0.2,
-                handlelength = 1.5,
-                # title = f"Setup ({p_texts[1]})", 
-                ncol = 1)
-
-fig.savefig(Path(FigConfig.paths['savefig_folder']) / f"{yyyymmdd}_preOpto_vs_locom_bodyAngles_incline.svg", bbox_extra_artists = (lgd, ), bbox_inches = 'tight',dpi=300)
-
-     
+figtitle = f"MS3_{yyyymmdd}_homolateralFORE_headHW_incline_trials_speeds.svg"
+plt.savefig(os.path.join(FigConfig.paths['savefig_folder'], figtitle), 
+            dpi = 300, 
+            )

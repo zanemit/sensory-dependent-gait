@@ -3,8 +3,8 @@ import os
 import pandas as pd
 import numpy as np
 from pathlib import Path
-from preprocessing.data_config import Config
-from preprocessing import data_loader, data_quality_checkers, process_metadata, utils_processing, utils_math
+from processing.data_config import Config
+from processing import data_loader, data_quality_checkers, process_metadata, utils_processing, utils_math
 
 
 def get_data(dataDir, outputDir = Config.paths["forceplate_data_folder"], yyyymmdd = None):

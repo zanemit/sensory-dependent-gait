@@ -17,16 +17,16 @@ param = 'speed'
 group_num = 5
 limb = 'rH0'
 limbRef = 'lH1'
-yyyymmdd =  '2021-10-23'
+yyyymmdd = '2022-08-18'
 appdx = ''
-mice_str = "mice_level"
-clr = 'greys'
-clr_id = 2
+mice_str = 'mice'
+clr = 'homolateral'
+clr_id = 0
 ploc = 0.7
 cfg_id = 0
 
 # SPLIT DATA IN QUINTILES
-df, _, _ = data_loader.load_processed_data(outputDir = Config.paths[f"mtTreadmill_output_folder"], 
+df, _, _ = data_loader.load_processed_data(outputDir = Config.paths[f"passiveOpto_output_folder"], 
                                             dataToLoad = "strideParams", 
                                             yyyymmdd = yyyymmdd,
                                             appdx = "",
@@ -36,7 +36,7 @@ param_split = utils_processing.split_by_percentile(df['speed'], 5)
 # param_split = [9,19,29,39,49,59]
 
 # ARR DEFINITION
-mouse_len =  len(Config.mtTreadmill_config[mice_str])
+mouse_len =  len(Config.passiveOpto_config["mice"])
 arr = np.empty((mouse_len, group_num, 2)) # mouse_num, group_num, sync/alt, mtTRDM/passiveOPTO
 arr[:] = 0
 
@@ -47,11 +47,11 @@ legend_colours = np.empty((2, 0)).tolist()
 legend_linestyles = np.empty((2, 0)).tolist()
 
 for ix, (yyyymmdd, appdx, mice_str) in enumerate(zip(
-        ['2021-10-23', '2022-05-06'],
-        ["", ""],
-        ["mice_level", "mice_incline"]
-        )):                                        
-    df, _, _ = data_loader.load_processed_data(outputDir = Config.paths["mtTreadmill_output_folder"], 
+        ['2022-08-18', '2022-08-18'],
+        ["", "_incline"],
+        ["mice", "mice"]
+        )):                                       
+    df, _, _ = data_loader.load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"], 
                                                 dataToLoad = "strideParams", 
                                                 yyyymmdd = yyyymmdd,
                                                 appdx = appdx,
@@ -65,7 +65,7 @@ for ix, (yyyymmdd, appdx, mice_str) in enumerate(zip(
     alternating = np.where((df[limb] >= 0.4) | (df[limb] <= -0.4))[0]
     synchronous = np.where((df[limb] >= -0.1) & (df[limb] <= 0.1))[0]    
     
-    for im, m in enumerate(Config.mtTreadmill_config[mice_str]):
+    for im, m in enumerate(Config.passiveOpto_config[mice_str]):
         df_sub = df[df['mouseID'] == m]
         
         # xvals = [np.nanmean((a,b,)) for a,b in zip(param_split[:-1], param_split[1:])]
@@ -122,6 +122,8 @@ ax.set_xticks(np.arange(group_num))
 ax.set_xlim(-0.5,group_num-1)
 ax.set_xticklabels(xticklabels)
 
+plt.tight_layout()
+
 ax.set_ylabel("Fraction of strides")
 lgd_actors2 = [(list(np.unique(legend_colours)), np.unique(legend_linestyles)[i]) for i in range(len(np.unique(legend_linestyles)))]
 
@@ -131,15 +133,11 @@ lgd2 = fig.legend([(lgd_actors2[0][0], "dashed"), (lgd_actors2[1][0], "solid")],
                 bbox_to_anchor=(0.3,0.9,0.5,0.2), mode="expand", borderaxespad=0.1,
                 ncol = 1)#, frameon = False) 
 
-
-plt.tight_layout()
-
-figtitle = f"MS2_{yyyymmdd}_strict_gait_fractions_homologous_mtTreadmill.svg"
+figtitle = f"MS2_{yyyymmdd}_strict_gait_fractions_homologous_passiveOpto.svg"
     
 plt.savefig(os.path.join(FigConfig.paths['savefig_folder'], figtitle), 
                 dpi = 300, 
                 bbox_extra_artists = (lgd2, ), 
-                bbox_inches = 'tight'
-                )
+                bbox_inches = 'tight')
 
 

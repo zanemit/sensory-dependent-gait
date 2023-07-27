@@ -5,89 +5,66 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 
-sys.path.append(r"C:\Users\MurrayLab\sensoryDependentGait")
+sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
-from preprocessing import data_loader
-from preprocessing.data_config import Config
+from processing import data_loader
+from processing.data_config import Config
 from figures.fig_config import Config as FigConfig
-from figures import scalebars
 
-# TODO generate both preOpto and locom
-# add limb labels
-# make a similar plot for the forceplate data (rF1 and rH1)
-# make a forceplate data plot with GRF centre vs foot position averaged across inclines (head high and low + rF1 and rH1)
+yyyymmdd = '2021-10-26'
+param = 'headHW'
+df, _ = data_loader.load_processed_data(outputDir = Config.paths["forceplate_output_folder"], 
+                                               dataToLoad="meanParamDF", 
+                                               yyyymmdd = yyyymmdd, 
+                                               appdx = '_'+param)
 
-yyyymmdd = '2022-04-0x'
-param = 'levels'
-conditions = [-40,0,40]
-limbs_sub = ['rH1', 'rF1']
-colordict = { 'rH1': 'homologous',  'rF1': 'diagonal'}      
+mice = np.unique(df['mouse'])
+variable = 'CoMy_mean'
+clr = 'main'
 
-
-# PREPARE DATA FOR REGRESSION
-df = pd.read_csv(os.path.join(Config.paths["forceplate_output_folder"], yyyymmdd + '_limbPositionRegressionArray_COMBINED.csv'))
-modLIN = pd.read_csv(os.path.join(Config.paths["forceplate_output_folder"], yyyymmdd + f'_limbPositionRegressionArray_MIXEDMODEL_linear_forceplate_{param}.csv'))
-modLIN = modLIN.set_index('Unnamed: 0')
-
-df['level'] = [-int(x[3:]) for x in df['level']]
-
-mice = np.unique(df['mouseID'])
-levels_centred = df['level'] - np.nanmean(df['level'])
-xvals = np.linspace(np.nanmin(levels_centred), np.nanmax(levels_centred))
-
-ptext = []
-for ilimb, limb in enumerate(limbs_sub):
-    limbCoord = limb + 'x'
-
-    # convert y axis to zero incline-centred cm 
-    zero_incline_centred = - np.nanmean(df['level'])
-    model_Yzero = modLIN.loc[f'Intercept_{limbCoord}','Estimate'] + modLIN.loc[f'param_centred_{limbCoord}','Estimate'] * zero_incline_centred + np.nanmean(df[limbCoord])
+fig, ax = plt.subplots(1, 1, figsize=(1.55, 1.5))
+for im, m in enumerate(mice):
+    df_sub = df[df['mouse'] == m]
+    headHWs = np.unique(df_sub['param'])
     
-    if (modLIN.loc[f'param_centred_{limbCoord}','Pr(>|t|)'] < FigConfig.p_thresholds).sum() == 0:
-        ptext.append( "n.s." )    
-    else:
-        ptext.append('*' * (modLIN.loc[f'param_centred_{limbCoord}','Pr(>|t|)'] < FigConfig.p_thresholds).sum())
-    # add rescaled positions to the df
-    df[limbCoord + '_cm'] = (df[limbCoord] - model_Yzero)/Config.forceplate_config["px_per_cm"]
+    yvals = [np.nanmean(df_sub[df_sub['param']==h][variable]) for h in np.unique(df_sub['param'])]
+    ax.plot(headHWs, 
+             yvals, 
+             color=FigConfig.colour_config[clr],  
+             alpha=0.4, 
+             linewidth = 1)
+             
+# fore-hind and comxy plot means
+variable_str = 'CoMy'
+title = 'anteroposterior CoP'
 
-# BOXPLOTS 
-fig, ax = plt.subplots(1,2,figsize = (1.7,1.7))
-for ilimb, limb in enumerate(limbs_sub):
-    xpos = 0
-    limbCoord = limb +'x_cm'
-    clr = FigConfig.colour_config[colordict[limb]][2]
-    positionsX = np.empty((len(mice), len(conditions)))
-    if ilimb != 0:
-        ax[ilimb].spines.left.set_visible(False)
-        ax[ilimb].get_yaxis().set_visible(False)
-    else:
-        ax[ilimb].set_ylabel('Horizontal position \n of the foot (cm)')
-        ax[ilimb].text(-0.5,2.3,'anterior', ha = 'right')
-        ax[ilimb].text(-0.5,-3.6,'posterior', ha = 'right')
+modQDR = pd.read_csv(Path(Config.paths["forceplate_output_folder"]) / f"{yyyymmdd}_mixedEffectsModel_quadratic_{variable_str}_{param}.csv")
+
+x_centered = df['param'] - np.nanmean(df['param'])
+x_pred = np.linspace(np.nanmin(x_centered), np.nanmax(x_centered), endpoint=True)
+
+y_predQDR = modQDR['Estimate'][0] + modQDR['Estimate'][1] * x_pred + modQDR['Estimate'][2] * x_pred**2 + np.nanmean(df[variable])
+x_pred += np.nanmean(df['param'])
+ax.plot(x_pred, 
+        y_predQDR, 
+        linewidth=2, 
+        color=FigConfig.colour_config[clr]) 
+p_text = title + ' ' + ('*' * (modQDR['Pr(>|t|)'][1] < FigConfig.p_thresholds).sum())
+if (modQDR['Pr(>|t|)'][1] < FigConfig.p_thresholds).sum() == 0:
+    p_text += "n.s."
+ax.text(0.6,0.9, p_text, ha = 'center', color = FigConfig.colour_config[clr])
         
-    for im, m in enumerate(mice):
-        df_sub = df[df['mouseID']== m]
-        for ic, c in enumerate(conditions):
-            df_sub_cond = df_sub[df_sub['level'] == c]
-            positionsX[im,ic] = np.nanmean(df_sub_cond[limbCoord])
-        ax[ilimb].plot([xpos, xpos+1, xpos+2], positionsX[im,:], color = clr, alpha = 0.3)
-        ax[ilimb].scatter([xpos, xpos+1, xpos+2], positionsX[im,:], color = clr, alpha = 0.3, s = 2)
-    for ic, c in enumerate(conditions):
-        ax[ilimb].boxplot(positionsX[:,ic], positions = [xpos], medianprops = dict(color = clr, linewidth = 1, alpha = 0.6),
-                    boxprops = dict(color = clr, linewidth = 1, alpha = 0.6), capprops = dict(color = clr, linewidth = 1, alpha = 0.6),
-                    whiskerprops = dict(color = clr, linewidth = 1, alpha = 0.6), flierprops = dict(mec = clr, linewidth = 1, alpha = 0.6, ms=2))
-        ax[ilimb].set_xticks([0,1,2])
-        ax[ilimb].set_xticklabels(conditions)
-        # ax[ilimb].set_xlabel('Incline (deg)')
-        ax[ilimb].set_ylim(-3,2)
-        ax[ilimb].set_yticks([-3,-2,-1,0,1,2])
-        ax[ilimb].text(1,2, f'{limb[:-1]} {ptext[ilimb]}', ha = 'center', color = clr)
-        
-        xpos = xpos+1 
+ax.set_ylabel("Centre of pressure (cm)")
+ax.set_xlabel('Weight-adjusted head height')
 
-fig.text(0.62, 0, 'Incline (deg)', ha='center')
-fig.text(0.62, 0.93, 'standstill', ha='center')
+ax.set_xticks([0,0.6,1.2])
+ax.set_xlim(-0.1,1.2)
+ax.set_yticks([-1.0,-0.5,0,0.5,1.0])
+ax.set_ylim(-1.0,1.0)
+ax.set_title("Head height trials")
 
-plt.tight_layout()
+plt.tight_layout(w_pad = 0, pad = 0, h_pad = 0)
+    
+fig.savefig(os.path.join(FigConfig.paths['savefig_folder'], f'MS2_{yyyymmdd}_CoMy_{param}.svg'))
 
-fig.savefig(Path(FigConfig.paths['savefig_folder']) / f"{yyyymmdd}_footPositionX_boxplots_forceplate_{param}.svg", dpi=300)
+

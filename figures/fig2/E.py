@@ -1,102 +1,161 @@
 import sys
 from pathlib import Path
 import pandas as pd
+import os
 import numpy as np
+import scipy.stats
 from matplotlib import pyplot as plt
 
-sys.path.append(r"C:\Users\MurrayLab\sensoryDependentGait")
+sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
-from preprocessing import data_loader, utils_math
-from preprocessing.data_config import Config
+from processing import data_loader, utils_processing, utils_math
+from processing.data_config import Config
 from figures.fig_config import Config as FigConfig
+from figures.fig_config import AnyObjectHandlerDouble
 
 yyyymmdd = '2022-08-18'
-param = 'headLVL'
-group_num = 5
-dataToPlot = 'lF0'
-clr_str = 'homolateral'
-limbRef = 'lH1'
-appdx = '_incline'
+outputDir = Config.paths['passiveOpto_output_folder']
+datafrac = 0.3
+iterations = 1000
+ref = 'COMBINED'
+limb = 'homolateral0'
+pct_text = 'speed percentile'
 
-fig, ax = plt.subplots(1, group_num,  
-                       gridspec_kw={'wspace':0.15,'hspace':0,'top':0.95, 'bottom':0.05, 'left':0.05, 'right':0.95}, 
-                       figsize = (1*group_num,1.15), subplot_kw = dict(projection = 'polar'))
-# left, right, top, bottom refer to coordinates where figure starts/ends
+appdx_dict = {2: '', 3: '_incline'}
+sample_nums = {'_incline': 9280, '': 10453}
 
-df, _, _ = data_loader.load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"], 
-                                            dataToLoad = "strideParams", 
-                                            yyyymmdd = yyyymmdd,
-                                            appdx = appdx,
-                                            limb = limbRef)
+ylim = (0.3*np.pi,1.5*np.pi)
+yticks = [0.5*np.pi,np.pi,1.5*np.pi]
+yticklabels = ["0.5π", "π", "1.5π"]  
 
-df = df[np.asarray([m in Config.passiveOpto_config["mice"] for m in df["mouseID"]])]
+legend_colours = [[],[]]
+legend_linestyles = [[],[]]
 
-conditions = np.unique(df[param])
+fig, ax = plt.subplots(1,1,figsize = (1.55,1.5), sharey = True) #1.6,1.4 for 4figs S2 bottom row
 
-# convert incline metadata to numerical (+ positive value = uphill)
-df[param] = [int(d[3:])*-1 for d in df[param]]
+predictors = ['speed', 'snoutBodyAngle', 'incline']
+param_col = 'snoutBodyAngle'
+interaction = 'TRUEsecondary'
+clrs = 'homolateral'
+tlt = 'Slope trials'
+    
+sBA_split_str = 'FALSE'
+    
+appdx = appdx_dict[len(predictors)]
+samples = sample_nums[appdx]
+      
+beta1path = Path(outputDir) / f"{yyyymmdd}_beta1_{limb}_ref{ref}_{predictors[0]}_{predictors[1]}_{predictors[2]}_refLimb_interaction{interaction}_continuous_randMouse_sBAsplit{sBA_split_str}_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
+beta2path = Path(outputDir) / f"{yyyymmdd}_beta2_{limb}_ref{ref}_{predictors[0]}_{predictors[1]}_{predictors[2]}_refLimb_interaction{interaction}_continuous_randMouse_sBAsplit{sBA_split_str}_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
+statspath = Path(outputDir) / f"{yyyymmdd}_coefCircCategorical_homolateral0_refCOMBINED_{predictors[0]}_{predictors[1]}_{predictors[2]}_refLimb_interaction{interaction}_continuous_randMouse_sBAsplitFALSE_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
 
-# split data into group_num groups
-data_split = np.linspace(df[param].min()-0.0000001, df[param].max(), group_num+1)
+beta1 = pd.read_csv(beta1path)
+beta2 = pd.read_csv(beta2path)
+stats = pd.read_csv(statspath)
 
-# initialise arrays
-histAcrossMice2 = np.empty((np.unique(df['mouseID']).shape[0], Config.passiveOpto_config["kde_bin_num"]+1, group_num))
-histAcrossMice2[:] = np.nan
+datafull = data_loader.load_processed_data(dataToLoad = 'strideParams', 
+                                           yyyymmdd = yyyymmdd,
+                                           limb = ref, 
+                                           appdx = appdx)[0]
 
-for im, m in enumerate(np.unique(df['mouseID'])):
-    df_sub = df[df['mouseID'] == m]
-    df_grouped = df_sub.groupby(pd.cut(df_sub[param], data_split)) 
-    group_row_ids = df_grouped.groups
-    grouped_dict = {key:df_sub.loc[val,dataToPlot].values for key,val in group_row_ids.items()} 
-    keys = list(grouped_dict.keys())
-    for i, gkey in enumerate(keys):
-        values = grouped_dict[gkey][~np.isnan(grouped_dict[gkey])]
-        if values.shape[0] < (Config.passiveOpto_config["stride_num_threshold"]):
-            print(f"Mouse {m} data excluded from group {gkey} because there are only {values.shape[0]} valid trials!")
-            continue
+if 'deg' in datafull['headLVL'][0]:
+    datafull['incline'] = [-int(x[3:]) for x in datafull['headLVL']]
+    
+predictor = 'incline'
+pred = 'pred3' #incline
+nonpred = 'pred2'
+xlim = (-41,45)
+ax.set_xlim(xlim[0], xlim[1])
+ax.set_xticks([-40,-20,0,20,40])
+ax.set_xlabel('Incline (deg)')
+
+y_tr_list = np.empty((0)) # 5 percentiles to plot = 5 pairs to compare!
+x_tr_list = np.empty((0))
+p_tr_list = np.empty((0))
+y_delta_list = np.empty((0))
+    
+# define the range of snout-hump angles or inclines (x axis predictor)
+pred2_relevant = utils_processing.remove_outliers(datafull[predictor]) 
+pred2_centred = pred2_relevant - np.nanmean(pred2_relevant) #centering
+pred2_range = np.linspace(pred2_centred.min(), pred2_centred.max(), num = 100)
+
+# speed_relevant = utils_processing.remove_outliers(datafull['speed'])
+# speed = np.percentile(speed_relevant, 50) - np.nanmean(speed_relevant)
+
+unique_traces = np.empty((0))
+
+prcnts = [20,50,80]
+prcnts_d = [-0.2,0,0.2]
+# find median param (excluding outliers)   
+
+for iprcnt, prcnt in enumerate(prcnts): 
+    param_relevant = utils_processing.remove_outliers(datafull[param_col])
+    param = np.percentile(param_relevant, 50) - np.nanmean(param_relevant)
+    speed_relevant = utils_processing.remove_outliers(datafull[param_col])
+    speed = np.percentile(speed_relevant, prcnt) - np.nanmean(speed_relevant)
+    
+    # initialise arrays
+    phase2_preds = np.empty((beta1.shape[0], pred2_range.shape[0]))
+    phase2_preds[:] = np.nan
+    
+    unique_traces = np.empty((0))
+    refLimb = ''
+    lnst = 'solid'
         
-        # polar plot
-        kde_bins, kde = utils_math.von_mises_kde_exact(grouped_dict[gkey]*2*np.pi, 10, Config.passiveOpto_config["kde_bin_num"])
-        kde_bins_points = np.concatenate((kde_bins, [kde_bins[0]]))
-        kde_points = np.concatenate((kde, [kde[0]]))
+    mu1 = np.asarray(beta1['(Intercept)']).reshape(-1,1) + np.asarray(beta1['pred1']).reshape(-1,1) * speed + np.asarray(beta1[pred]).reshape(-1,1) @ pred2_range.reshape(-1,1).T + np.asarray(beta1[nonpred]).reshape(-1,1) * param + np.asarray(beta1["pred2:pred3"]).reshape(-1,1) @ (pred2_range.reshape(-1,1).T *param) #the mean of the third predictor (if present) is zero because it was centred before modelling
+    mu2 = np.asarray(beta2['(Intercept)']).reshape(-1,1) + np.asarray(beta2['pred1']).reshape(-1,1) * speed + np.asarray(beta2[pred]).reshape(-1,1) @ pred2_range.reshape(-1,1).T + np.asarray(beta2[nonpred]).reshape(-1,1) * param + np.asarray(beta2["pred2:pred3"]).reshape(-1,1) @ (pred2_range.reshape(-1,1).T *param) 
+    phase2_preds[:,:] = np.arctan2(mu2, mu1)
+    
+    # compute and plot mean phases for three circular ranges so that the plots look nice and do not have lines connecting 2pi to 0
+    for k, (lo, hi) in enumerate(zip([-np.pi, 0, np.pi] , [np.pi, 2*np.pi, 3*np.pi])):
+        print(f"{refLimb}: working on data range {k}...")
+        if k == 1:
+            phase2_preds[phase2_preds<0] = phase2_preds[phase2_preds<0]+2*np.pi
+        if k == 2:
+            phase2_preds[phase2_preds<np.pi] = phase2_preds[phase2_preds<np.pi]+2*np.pi
+            legend_colours.append(FigConfig.colour_config[clrs][iprcnt*2])
+            legend_linestyles.append(lnst)
         
-        ax[i].fill_between(kde_bins_points, np.repeat(0,len(kde_points)), kde_points, facecolor = FigConfig.colour_config[clr_str][i], alpha = 0.2)
-        histAcrossMice2[im,:, i] = kde_points
-
+        trace = scipy.stats.circmean(phase2_preds[:,:],high = hi, low = lo, axis = 0)
+        lower = np.zeros_like(trace); higher = np.zeros_like(trace)
+        for x in range(lower.shape[0]):
+            lower[x], higher[x] =  utils_math.hpd_circular(phase2_preds[:,x], 
+                                                            mass_frac = 0.95, 
+                                                            high = hi, 
+                                                            low = lo) #% (np.pi*2)
         
-histAcrossMice2_mean = np.nanmean(histAcrossMice2, axis = 0)
+        if round(trace[-1],6) not in unique_traces and not np.any(abs(np.diff(trace))>5):
+            unique_traces = np.append(unique_traces, round(trace[-1],6))
+            print('plotting...')    
+            ax.fill_between(pred2_range + np.nanmean(pred2_relevant), 
+                                  lower, 
+                                  higher, 
+                                  alpha = 0.2, 
+                                  facecolor = FigConfig.colour_config[clrs][iprcnt*2]
+                                    )
+            ax.plot((pred2_range + np.nanmean(pred2_relevant)), 
+                    trace, 
+                    color = FigConfig.colour_config[clrs][iprcnt*2], 
+                    linewidth = 1, 
+                    linestyle = lnst, 
+                    )
+        print(prcnt, trace[-1]) 
+    ax.text(np.mean(xlim)+((xlim[1]-xlim[0])*0.75/4)*(iprcnt-1), 1.3*np.pi, f"{prcnt}", ha = 'center', color = FigConfig.colour_config[clrs][iprcnt*2])  
+    
 
-for i, gkey in enumerate(keys):    
-    ax[i].spines['polar'].set_visible(False)
-    ax[i].grid(color = 'lightgrey', linewidth = 0.5)
-    titles = [f"{x:.2f}" for x in np.linspace(0,0.72,4, endpoint = True)[1:]]
-    ax[i].set_rticks([])
-    ax[i].yaxis.grid(True, color = 'lightgrey', linestyle = 'dashed', linewidth = 0.5)
-    ax[i].set_thetagrids(angles = (180, 90, 0, 270), labels = (), color = 'black') # gets rid of the diagonal lines
-    for a in (180,90,0,270):
-        ax[i].set_rgrids(np.linspace(0,0.72,4, endpoint = True)[1:], labels = titles, angle = a, fontsize = 6)
-    ax[i].set_rlim(0,0.72)
-    ax[i].set_yticks(ax[i].get_yticks())
-    ax[i].set_axisbelow(True)
-    ax[i].xaxis.set_tick_params(pad=-5)
-    if i == 0:
-        ax[i].set_title(f'[{keys[i].left:.0f},{keys[i].right:.0f}] deg', size = 6)
-        ax[i].set_xticklabels(['π', '0.5π', '', '1.5π'])
-        ax[i].set_yticklabels(titles, color = 'lightgrey')
-    else:
-        if i == (group_num-1):
-            ax[i].set_xticklabels(['','0.5π', '0', '1.5π'])
-        else:
-            ax[i].set_xticklabels(['', '0.5π', '', '1.5π'])
-        ax[i].set_title(f'({keys[i].left:.0f},{keys[i].right:.0f}] deg', size = 6)
-        ax[i].set_yticklabels(["","",""], color = 'lightgrey')
+ax.text(np.mean(xlim), 1.43*np.pi, pct_text, color = FigConfig.colour_config[clrs][0], ha = 'center')
 
-    polar_points = histAcrossMice2_mean[:, i]
-    ax[i].plot(kde_bins_points, polar_points, color = FigConfig.colour_config[clr_str][i],linestyle = 'solid', linewidth = 1)
+# axes 
+ax.set_ylim(ylim[0], ylim[1])
+ax.set_yticks(yticks)
+ax.set_yticklabels(yticklabels)
+ax.set_title(tlt, pad = 10)
+    
+ax.set_ylabel('Homolateral phase (rad)')
 
-plt.text(0.03, 0.1, 'Probability\ndensity', ha = 'center', color = 'lightgrey', size = 6, transform = plt.gcf().transFigure)
-plt.text(0.03, 1, 'Incline\nangle', ha = 'center', color = 'black', size = 6, transform = plt.gcf().transFigure)
 
-fig.savefig(Path(FigConfig.paths['savefig_folder']) / f"{yyyymmdd}_allPhaseHistogramsAVERAGED_POLAR_{param}{group_num}_{dataToPlot}_{limbRef}{appdx}.svg")
+plt.tight_layout(w_pad = 3)
 
-     
+figtitle = f"MS3_{yyyymmdd}_homolateral_incline_speeds.svg"
+plt.savefig(os.path.join(FigConfig.paths['savefig_folder'], figtitle), 
+            dpi = 300, 
+            )

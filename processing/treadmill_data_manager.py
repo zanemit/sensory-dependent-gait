@@ -11,11 +11,11 @@ import pickle
 import warnings
 import sys
 
-sys.path.append(r"C:\Users\MurrayLab\sensoryDependentGait")
-from preprocessing.data_config import Config
-from preprocessing.data_quality_checkers import *
-from preprocessing.data_loader import *
-from preprocessing.utils_processing import populate_nested_dict 
+sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
+from processing.data_config import Config
+from processing.data_quality_checkers import *
+from processing.data_loader import *
+from processing.utils_processing import populate_nested_dict , preprocess_dlc_data
     
 def organise_all_data(dataDir, yyyymmdd, trialType = None):
     """  

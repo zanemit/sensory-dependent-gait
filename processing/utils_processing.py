@@ -91,6 +91,12 @@ def get_hist_probs_from_array(arr, num_bins):
     p = h / arr.shape[0]
     return e,p
 
+def compute_forelimb_phase(ref_phases, nonref_phases):
+    phases = nonref_phases-ref_phases
+    phases[phases<-0.5] = phases[phases<-0.5]+1
+    phases[phases>0.5] = phases[phases>0.5]-1
+    return phases
+
 def support_intersection(p,q):
     sup_int = (list(filter(
         lambda x: (x[0]!=0) & (x[1]!=0), zip(p,q))))

@@ -1,96 +1,188 @@
 import sys
 from pathlib import Path
 import pandas as pd
+import os
 import numpy as np
+import scipy.stats
 from matplotlib import pyplot as plt
 
-sys.path.append(r"C:\Users\MurrayLab\sensoryDependentGait")
+sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
-from preprocessing import data_loader, utils_math
-from preprocessing.data_config import Config
+from processing import data_loader, utils_processing, utils_math
+from processing.data_config import Config
 from figures.fig_config import Config as FigConfig
+from figures.fig_config import AnyObjectHandlerDouble
 
-param = 'lF0'
-group_num = 5
-bin_num = 20
-dataToPlot = 'snoutBodyAngle'
-dataToPlot_type = 'homolateral'
-limbRef = 'lH1'
+outputDir = Config.paths['mtTreadmill_output_folder']
+datafrac = 0.15
+iterations = 1000
+ref = 'COMBINED'
+limb = 'homolateral0'
 appdx = ''
+interaction= 'FALSE'
+pct_text = 'speed percentile'
+param_col = 'speed'
 
-fig, ax = plt.subplots(1, group_num-1, sharex = True, sharey = True, figsize = (0.7*group_num,1.5)) #(1*gn, 1.5)
+sample_nums = {2: 11428, 3: 13137}
 
-for yyyymmdd, mouse_str, clr_str in zip(['2021-10-23', '2022-05-06'],
-                               ['mice_level', 'mice_incline'],
-                               ['greys', 'homolateral']):
-    df, _, _ = data_loader.load_processed_data(outputDir = Config.paths["mtTreadmill_output_folder"], 
-                                               dataToLoad = "strideParams", 
+ylim = (0.3*np.pi,1.5*np.pi)
+yticks = [0.5*np.pi,np.pi,1.5*np.pi]
+yticklabels = ["0.5π", "π", "1.5π"]  
+
+prcnts = [20,50,80]
+
+clrs = 'greys7'
+
+fig, ax = plt.subplots(1,3,figsize = (1.65*3,1.5), sharey = True) #1.6,1.4 for 4figs S2 bottom row
+for axid, (yyyymmdd, predictors, nonparam_col, tlt) in enumerate(zip(
+        ['2021-10-23','2022-05-06','2022-05-06'],
+        [['speed', 'snoutBodyAngle'], ['speed', 'snoutBodyAngle', 'incline'], ['speed', 'snoutBodyAngle', 'incline']],
+        ['speed', 'incline', 'snoutBodyAngle'],
+        ['Level trials', 'Slope trials', 'Slope trials']
+        )):
+    
+    sBA_split_str = 'FALSE'
+        
+    samples = sample_nums[len(predictors)]
+          
+    if len(predictors) > 2:
+        beta1path = Path(outputDir) / f"{yyyymmdd}_beta1_{limb}_ref{ref}_{predictors[0]}_{predictors[1]}_{predictors[2]}_refLimb_interaction{interaction}_continuous_randMouse_sBAsplit{sBA_split_str}_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
+        beta2path = Path(outputDir) / f"{yyyymmdd}_beta2_{limb}_ref{ref}_{predictors[0]}_{predictors[1]}_{predictors[2]}_refLimb_interaction{interaction}_continuous_randMouse_sBAsplit{sBA_split_str}_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
+        statspath2 = Path(outputDir) / f"{yyyymmdd}_coefCircContinuous_{limb}_ref{ref}_{predictors[0]}_{predictors[1]}_{predictors[2]}_refLimb_interaction{interaction}_continuous_randMouse_sBAsplitFALSE_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
+       
+    else: #head height trials
+        beta1path = Path(outputDir) / f"{yyyymmdd}_beta1_{limb}_ref{ref}_{predictors[0]}_{predictors[1]}_refLimb_interaction{interaction}_continuous_randMouse_sBAsplitFALSE_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
+        beta2path = Path(outputDir) / f"{yyyymmdd}_beta2_{limb}_ref{ref}_{predictors[0]}_{predictors[1]}_refLimb_interaction{interaction}_continuous_randMouse_sBAsplitFALSE_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
+        statspath2 = Path(outputDir) / f"{yyyymmdd}_coefCircContinuous_{limb}_ref{ref}_{predictors[0]}_{predictors[1]}_refLimb_interaction{interaction}_continuous_randMouse_sBAsplitFALSE_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
+        
+    beta1 = pd.read_csv(beta1path)
+    beta2 = pd.read_csv(beta2path)
+    stats2 = pd.read_csv(statspath2)
+
+    datafull = data_loader.load_processed_data(outputDir = outputDir,
+                                               dataToLoad = 'strideParams', 
                                                yyyymmdd = yyyymmdd,
-                                               appdx = appdx,
-                                               limb = limbRef)
+                                               limb = ref)[0]
     
-    mice =    Config.mtTreadmill_config[mouse_str] 
-    df = df[np.asarray([m in mice for m in df["mouseID"]])]
-    data_split = np.linspace(-0.0000001, 1, group_num+1)
-    
-    axj = 0
-    histAcrossMice = np.empty((len(mice), bin_num, group_num))
-    histAcrossMice[:] = np.nan
+    if 'deg' in datafull['trialType'][0]:
+        datafull['incline'] = [-int(x[3:]) for x in datafull['trialType']]
         
-    for im, m in enumerate(mice):
-        df_sub = df[df['mouseID'] == m]
-        df_sub[param] = [x+1 if x<0 else x for x in df_sub[param]]
-        df_grouped = df_sub.groupby(pd.cut(df_sub[param], data_split)) 
-        group_row_ids = df_grouped.groups
-        grouped_dict = {key:df_sub.loc[val, dataToPlot].values for key,val in group_row_ids.items()} 
-        keys = np.delete(list(grouped_dict.keys()),4)
-        # keys = list(grouped_dict.keys())
-        axk = 0
-        for i, gkey in enumerate(keys):
-            # values = np.nan_to_num(grouped_dict[gkey])
-            values = grouped_dict[gkey][~np.isnan(grouped_dict[gkey])]
-            if values.shape[0] < Config.mtTreadmill_config['stride_num_threshold']:
-                print(f"Mouse {m} excluded from group {gkey}, limb {param} because there are only {values.shape[0]} valid trials!")
-                axk = (axk + 1) % group_num
-                continue
+    if len(predictors)>2 and axid ==2 : # incline
+        predictor = 'incline'
+        pred = 'pred3' #incline
+        nonpred = 'pred2'
+        xlim = (-41,45)
+        ax[axid].set_xlim(xlim[0], xlim[1])
+        ax[axid].set_xticks([-40,-20,0,20,40])
+        ax[axid].set_xlabel('Incline (deg)')
+    else:
+        predictor = 'snoutBodyAngle'
+        pred = 'pred2'
+        nonpred = 'pred3' #not used in head height trials
+        xlim = (140,180)
+        ax[axid].set_xlim(xlim[0],xlim[1])
+        ax[axid].set_xticks([140,150,160,170,180])
+        ax[axid].set_xlabel('Snout-hump angle (deg)')
     
-            n, bins, patches = ax[axk].hist(grouped_dict[gkey], 
-                                            bins = bin_num, 
-                                            color = FigConfig.colour_config[clr_str][i], 
-                                            range = [140,180],
-                                            density = True, 
-                                            alpha = 0.1)
+    y_tr_list = np.empty((0)) # 5 percentiles to plot = 5 pairs to compare!
+    x_tr_list = np.empty((0))
+    p_tr_list = np.empty((0))
+    y_delta_list = np.empty((0))
+
+    speed_relevant = utils_processing.remove_outliers(datafull['speed'])
+    speed = np.percentile(speed_relevant, 50) - np.nanmean(speed_relevant)
+        
+    # define the range of snout-hump angles or inclines (x axis predictor)
+    pred2_relevant = utils_processing.remove_outliers(datafull[predictor]) 
+    pred2_centred = pred2_relevant - np.nanmean(pred2_relevant) #centering
+    pred2_range = np.linspace(pred2_centred.min(), pred2_centred.max(), num = 100)
+        
+    for iprcnt, prcnt in enumerate(prcnts):
+        # find median param (excluding outliers)    
+        param_relevant = utils_processing.remove_outliers(datafull[nonparam_col])
+        nonparam = np.percentile(param_relevant, 50) - np.nanmean(param_relevant)
+        
+        speed_relevant = utils_processing.remove_outliers(datafull['speed'])
+        speed = np.percentile(speed_relevant, prcnt) - np.nanmean(speed_relevant)
+        
+        # initialise arrays
+        phase2_preds = np.empty((beta1.shape[0], pred2_range.shape[0]))
+        phase2_preds[:] = np.nan
+        
+        unique_traces = np.empty((0))
+        
+        if len(predictors) > 2: # incline trials with angle x incline interaction
+            mu1 = np.asarray(beta1['(Intercept)']).reshape(-1,1) + np.asarray(beta1['pred1']).reshape(-1,1) * speed + np.asarray(beta1[pred]).reshape(-1,1) @ pred2_range.reshape(-1,1).T + np.asarray(beta1[nonpred]).reshape(-1,1) * nonparam 
+            mu2 = np.asarray(beta2['(Intercept)']).reshape(-1,1) + np.asarray(beta2['pred1']).reshape(-1,1) * speed + np.asarray(beta2[pred]).reshape(-1,1) @ pred2_range.reshape(-1,1).T + np.asarray(beta1[nonpred]).reshape(-1,1) * nonparam  
+            phase2_preds[:,:] = np.arctan2(mu2, mu1)
             
-            bins_mean = bins[:-1] + np.diff(bins)
-            histAcrossMice[im,:, i] = n
-            axk = (axk + 1) % group_num
-         
-    histAcrossMice_mean = np.nanmean(histAcrossMice, axis = 0)
-    
-    for i, gkey in enumerate(keys):
-        total = histAcrossMice_mean[:, axj].sum()
-        bins_points = np.concatenate(([bins[0]], np.repeat(bins[1:-1],2), [bins[-1]]))
-        histo_points = np.repeat(histAcrossMice_mean[:, axj],2)
-    
-        ax[axj].plot(bins_points, histo_points, color = FigConfig.colour_config[clr_str][i], linewidth = 2)
+        else: # head height trials with speed x angle interaction (param = speed, different percentiles)
+            mu1 = np.asarray(beta1['(Intercept)']).reshape(-1,1) + np.asarray(beta1['pred1']).reshape(-1,1) * speed + np.asarray(beta1[pred]).reshape(-1,1) @ pred2_range.reshape(-1,1).T  
+            mu2 = np.asarray(beta2['(Intercept)']).reshape(-1,1) + np.asarray(beta2['pred1']).reshape(-1,1) * speed + np.asarray(beta2[pred]).reshape(-1,1) @ (pred2_range.reshape(-1,1).T) 
+            phase2_preds[:,:] = np.arctan2(mu2, mu1)
         
-        if i == 0:
-            ax[axj].set_title(f'[0,{2*keys[i].right:.1f}π]')
-        # elif i == len(keys)-1:
-        #     ax[axj].set_title(f'({2*keys[i].left:.1f}π,2π]')
-        else:
-            ax[axj].set_title(f'({2*keys[i].left:.1f}π,{2*keys[i].right:.1f}π]')
-        
-        ax[axj].set_xlim(140,180)
-        ax[axj].set_xticks([140,150,160,170,180])
-        ax[axj].set_xticklabels(['140','','160','','180'])
+        # compute and plot mean phases for three circular ranges so that the plots look nice and do not have lines connecting 2pi to 0
+        for k, (lo, hi) in enumerate(zip([-np.pi, 0, np.pi] , [np.pi, 2*np.pi, 3*np.pi])):
+            if k == 1:
+                phase2_preds[phase2_preds<0] = phase2_preds[phase2_preds<0]+2*np.pi
+            if k == 2:
+                phase2_preds[phase2_preds<np.pi] = phase2_preds[phase2_preds<np.pi]+2*np.pi
+            
+            trace = scipy.stats.circmean(phase2_preds[:,:],high = hi, low = lo, axis = 0)
+            lower = np.zeros_like(trace); higher = np.zeros_like(trace)
+            for x in range(lower.shape[0]):
+                lower[x], higher[x] =  utils_math.hpd_circular(phase2_preds[:,x], 
+                                                                mass_frac = 0.95, 
+                                                                high = hi, 
+                                                                low = lo) #% (np.pi*2)
+            
+            if round(trace[-1],6) not in unique_traces and not np.any(abs(np.diff(trace))>5):
+                unique_traces = np.append(unique_traces, round(trace[-1],6))
+                print('plotting...')    
+                ax[axid].fill_between(pred2_range + np.nanmean(pred2_relevant), 
+                                      lower, 
+                                      higher, 
+                                      alpha = 0.2, 
+                                      facecolor = FigConfig.colour_config[clrs][iprcnt*2]
+                                      )
+                ax[axid].plot((pred2_range + np.nanmean(pred2_relevant)), 
+                        trace, 
+                        color = FigConfig.colour_config[clrs][iprcnt*2], 
+                        linewidth = 1
+                        )
+                      
+        ax[axid].text(np.mean(xlim)+((xlim[1]-xlim[0])*0.75/4)*(iprcnt-1), 1.25*np.pi, f"{prcnt}th", ha = 'center', color = FigConfig.colour_config[clrs][iprcnt*2])
+             
+    y_tr_spread = y_tr_list #np.median(y_tr_list) + [-0.4,-0.2,0,0.2,0.4] # empirically determined that 0.2 is sufficient separation on my axis
+    for isp in range(len(y_tr_spread)):
+        ax[axid].text(x_tr_list[isp], 
+                      y_tr_spread[isp],# + y_delta_list[isp], 
+                      p_tr_list[isp])
     
-        axj = (axj + 1) % group_num
+    # SPEED STATS
+    param_of_interest_id = np.where(np.asarray(predictors) == param_col)[0][0]+1
+    row_for_param = np.where(stats2['Unnamed: 0'] == f'pred{param_of_interest_id} SSDO')[0][0]
+    signif = np.all((np.sign(stats2.loc[row_for_param, 'LB HPD']),np.sign(stats2.loc[row_for_param, 'UB HPD'])))
+    p_text = pct_text + ' ' + ('*' * signif)
+    if not signif:
+        p_text += "n.s."  
+        
+    ax[axid].text(np.mean(xlim), 1.37*np.pi, p_text, color = FigConfig.colour_config[clrs][0], ha = 'center')
+    
+    
+    # axes 
+    ax[axid].set_ylim(ylim[0], ylim[1])
+    ax[axid].set_yticks(yticks)
+    ax[axid].set_yticklabels(yticklabels)
+    ax[axid].set_title(tlt, pad = 0)
+    
+ax[0].set_ylabel('Homolateral phase (rad)')
 
-ax[0].set_ylabel("Probability density")
-ax[0].set_ylim(0,0.18)
-ax[0].set_yticks([0,0.06,0.12,0.18])
-fig.text(0.5, 0, "Snout-hump angle (deg)", ha = 'center')
-plt.tight_layout(w_pad = 1.5)
+plt.tight_layout(w_pad = 3)
 
-fig.savefig(Path(FigConfig.paths['savefig_folder']) / f"{yyyymmdd}_allPhaseHistogramsAVERAGED_{param}{group_num}_allMICE_ref{limbRef}.svg", dpi = 300)
+figtitle = f"MS2_{yyyymmdd}_homolateral_COMBINED3.svg"
+plt.savefig(os.path.join(FigConfig.paths['savefig_folder'], figtitle), 
+            dpi = 300, 
+            # bbox_extra_artists = (lgd, ), 
+            # bbox_inches = 'tight'
+            )

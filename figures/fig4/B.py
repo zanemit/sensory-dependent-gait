@@ -1,227 +1,161 @@
 import sys
 from pathlib import Path
-import os
 import pandas as pd
+import os
 import numpy as np
 import scipy.stats
 from matplotlib import pyplot as plt
 
-sys.path.append(r"C:\Users\MurrayLab\sensoryDependentGait")
+sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
-from preprocessing import data_loader, utils_processing
-from preprocessing.data_config import Config
+from processing import data_loader, utils_processing, utils_math
+from processing.data_config import Config
 from figures.fig_config import Config as FigConfig
+from figures.fig_config import AnyObjectHandlerDouble
 
-fig, ax = plt.subplots(1,1, figsize = (1.4,1.4))
-
-limb = 'lF0'#,'rF0','rH0']
-refLimb = 'lH1'
-iters = 1000
 yyyymmdd = '2022-08-18'
+outputDir = Config.paths['passiveOpto_output_folder']
+datafrac = 0.3
+iterations = 1000
+ref = 'COMBINED_FORE'
+limb = 'homologous0'
+pct_text = 'speed percentile'
 
-u = 1    
+appdx_dict = {2: '', 3: '_incline'}
+sample_nums = {'_incline': 9560, '': 10462}
 
-# CoMy vs snoutBodyAngle regression (none of the mice of interest, so use the average)
-CoMy_snoutBodyAngle_path = os.path.join(Config.paths["forceplate_output_folder"],"2021-10-26_mixedEffectsModel_linear_COMy_snoutBodyAngle.csv")
-CoMy_snoutBodyAngle = pd.read_csv(CoMy_snoutBodyAngle_path)
-CoMy_snoutBodyAngle_intercept = CoMy_snoutBodyAngle.iloc[0,1]
-CoMy_snoutBodyAngle_slope = CoMy_snoutBodyAngle.iloc[1,1]
-# load data that the model is based on for centering of sBA data
-datafp1 = pd.read_csv(os.path.join(Config.paths["forceplate_output_folder"], "2021-10-26_meanParamDF_snoutBodyAngle.csv"))
+ylim = (-0.3,1.5*np.pi)
+yticks = [0,0.5*np.pi,np.pi, 1.5*np.pi]
+yticklabels = ["0","0.5π", "π", "1.5π"] 
+
+legend_colours = [[],[]]
+legend_linestyles = [[],[]]
+
+fig, ax = plt.subplots(1,1,figsize = (1.55,1.5), sharey = True) #1.6,1.4 for 4figs S2 bottom row
+
+predictors = ['speed', 'snoutBodyAngle', 'incline']
+param_col = 'snoutBodyAngle'
+interaction = 'TRUE'
+clrs = 'diagonal'
+tlt = 'Slope trials'
     
-# CoMy vs incline regression 2022-04-04 (not all of the same mice)
-CoMy_incline_path = os.path.join(Config.paths["forceplate_output_folder"], "2022-04-04_mixedEffectsModel_linear_COMy_levels.csv")
-CoMy_incline = pd.read_csv(CoMy_incline_path)
-CoMy_incline_intercept = CoMy_incline.iloc[0,1]
-CoMy_incline_slope = CoMy_incline.iloc[1,1]
-# load data that the model is based on for centering of sBA data
-datafp2 = pd.read_csv(os.path.join(Config.paths["forceplate_output_folder"], "2022-04-04_meanParamDF_levels.csv"))
+sBA_split_str = 'FALSE'
+    
+appdx = appdx_dict[len(predictors)]
+samples = sample_nums[appdx]
       
-# phase ~ speed + snoutBodyAngle + incline
-glm_inclineTrials_path = os.path.join(Config.paths["passiveOpto_output_folder"], f"{yyyymmdd}_beta12acrossMice_{limb}_ref{refLimb}_speed_snoutBodyAngle_incline_interactionTRUEsecondary_{iters}its_100burn_3lag.csv")
-glm_inclineTrials = pd.read_csv(glm_inclineTrials_path) 
-glm_inclineTrials = glm_inclineTrials.iloc[:,1:]
-mice_inclineTrials = np.unique([x[:10] for x in glm_inclineTrials.columns])   
-# load data that the model is based on
-datafull1 = data_loader.load_processed_data(dataToLoad = 'strideParams', 
-                                            yyyymmdd = yyyymmdd, 
-                                            limb = refLimb, 
-                                            appdx = '_incline')[0]
-datafull1['incline'] = [-int(x[3:]) for x in datafull1['headLVL']]
+beta1path = Path(outputDir) / f"{yyyymmdd}_beta1_{limb}_ref{ref}_{predictors[0]}_{predictors[1]}_{predictors[2]}_refLimb_interaction{interaction}_continuous_randMouse_sBAsplit{sBA_split_str}_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
+beta2path = Path(outputDir) / f"{yyyymmdd}_beta2_{limb}_ref{ref}_{predictors[0]}_{predictors[1]}_{predictors[2]}_refLimb_interaction{interaction}_continuous_randMouse_sBAsplit{sBA_split_str}_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
+statspath = Path(outputDir) / f"{yyyymmdd}_coefCircCategorical_{limb}_ref{ref}_{predictors[0]}_{predictors[1]}_{predictors[2]}_refLimb_interaction{interaction}_continuous_randMouse_sBAsplitFALSE_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
 
-# phase ~ speed + snoutBodyAngle
-glm_headHeightTrials_path = os.path.join(Config.paths["passiveOpto_output_folder"], f"{yyyymmdd}_beta12acrossMice_{limb}_ref{refLimb}_speed_snoutBodyAngle_interactionTRUE_{iters}its_100burn_3lag.csv")
-glm_headHeightTrials = pd.read_csv(glm_headHeightTrials_path) 
-mice_headHeightTrials = np.unique([x[:10] for x in glm_headHeightTrials.columns])
-# load data that the model is based on
-datafull2 = data_loader.load_processed_data(dataToLoad = 'strideParams', 
-                                            yyyymmdd = yyyymmdd, 
-                                            limb = refLimb, 
-                                            appdx = "")[0]
+beta1 = pd.read_csv(beta1path)
+beta2 = pd.read_csv(beta2path)
+stats = pd.read_csv(statspath)
 
-mice = np.intersect1d(mice_inclineTrials, mice_headHeightTrials)
+datafull = data_loader.load_processed_data(dataToLoad = 'strideParams', 
+                                           yyyymmdd = yyyymmdd,
+                                           limb = ref, 
+                                           appdx = appdx)[0]
 
-phase1_incT_sBA = []
-phase2_incT_sBA = []
-phase1_incT_inc = []
-phase2_incT_inc = []
-phase1_hhT_sBA = []
-phase2_hhT_sBA = []
-# bad mice FAA1034949 and FAA1034942! (no incline effect)
+if 'deg' in datafull['headLVL'][0]:
+    datafull['incline'] = [-int(x[3:]) for x in datafull['headLVL']]
+    
+predictor = 'incline'
+pred = 'pred3' #incline - the variable on x axis
+nonpred = 'pred2'
+xlim = (-41,45)
+ax.set_xlim(xlim[0], xlim[1])
+ax.set_xticks([-40,-20,0,20,40])
+ax.set_xlabel('Incline (deg)')
 
-for m in mice:
-    # subset dataframe
-    datafull_sub1 = datafull1[datafull1['mouseID'] == m]
-    datafull_sub2 = datafull2[datafull2['mouseID'] == m]
+y_tr_list = np.empty((0)) # 5 percentiles to plot = 5 pairs to compare!
+x_tr_list = np.empty((0))
+p_tr_list = np.empty((0))
+y_delta_list = np.empty((0))
     
-    # compute the median speed
-    speed1_relevant = utils_processing.remove_outliers(datafull_sub1['speed'])
-    speed1 = np.nanmedian(speed1_relevant) - np.nanmean(speed1_relevant)
+# define the range of snout-hump angles or inclines (x axis predictor)
+pred2_relevant = utils_processing.remove_outliers(datafull[predictor]) 
+pred2_centred = pred2_relevant - np.nanmean(pred2_relevant) #centering
+pred2_range = np.linspace(pred2_centred.min(), pred2_centred.max(), num = 100)
+
+# speed_relevant = utils_processing.remove_outliers(datafull['speed'])
+# speed = np.percentile(speed_relevant, 50) - np.nanmean(speed_relevant)
+
+unique_traces = np.empty((0))
+
+prcnts = [20,50,80]
+prcnts_d = [-0.2,0,0.2]
+# find median param (excluding outliers)   
+
+for iprcnt, prcnt in enumerate(prcnts): 
+    param_relevant = utils_processing.remove_outliers(datafull[param_col])
+    param = np.percentile(param_relevant, 50) - np.nanmean(param_relevant)
+    speed_relevant = utils_processing.remove_outliers(datafull["speed"])
+    speed = np.percentile(speed_relevant, prcnt) - np.nanmean(speed_relevant)
     
-    speed2_relevant = utils_processing.remove_outliers(datafull_sub2['speed'])
-    speed2 = np.nanmedian(speed2_relevant) - np.nanmean(speed2_relevant)
+    # initialise arrays
+    phase2_preds = np.empty((beta1.shape[0], pred2_range.shape[0]))
+    phase2_preds[:] = np.nan
     
-    incline_relevant = utils_processing.remove_outliers(datafull_sub1['incline'])
-    incline = np.nanmedian(incline_relevant) - np.nanmean(incline_relevant)
-    
-    angle1_relevant = utils_processing.remove_outliers(datafull_sub1['snoutBodyAngle'])
-    angle1 = np.nanmedian(angle1_relevant) - np.nanmean(angle1_relevant)
-    
-    angle2_relevant = utils_processing.remove_outliers(datafull_sub2['snoutBodyAngle'])
-    angle2 = np.nanmedian(angle2_relevant) - np.nanmean(angle2_relevant)
-    
-    # compute the snoutBodyAngle range in incline trials
-    sBA_min = np.nanmin(datafull_sub1['snoutBodyAngle']) #- np.nanmean(datafull1['snoutBodyAngle'])
-    sBA_max = np.nanmax(datafull_sub1['snoutBodyAngle']) #- np.nanmean(datafull1['snoutBodyAngle'])
-    sBA_range = np.linspace(sBA_min, sBA_max, 100, endpoint = True)
-    
-    # compute the corresponding CoMy change (adding means to de-center CoMy) -> CoMy is as in the Fig1 plot
-    CoMy_sBAmin = (CoMy_snoutBodyAngle_intercept + (sBA_min - np.nanmean(datafp1['param'])) * CoMy_snoutBodyAngle_slope) + np.nanmean(datafp1['CoMy_mean'])
-    CoMy_sBAmax = (CoMy_snoutBodyAngle_intercept + (sBA_max - np.nanmean(datafp1['param'])) * CoMy_snoutBodyAngle_slope) + np.nanmean(datafp1['CoMy_mean'])
-    
-    # find the corresponding inclines (add the dataset mean to de-center the values)
-    incline_sBAmin = ((CoMy_sBAmin - np.nanmean(datafp2['CoMy_mean']) - CoMy_incline_intercept) / CoMy_incline_slope) + np.nanmean(datafp2['param'])
-    incline_sBAmax = ((CoMy_sBAmax - np.nanmean(datafp2['CoMy_mean']) - CoMy_incline_intercept) / CoMy_incline_slope) + np.nanmean(datafp2['param'])
-    incline_range = np.linspace(incline_sBAmin, incline_sBAmax, 100, endpoint= True)
-    
-    for i, (phaselist1, phaselist2, title) in enumerate(zip([phase1_incT_sBA,phase1_incT_inc, phase1_hhT_sBA], 
-                                                            [phase2_incT_sBA, phase2_incT_inc, phase2_hhT_sBA], 
-                                                            ["incline trials: body tilt", "incline trials: incline", "head height trials: body tilt"]
-                                                            )):
-        if i == 0: #body angle incline trials
-            mu1 = np.asarray(glm_inclineTrials[f'{m}_beta1_intercept']).reshape(-1,1) + \
-                    np.asarray(glm_inclineTrials[f'{m}_beta1_speed']).reshape(-1,1) * speed1 + \
-                    np.asarray(glm_inclineTrials[f'{m}_beta1_snoutBodyAngle']).reshape(-1,1) * (sBA_range - np.nanmean(datafull_sub1['snoutBodyAngle'])).reshape(-1,1).T + \
-                    np.asarray(glm_inclineTrials[f'{m}_beta1_incline']).reshape(-1,1) * incline + \
-                    np.asarray(glm_inclineTrials[f'{m}_beta1_snoutBodyAngle_incline']).reshape(-1,1) * incline * (sBA_range - np.nanmean(datafull_sub1['snoutBodyAngle'])).reshape(-1,1).T
-            mu2 = np.asarray(glm_inclineTrials[f'{m}_beta2_intercept']).reshape(-1,1) + \
-                    np.asarray(glm_inclineTrials[f'{m}_beta2_speed']).reshape(-1,1) * speed1 + \
-                    np.asarray(glm_inclineTrials[f'{m}_beta2_snoutBodyAngle']).reshape(-1,1) * (sBA_range - np.nanmean(datafull_sub1['snoutBodyAngle'])).reshape(-1,1).T + \
-                    np.asarray(glm_inclineTrials[f'{m}_beta2_incline']).reshape(-1,1) * incline + \
-                    np.asarray(glm_inclineTrials[f'{m}_beta2_snoutBodyAngle_incline']).reshape(-1,1) * incline * (sBA_range - np.nanmean(datafull_sub1['snoutBodyAngle'])).reshape(-1,1).T
-                
-        elif i == 1: #incline incline trials
-            mu1 = np.asarray(glm_inclineTrials[f'{m}_beta1_intercept']).reshape(-1,1) + \
-                    np.asarray(glm_inclineTrials[f'{m}_beta1_speed']).reshape(-1,1) * speed1 + \
-                    np.asarray(glm_inclineTrials[f'{m}_beta1_snoutBodyAngle']).reshape(-1,1) * angle1 + \
-                    np.asarray(glm_inclineTrials[f'{m}_beta1_incline']).reshape(-1,1) * (incline_range - np.nanmean(datafull_sub1['incline'])).reshape(-1,1).T + \
-                    np.asarray(glm_inclineTrials[f'{m}_beta1_snoutBodyAngle_incline']).reshape(-1,1) * angle1 * (incline_range - np.nanmean(datafull_sub1['incline'])).reshape(-1,1).T
-                
-            mu2 = np.asarray(glm_inclineTrials[f'{m}_beta2_intercept']).reshape(-1,1) + \
-                    np.asarray(glm_inclineTrials[f'{m}_beta2_speed']).reshape(-1,1) * speed1 + \
-                    np.asarray(glm_inclineTrials[f'{m}_beta2_snoutBodyAngle']).reshape(-1,1) * angle1 + \
-                    np.asarray(glm_inclineTrials[f'{m}_beta2_incline']).reshape(-1,1) * (incline_range - np.nanmean(datafull_sub1['incline'])).reshape(-1,1).T   + \
-                    np.asarray(glm_inclineTrials[f'{m}_beta2_snoutBodyAngle_incline']).reshape(-1,1) * angle1 * (incline_range - np.nanmean(datafull_sub1['incline'])).reshape(-1,1).T
+    unique_traces = np.empty((0))
+    refLimb = ''
+    lnst = 'solid'
         
-        else: #body angle head height trials
-            mu1 = np.asarray(glm_headHeightTrials[f'{m}_beta1_intercept']).reshape(-1,1) + \
-                    np.asarray(glm_headHeightTrials[f'{m}_beta1_speed']).reshape(-1,1) * speed2 + \
-                    np.asarray(glm_headHeightTrials[f'{m}_beta1_snoutBodyAngle']).reshape(-1,1) * (sBA_range - np.nanmean(datafull_sub2['snoutBodyAngle'])).reshape(-1,1).T + \
-                    np.asarray(glm_headHeightTrials[f'{m}_beta1_speed_snoutBodyAngle']).reshape(-1,1) * (sBA_range - np.nanmean(datafull_sub2['snoutBodyAngle'])).reshape(-1,1).T * speed2
-                    
-            mu2 = np.asarray(glm_headHeightTrials[f'{m}_beta2_intercept']).reshape(-1,1) + \
-                    np.asarray(glm_headHeightTrials[f'{m}_beta2_speed']).reshape(-1,1) * speed2 + \
-                    np.asarray(glm_headHeightTrials[f'{m}_beta2_snoutBodyAngle']).reshape(-1,1) * (sBA_range - np.nanmean(datafull_sub2['snoutBodyAngle'])).reshape(-1,1).T   + \
-                    np.asarray(glm_headHeightTrials[f'{m}_beta2_speed_snoutBodyAngle']).reshape(-1,1) * (sBA_range - np.nanmean(datafull_sub2['snoutBodyAngle'])).reshape(-1,1).T * speed2
-                      
-        phase_preds = np.arctan2(mu2, mu1)
-        mean_phase = scipy.stats.circmean(phase_preds, high = np.pi, low = -np.pi, axis=0)
-        if np.any(abs(np.diff(mean_phase))>5):
-            phase_preds[phase_preds<0] = phase_preds[phase_preds<0]+2*np.pi
-            mean_phase = scipy.stats.circmean(phase_preds, high = 2*np.pi, low = 0, axis=0)
-       
-        phaselist1.append(mean_phase[0])   
-        phaselist2.append(mean_phase[-1]) 
+    mu1 = np.asarray(beta1['(Intercept)']).reshape(-1,1) + np.asarray(beta1['pred1']).reshape(-1,1) * speed + np.asarray(beta1[pred]).reshape(-1,1) @ pred2_range.reshape(-1,1).T + np.asarray(beta1[nonpred]).reshape(-1,1) * param + np.asarray(beta1["pred1:pred2"]).reshape(-1,1) * speed *param #the mean of the third predictor (if present) is zero because it was centred before modelling
+    mu2 = np.asarray(beta2['(Intercept)']).reshape(-1,1) + np.asarray(beta2['pred1']).reshape(-1,1) * speed + np.asarray(beta2[pred]).reshape(-1,1) @ pred2_range.reshape(-1,1).T + np.asarray(beta2[nonpred]).reshape(-1,1) * param + np.asarray(beta2["pred1:pred2"]).reshape(-1,1) *speed *param
+    phase2_preds[:,:] = np.arctan2(mu2, mu1)
+    
+    # compute and plot mean phases for three circular ranges so that the plots look nice and do not have lines connecting 2pi to 0
+    for k, (lo, hi) in enumerate(zip([-np.pi, 0, np.pi] , [np.pi, 2*np.pi, 3*np.pi])):
+        print(f"{refLimb}: working on data range {k}...")
+        if k == 1:
+            phase2_preds[phase2_preds<0] = phase2_preds[phase2_preds<0]+2*np.pi
+        if k == 2:
+            phase2_preds[phase2_preds<np.pi] = phase2_preds[phase2_preds<np.pi]+2*np.pi
+            legend_colours.append(FigConfig.colour_config[clrs][iprcnt*2])
+            legend_linestyles.append(lnst)
         
-df = pd.DataFrame(zip(mice, phase1_incT_sBA, phase2_incT_sBA, phase1_incT_inc, phase2_incT_inc, phase1_hhT_sBA, phase2_hhT_sBA), 
-             columns = ['mouseID', 'phase1_incT_sBA', 'phase2_incT_sBA', 'phase1_incT_inc', 'phase2_incT_inc', 'phase1_hhT_sBA', 'phase2_hhT_sBA'])
-
-df['incT_inc'] = df['phase2_incT_inc'] - df['phase1_incT_inc']
-df['incT_sBA'] = df['phase2_incT_sBA'] - df['phase1_incT_sBA']  
-df['hhT_sBA'] = df['phase2_hhT_sBA'] - df['phase1_hhT_sBA'] 
-df['incT_total'] = df['incT_sBA'] + df['incT_inc']
-
-
-if 'l' in refLimb:
-    dataLabelDict = {'lF0': 'homolateral', 'rF0': 'diagonal', 'rH0': 'homologous'}
-elif 'r' in refLimb:
-    dataLabelDict = {'rF0': 'homolateral', 'lF0': 'diagonal', 'lH0': 'homologous'}
-clr = FigConfig.colour_config[dataLabelDict[limb]][2]
-
-clrs = [ FigConfig.colour_config[dataLabelDict[limb]][2],
-        FigConfig.colour_config[dataLabelDict[limb]][2],
-        FigConfig.colour_config['greys'][2],
-        FigConfig.colour_config[dataLabelDict[limb]][0]]
-
-for i, (colnum, xpos) in enumerate(zip([-4,-3,-2,-1], [u+0.3, u+1+0.3, u+2+0.3, u+3+0.3])):   
-    ax.boxplot([df.iloc[:,colnum]], positions = [xpos], medianprops = dict(color = clrs[i], linewidth = 1, alpha = 0.6),
-                boxprops = dict(color = clrs[i], linewidth = 1, alpha = 0.6), capprops = dict(color = clrs[i], linewidth = 1, alpha = 0.6),
-                whiskerprops = dict(color = clrs[i], linewidth = 1, alpha = 0.6), flierprops = dict(mec = clrs[i], linewidth = 1, alpha = 0.6, ms=2))
-  
-    ax.set_xlim(0,5)#*limblen+3)
-    ax.set_ylim(-1.5*np.pi,np.pi)
-    ax.set_yticks([-1.5*np.pi,-np.pi,-0.5*np.pi,0,0.5*np.pi,np.pi])
-    ax.set_yticklabels(["-1.5π", "-π", "-0.5π", "0", "0.5π", "π"])
-    ax.set_xticks([1,2,3,4])#,4,5,7,8])
-# ax.set_xticklabels(["incline (I)", "body tilt (I)", "body tilt (H)", "incline (I) +\nbody tilt (I)"], rotation = 45, ha = 'right')
-ax.set_xticklabels([])
-for xpos, text in zip([-0.3,0.5,1.4,2.7],
-                      ["incline (I)", "body tilt (I)", "body tilt (H)", "incline (I) +\nbody tilt (I)"]):
-    ax.text(xpos, -5.3, text, rotation = 45, va = 'top')
-
-ax.set_ylabel("Homolateral phase shift (rad)")
-
-# stats
-_, p1 = scipy.stats.ttest_rel(df['incT_sBA'], df['incT_inc'])
-print(f"Incline trials, {limb}: p-val {p1}")
-_, p2 = scipy.stats.ttest_rel(df['incT_sBA'], df['hhT_sBA'])
-print(f"Incline trials, {limb}: p-val {p2}")
-_, p3 = scipy.stats.ttest_rel(df['hhT_sBA'], df['incT_total'])
-print(f"Head height vs total incline, {limb}: p-val {p3}")
-
-ptext = []
-for i, (p, pos) in enumerate(zip([p1,p2,p3], [1.5,2.5,3.5])):
-    if (p < FigConfig.p_thresholds).sum() == 0:
-        ptext.append( "n.s." )    
-        ydelta = 0.1
-    else:
-        ptext.append('*' * (p < FigConfig.p_thresholds).sum())
-        ydelta = 0
-    ax.text(pos,0.9*np.pi+ydelta,ptext[i], ha = 'center')
-    # ax[i].set_title(tlt)
-
-for i in range(df.shape[0]):
-    ax.plot([u, u+1], df.iloc[i,-4:-2], linewidth = 0.5, color = clrs[0], alpha = 0.2)
-    ax.scatter([u, u+1], df.iloc[i,-4:-2], color =  clrs[0], alpha = 0.4, s = 2)
+        trace = scipy.stats.circmean(phase2_preds[:,:],high = hi, low = lo, axis = 0)
+        lower = np.zeros_like(trace); higher = np.zeros_like(trace)
+        for x in range(lower.shape[0]):
+            lower[x], higher[x] =  utils_math.hpd_circular(phase2_preds[:,x], 
+                                                            mass_frac = 0.95, 
+                                                            high = hi, 
+                                                            low = lo) #% (np.pi*2)
+        
+        if round(trace[-1],6) not in unique_traces and not np.any(abs(np.diff(trace))>5):
+            unique_traces = np.append(unique_traces, round(trace[-1],6))
+            print('plotting...')    
+            ax.fill_between(pred2_range + np.nanmean(pred2_relevant), 
+                                  lower, 
+                                  higher, 
+                                  alpha = 0.2, 
+                                  facecolor = FigConfig.colour_config[clrs][iprcnt*2]
+                                    )
+            ax.plot((pred2_range + np.nanmean(pred2_relevant)), 
+                    trace, 
+                    color = FigConfig.colour_config[clrs][iprcnt*2], 
+                    linewidth = 1, 
+                    linestyle = lnst, 
+                    )
+        print(prcnt, trace[-1]) 
+    ax.text(np.mean(xlim)+((xlim[1]-xlim[0])*0.75/4)*(iprcnt-1), 1.3*np.pi, f"{prcnt}", ha = 'center', color = FigConfig.colour_config[clrs][iprcnt*2])  
     
-    ax.plot([u+1, u+2], df.iloc[i,-3:-1], linewidth = 0.5, color = clrs[2], alpha = 0.2)
-    ax.scatter(u+2, df.iloc[i,-2], color =  clrs[2], alpha = 0.4, s = 2)
+
+ax.text(np.mean(xlim), 1.5*np.pi, pct_text, color = FigConfig.colour_config[clrs][0], ha = 'center')
+
+# axes 
+ax.set_ylim(ylim[0], ylim[1])
+ax.set_yticks(yticks)
+ax.set_yticklabels(yticklabels)
+ax.set_title(tlt, pad = 10)
     
-    ax.plot([u+2, u+3], df.iloc[i,-2:], linewidth = 0.5, color = clrs[3], alpha = 0.2)
-    ax.scatter(u+3, df.iloc[i,-1], color =  clrs[3], alpha = 0.4, s = 2)
-    
-fig.savefig(Path(FigConfig.paths['savefig_folder']) / f"{yyyymmdd}_mouseComparisonIncline_interaction2_{limb}_ref{refLimb}.svg", dpi=300)
+ax.set_ylabel('Homologous phase,\nshoulder girdle (rad)')
 
 
+plt.tight_layout(w_pad = 0)
 
-
+figtitle = f"MS3_{yyyymmdd}_homolateralFORE_incline_speeds.svg"
+plt.savefig(os.path.join(FigConfig.paths['savefig_folder'], figtitle), 
+            dpi = 300, 
+            )

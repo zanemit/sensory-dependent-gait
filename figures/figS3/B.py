@@ -4,89 +4,136 @@ import os
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
-import seaborn as sns
 
-sys.path.append(r"C:\Users\MurrayLab\sensoryDependentGait")
+sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
-from preprocessing.data_config import Config
+from processing import data_loader
+from processing.data_config import Config
 from figures.fig_config import Config as FigConfig
 
-outputDir = Config.paths['mtTreadmill_output_folder']
-limb = 'lF0'
+yyyymmdd = '2022-08-18'
+refLimb = 'lH1'
+group_num = 6
+param = 'headHW'
+fig, ax = plt.subplots(1, 1, figsize=(1.5, 1.5))
+#TODO: should load the combined dataset (shoudl save it from R first!) to have correct centred vals!
+df, _ = data_loader.load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"], 
+                                               dataToLoad="locomParams", 
+                                               yyyymmdd = yyyymmdd, 
+                                               appdx = '_FPcomparison')
+modQDRhw = pd.read_csv(Path(Config.paths["passiveOpto_output_folder"])/f"{yyyymmdd}_mixedEffectsModel_quadratic_snoutBodyAngle_vs_headHW_FP_TRDMlocom_TRDMstat_COMPARISON.csv")
+modQDRhw2 = pd.read_csv(Path(Config.paths["passiveOpto_output_folder"])/f"{yyyymmdd}_mixedEffectsModel_quadratic_snoutBodyAngle_vs_headHW_TRDMlocom_FP_TRDMstat_COMPARISON.csv")
 
+minmaxs = np.asarray((1000, 0), dtype = np.float32)
 
-fig, ax = plt.subplots(2,2,figsize = (1.3*2,1.5), gridspec_kw = {'height_ratios': [9,1], 'width_ratios': [1,1]}, sharex = 'col')
-fig.subplots_adjust(right=0.8)
-cbar_ax = fig.add_axes([0.84, 0.18, 0.01, 0.7])
-stattype = 'WASSERSTEIN'
-param = 'snoutBodyAngle'
-lbl = 'Snout-hump angle (deg)'
-ticklabels = ['[0, 0.4π]','(0.4π, 0.8π]','(0.8π, 1.2π]','(1.2π, 1.6π]']
+setup = 'TRDMstat'
 
-for i, (yyyymmdd, title) in enumerate(zip(['2021-10-23','2022-05-06'],
-                                          ['level locomotion:\nbody tilt', 'incline locomotion:\nbody tilt']
-                                          )):
-    cot_pvals = pd.read_csv(os.path.join(outputDir, f'{yyyymmdd}_{stattype}pvals_{param}_{limb}.csv'), index_col =0)
-    cot = pd.read_csv(os.path.join(outputDir, f'{yyyymmdd}_{stattype}_{param}_{limb}.csv'), index_col =0)
-    cot_ptext = pd.read_csv(os.path.join(outputDir, f'{yyyymmdd}_{stattype}ptext_{param}_{limb}.csv'), index_col =0)
-    cot_uni_pvals = pd.read_csv(os.path.join(outputDir, f'{yyyymmdd}_{stattype}_UNIFORMpvals_{param}_{limb}.csv'), index_col =0)
-    cot_uni = pd.read_csv(os.path.join(outputDir, f'{yyyymmdd}_{stattype}_UNIFORM_{param}_{limb}.csv'), index_col =0)
-    cot_uni_ptext = pd.read_csv(os.path.join(outputDir, f'{yyyymmdd}_{stattype}_UNIFORMptext_{param}_{limb}.csv'), index_col =0)
-     
-    cot_ptext = np.asarray(["" if type(x) == float else x for x in np.asarray(cot_ptext).flatten()]).reshape(cot.shape[0], cot.shape[1])
-    cot_uni_ptext = np.asarray(["" if type(x) == float else x for x in np.asarray(cot_uni_ptext).flatten()]).reshape(cot_uni.shape[0], cot_uni.shape[1])
-     
-    if i < 1:          
-        sns.heatmap(cot, 
-                    vmin=0, 
-                    vmax=8, 
-                    ax = ax[0, i], 
-                    cbar = False, 
-                    cmap = 'mako',
-                    annot = cot_ptext, 
-                    fmt = "", 
-                    annot_kws = {"size":6}
-                    )
-      
-    else: 
-        sns.heatmap(cot, 
-                    vmin=0, 
-                    vmax=8, 
-                    cbar_ax = cbar_ax,
-                    ax = ax[0, i], 
-                    cmap = 'mako',
-                    annot = cot_ptext, 
-                    fmt = "", 
-                    annot_kws = {"size":6}
-                    )    
+# arr = np.empty((len(Config.passiveOpto_config['mice']), group_num))
+
+df_subx = df[df['setup'] == setup]
+for im, m in enumerate(Config.passiveOpto_config['mice']):
+    df_sub = df_subx[df_subx['mouseID'] == m]
+    param_split = np.linspace(df_sub[param].min()-0.0001, df_sub[param].max(), group_num+1)
+    xvals = [np.nanmean((a,b,)) for a,b in zip(param_split[:-1], param_split[1:])]
+    df_grouped = df_sub.groupby(pd.cut(df_sub[param], param_split)) 
+    group_row_ids = df_grouped.groups
     
-    ax[0,i].set_title(title)
-    
-    sns.heatmap(cot_uni.T, 
-                vmin=0, 
-                vmax=8, 
-                ax = ax[1,i],
-                cmap = 'mako',
-                cbar = False, 
-                annot = cot_uni_ptext.T, 
-                fmt = "", 
-                annot_kws = {"size":6})
-    
-    # for tick in ax[1,i].get_xticklabels():
-    #     tick.set_rotation(35)
-    #     tick.set_ha('right')
-    ax[1,i].set_xticklabels(ticklabels, rotation = 35, ha = 'right')
-    # ax[1,i].set_xlabel(lbl)
-    ax[i,1].tick_params(labelleft = False)#, left = False)
-                 
-ax[0,0].set_ylabel(lbl)
-fig.text(0.5, -0.24, lbl, ha='center') # xlabel
-ax[1,0].set_yticklabels(['uniform'], rotation = 0)
-ax[0,0].set_yticklabels(ticklabels, rotation = 0)
-fig.subplots_adjust(wspace = 0.4)
-cbar_ax.set_ylabel('Wasserstein distance')
-cbar_ax.set_yticks([0,2,4,6,8])
-# plt.tight_layout()
+    yvals = [np.nanmean(df_sub.loc[val,'snoutBodyAngle'].values) for key,val in group_row_ids.items()]
+    # arr[im, :] = yvals
+    ax.plot(xvals, 
+            yvals, 
+            color = FigConfig.colour_config['headbars'],  
+            alpha = 0.4, 
+            linewidth = 1)
+    minmaxs[0] = np.nanmin([minmaxs[0],np.nanmin(xvals)])
+    minmaxs[1] = np.nanmax([minmaxs[1],np.nanmax(xvals)])
 
-fig.savefig(Path(FigConfig.paths['savefig_folder']) / f"{yyyymmdd}_wassersteinAcrossMicePermuted_{limb}.svg", dpi = 300)
-   
+# plt.plot(xvals, np.nanmean(arr, axis = 0), color = 'red')
+# model: snoutBodyAngle ~ poly(headHW, 2) + setup + 1|mouseID
+x_pred = np.linspace(minmaxs[0]- np.nanmean(df[param]), minmaxs[1]- np.nanmean(df[param]), 100)
+
+y_predQDR_FP = modQDRhw['Estimate'][0] + modQDRhw['Estimate'][1]*x_pred + modQDRhw['Estimate'][2]*x_pred**2 + np.nanmean(df['snoutBodyAngle'])
+y_predQDR_TRDM_preOpto = modQDRhw['Estimate'][0] + modQDRhw['Estimate'][1]*x_pred + modQDRhw['Estimate'][2]*(x_pred**2) + modQDRhw['Estimate'][4] + np.nanmean(df['snoutBodyAngle']) 
+
+x_pred += np.nanmean(df['headHW'])
+# p_texts = np.empty(2, dtype = 'object')
+# for i, est in enumerate([1,3]):
+#     if (modQDRhw['Pr(>|t|)'][est] < FigConfig.p_thresholds).sum() != 0:
+#         p_texts[i] = '*' * (modQDRhw['Pr(>|t|)'][est] < FigConfig.p_thresholds).sum()
+#     else:
+#         p_texts[i] = "n.s."
+
+traces_ends = {}
+for i, (y_pred, lnst, lc, lbl) in enumerate(zip(
+        [y_predQDR_FP, y_predQDR_TRDM_preOpto], 
+        ['dashed', 'solid'],
+        [FigConfig.colour_config['diagonal'][2], FigConfig.colour_config['headbars']],
+        ['force sensors', 'treadmill stationary'])):
+    ax.plot(x_pred, 
+            y_pred, 
+            color = lc, 
+            linewidth = 2, 
+            linestyle = lnst,
+            label = lbl)
+    traces_ends[i] = y_pred[-1]
+    
+p_texts = {} #setupFP_setupTRDMlocom, setupTRDMlocom_setupTRDMstat, setupFP_setupTRDMstat, headHW
+p_thresholds = np.asarray(FigConfig.p_thresholds)/3 # pairwise comparison correction
+for i, (mod, est) in enumerate(zip(
+        [modQDRhw, modQDRhw2, modQDRhw, modQDRhw],
+        ['setupTRDMlocom', 'setupReleveledTRDMstat', 'setupTRDMstat', 'poly(headHW_centred, 2, raw = TRUE)1'])):
+    pval = float(mod[mod['Unnamed: 0'] == est]['Pr(>|t|)'])
+    if (pval < p_thresholds).sum() != 0:
+            p_texts[i] = '*' * (pval < p_thresholds).sum()
+    else:
+            p_texts[i] = "n.s."
+            
+stat_dist = [0.01, 0.03, 0.05, 0.08, 0.02, 4, -4 ] # x0 : distance from the traces
+                                            # x1-x0 : length of first horizontal line
+                                            # x2-x1 : length of second horizontal line
+                                            # x3 : extension of horizontal lines
+                                            # x4 : distance from second horiz line to text
+                                            # x5, x6 : y length
+p_y_dist = [0.5, 2, 0.5]                                    
+for iy, y_tr in enumerate(traces_ends.values()):
+    if iy < len(traces_ends)-1:
+        ax.hlines(y_tr, xmin = x_pred[-1]+stat_dist[0], xmax = x_pred[-1]+stat_dist[1], linewidth = 0.5, color = 'black')
+        ax.vlines(x_pred[-1]+stat_dist[1], ymin = traces_ends[iy], ymax = traces_ends[iy+1], linewidth = 0.5, color = 'black')
+        ax.hlines(np.mean((traces_ends[iy], traces_ends[iy+1])), xmin = x_pred[-1]+stat_dist[1], xmax = x_pred[-1]+stat_dist[2], linewidth = 0.5, color = 'black')
+        ax.vlines(x_pred[-1]+stat_dist[2], ymin = np.mean((traces_ends[iy], traces_ends[iy+1])), ymax = np.mean((traces_ends[iy], traces_ends[iy+1]))+stat_dist[iy+5], linewidth = 0.5, color = 'black')
+        ax.hlines(np.mean((traces_ends[iy], traces_ends[iy+1]))+stat_dist[iy+5], xmin = x_pred[-1]+stat_dist[2], xmax = x_pred[-1]+stat_dist[2]+stat_dist[1]-stat_dist[0], linewidth = 0.5, color = 'black')
+        ax.text(x_pred[-1]+stat_dist[2]+stat_dist[1], np.mean((traces_ends[iy], traces_ends[iy+1]))+stat_dist[iy+5]-p_y_dist[iy], p_texts[iy])
+    else:
+        ax.hlines(y_tr, xmin = x_pred[-1]+stat_dist[0], xmax = x_pred[-1]+stat_dist[1], linewidth = 0.5, color = 'black', linestyle = 'solid')
+        ax.hlines(y_tr, xmin = x_pred[-1]+stat_dist[3], xmax = x_pred[-1]+stat_dist[1]+stat_dist[3], linewidth = 0.5, color = 'black', linestyle = 'dashed')
+        ax.hlines(traces_ends[0], xmin = x_pred[-1]+stat_dist[3], xmax = x_pred[-1]+stat_dist[1]+stat_dist[3], linewidth = 0.5, color = 'black', linestyle = 'dashed')
+        ax.vlines(x_pred[-1]+stat_dist[1]+stat_dist[3], ymin = traces_ends[iy], ymax = traces_ends[0], linewidth = 0.5, color = 'black', linestyle = 'dashed')
+        ax.hlines(np.mean((traces_ends[iy], traces_ends[0])), xmin = x_pred[-1]+stat_dist[1]+stat_dist[3], xmax = x_pred[-1]+stat_dist[2]+stat_dist[3], linewidth = 0.5, color = 'black', linestyle = 'dashed')
+        ax.text(x_pred[-1]+stat_dist[2]+stat_dist[3]+stat_dist[4], np.mean((traces_ends[iy], traces_ends[0]))-0.3, p_texts[iy])
+
+ax.text(0.6, 180, f"head height {p_texts[3]}", ha = 'center', color = FigConfig.colour_config['headbars'])
+
+ax.set_xlim(0,1.2)
+ax.set_ylim(138,180)
+ax.set_ylabel('Snout-body angle (deg)')
+ax.set_xlabel('Weight-adjusted head height')
+ax.set_xticks([0,0.4,0.8,1.2])
+ax.set_yticks([140,150,160,170,180])
+
+lgd = ax.legend(loc = 'upper center',
+                bbox_to_anchor=(0.1,-0.5,0.9,0.2), #0.055
+                mode="expand", 
+                borderaxespad=0,
+                borderpad = 0.2,
+                handlelength = 1.5,
+                # title = f"Setup ({p_texts[1]})", 
+                ncol = 1)
+
+lgd._legend_box.align = 'center'
+
+fig.savefig(Path(FigConfig.paths['savefig_folder']) / f"MS2_{yyyymmdd}_snoutBodyAngles_vs_headHW_treadmill.svg",
+            bbox_extra_artists = (lgd, ), 
+            bbox_inches = 'tight')
+
+
+

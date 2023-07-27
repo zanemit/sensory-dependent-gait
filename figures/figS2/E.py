@@ -4,95 +4,112 @@ import os
 import pandas as pd
 import numpy as np
 import seaborn as sns
-from matplotlib.patches import Patch as patch
 from matplotlib import pyplot as plt
 
-sys.path.append(r"C:\Users\MurrayLab\sensoryDependentGait")
+sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
-from preprocessing import data_loader
-from preprocessing.data_config import Config
+from processing import data_loader
+from processing.data_config import Config
 from figures.fig_config import Config as FigConfig
 from figures.fig_config import AnyObjectHandler
 
-param = 'speed'
+yyyymmdd = '2022-08-18'
+param = 'headHW'
+colname = 'medianSpeed'
+clr = FigConfig.colour_config['neutral']
+group_num = 5
 appdx = ''
-refLimb = 'lH1'
+p_tlt = 'head height'
 
-xmin = 10
-xmax = 150
-interval = 10
-xlbl = 'Speed (cm/s)'
+df, yyyymmdd = data_loader.load_processed_data(dataToLoad = 'locomParamsAcrossMice', 
+                                               yyyymmdd = yyyymmdd,
+                                               appdx = '')
 
-x = np.arange(xmin, xmax, interval)
-
-fracs = ['frac4','frac3','frac2diag','frac2hmlt','frac2hmlgFORE', 'frac2hmlgHIND','frac1','frac0']
-fracs_lbls = ['4', '3', '2: diagonal', '2: homolateral', '2: homologous fore', '2: homologous hind', '1', '0']
-
-subplot_num = 2
-fig, ax = plt.subplots(1,subplot_num, figsize = (3.4,1.3), sharey = True)
-
-for axi, (outputDir, expDate, tlt) in enumerate(zip([Config.paths["passiveOpto_output_folder"],
-                                              Config.paths["mtTreadmill_output_folder"]],
-                                               ['2022-08-18', '2021-10-23'],
-                                               ['Passive treadmill', 'Motorised treadmill'])):
-    df, yyyymmdd, limb = data_loader.load_processed_data(outputDir = outputDir,
-                                                         dataToLoad = 'supportFractions', 
-                                                         yyyymmdd = expDate,
-                                                         appdx = appdx,
-                                                         limb = refLimb)
+# subset mice
+for m in np.setdiff1d(np.unique(df['mouseID']), Config.passiveOpto_config['mice']):
+    df = df[df['mouseID'] != m]
     
-    mice = np.unique(df['mouseID'])
-    y_arr = np.zeros((mice.shape[0], x.shape[0], len(fracs))) * np.nan
-    for im, m in enumerate(mice):
-        df_sub = df[df['mouseID'] == m]
-        df_sub = df_sub.iloc[np.random.randint(0,df_sub.shape[0], 1000),:]
-        for ix, xitem in enumerate(x):
-            df_sub2 = df_sub[(df_sub['speed']>=(xitem-(interval/2)))&(df_sub['speed']<(xitem+(interval/2)))]
-            y_arr[im, ix, :] = [df_sub2[f].mean() for f in fracs]
-    y = np.nanmean(y_arr, axis = 0)
-       
-    xmean = np.mean(x)
-    xstd = np.std(x)
-    xtext_pos = [xmean-0.875*xstd, xmean-0.625*xstd, xmean-0.375*xstd, xmean-0.125*xstd,
-             xmean+0.125*xstd, xmean+0.375*xstd, xmean+0.625*xstd, xmean+0.875*xstd]
-    xint_pos = int(len(x)/2)
-    xint_pos = [xint_pos-0.7*xint_pos, xint_pos-0.5*xint_pos, xint_pos+0.3*xint_pos, xint_pos-0.1*xint_pos,
-            xint_pos+0.1*xint_pos, xint_pos+0.3*xint_pos, xint_pos+0.5*xint_pos, xint_pos+0.7*xint_pos]
-    ytext_pos = []
-    xticks = np.linspace(xmin, xmax, 5, endpoint = True)
-     
-    # Plot
-    ax[axi].stackplot(x,
-                 y[:,0],
-                 y[:,1],
-                 y[:,2],
-                 y[:,3],
-                 y[:,4],
-                 y[:,5],
-                 y[:,6],
-                 y[:,7],
-                 colors = FigConfig.colour_config["mains8"])
+
+df['headLVL'] = [-int(h[3:]) if 'deg' in h else h for h in df['headLVL']]
+df['stimFreq_num'] = [int(x[:-2]) for x in df['stimFreq']]
+
+# df_tt = df[df['trialType']=='headHeight']
+
+fig, ax = plt.subplots(1,1, figsize = (1.55,1.5))
+
+xvals_all = []
+for im, m in enumerate(np.unique(df['mouseID'])):
+    df_m = df[df['mouseID'] == m]
+    param_split = np.linspace(df_m[param].min()-0.0001, df_m[param].max(), group_num+1)
+    xvals = [np.mean((a,b,)) for a,b in zip(param_split[:-1], param_split[1:])]
+    df_grouped = df_m.groupby(pd.cut(df_m[param], param_split)) 
+    group_row_ids = df_grouped.groups
     
-    ax[axi].set_xticks(xticks)
-    ax[axi].set_xlabel(xlbl)
-    ax[axi].set_title(tlt)
+    yvals = [np.nanmean(df_m.loc[val,colname].values) for key,val in group_row_ids.items()]
+   
+    ax.plot(xvals, 
+                  yvals,   
+                  alpha=0.3, 
+                  linewidth = 0.5, 
+                  color = clr)
+    
+    xvals_all.append(np.min(xvals))
+    xvals_all.append(np.max(xvals))   
 
-# lgd = fig.legend([([FigConfig.colour_config['homolateral'][2]],"solid"), 
-#                 ([FigConfig.colour_config['greys'][2]],"dashed")], 
-#                 ["Incline trials", "Head height trials"], 
-#                 handler_map={tuple: AnyObjectHandler()}, 
-#                 loc = 'upper center', bbox_to_anchor=(0.3,-0.25,0.5,0.2),
-#                 mode="expand", borderaxespad=0, ncol = 2)
+ax.set_ylim(0,100)
+ax.set_yticks(np.linspace(0,100,6,endpoint=True))
+      
+mod_types = ['linear', 'quadratic']
+mod_AIC = pd.read_csv(os.path.join(Config.paths['passiveOpto_output_folder'], f"{yyyymmdd}_mixedEffectsModel_AICRsq_{colname}_v_stimFreq_{param}{appdx}.csv"))
+AICs = [mod_AIC['Value'].loc[np.where((mod_AIC['Model']==mod_types[0].capitalize()) & (mod_AIC['Metric']=='AIC'))[0][0]],
+        mod_AIC['Value'].loc[np.where((mod_AIC['Model']==mod_types[1].capitalize()) & (mod_AIC['Metric']=='AIC'))[0][0]]]
 
-handles = [
-    patch(facecolor= clr, label = lbl)
-    for lbl, clr in zip(fracs_lbls, FigConfig.colour_config["mains8"])
-    ]
-lgd = fig.legend(handles = handles, loc = 'upper center', bbox_to_anchor=(0.15,-0.65,0.7,0.5),
-                mode="expand", borderaxespad=0, ncol = 2)
+selected_type = mod_types[np.argmin(AICs)]
 
-ax[0].set_ylabel('Fraction of limb support')
+mod = pd.read_csv(os.path.join(Config.paths['passiveOpto_output_folder'], f"{yyyymmdd}_mixedEffectsModel_{selected_type}_{colname}_v_stimFreq_{param}{appdx}.csv"))
 
-fig.savefig(Path(FigConfig.paths['savefig_folder']) / f"{yyyymmdd}_limbSupports.svg",
-            bbox_extra_artists = (lgd, ), 
-            bbox_inches = 'tight')
+x_centered = np.asarray(df[param])-np.mean(df[param])
+mean_stimFreq = np.nanmean(df['stimFreq_num'])
+
+x_pred = np.linspace(np.min(xvals_all)-np.mean(df[param]), np.max(xvals_all)-np.mean(df[param]), endpoint=True)
+# if param == 'headLVL' or trialType == 'headHeight':
+if selected_type == 'linear':
+    y_pred = mod['Estimate'][0] + mod['Estimate'][2] * x_pred + np.nanmean(df[colname])
+elif selected_type == 'quadratic':
+    y_pred = mod['Estimate'][0] + mod['Estimate'][2]*x_pred + mod['Estimate'][3]*x_pred**2 + np.nanmean(df[colname])    
+
+x_pred += np.mean(df[param])
+ax.plot(x_pred, 
+           y_pred, 
+           linewidth=1, 
+           color = clr)
+
+# p-values
+p_text = p_tlt + ' ' + ('*' * (mod['Pr(>|t|)'][2] < FigConfig.p_thresholds).sum())
+if (mod['Pr(>|t|)'][2] < FigConfig.p_thresholds).sum() == 0:
+    p_text += "n.s."
+ax.text(0.52, 1.05-0.13, p_text, ha = 'center', 
+        color = clr, 
+        transform=ax.transAxes)
+
+
+# try:
+#     ax.get_legend().remove()  
+# except:
+#     pass
+
+    
+ax.set_xlabel('Weight-adjusted head height')
+ax.set_xticks(np.linspace(0,1.2,4,endpoint = True))
+
+ax.set_ylabel('Median speed (cm/s)')
+
+plt.tight_layout()
+# # plt.tight_layout()
+
+
+fig.savefig(Path(FigConfig.paths['savefig_folder']) / f"MS2_{yyyymmdd}_locomParamsAcrossMice_medSpeed_vs_stimFreq_headHW.svg", dpi=300)
+
+
+
+ 

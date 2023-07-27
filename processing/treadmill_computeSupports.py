@@ -5,10 +5,10 @@ import pandas as pd
 import numpy as np
 import scipy.signal
 
-sys.path.append(r"C:\Users\MurrayLab\sensoryDependentGait")
+sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
-from preprocessing import data_loader, utils_processing, utils_math
-from preprocessing.data_config import Config
+from processing import data_loader, utils_processing, utils_math
+from processing.data_config import Config
 
 def compute_supports(arr):
     """

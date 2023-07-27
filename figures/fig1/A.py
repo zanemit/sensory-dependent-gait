@@ -7,7 +7,7 @@ import scipy.stats
 from matplotlib import pyplot as plt
 
 
-sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
+sys.path.append(r"C:\Users\MurrayLab\sensoryDependentGait")
 
 from processing import data_loader, forceplate_data_manager
 from processing.data_config import Config
@@ -65,6 +65,40 @@ for limb in limbs:
             color = FigConfig.colour_config[color_dict[limb][0]][color_dict[limb][1]],
             lw = 2)
 
+# for icon, (cond, cond_t) in enumerate(zip(conditions, cond_titles)):  # loop over levels/intervals
+#     # forelimb data of all mice
+#     data_fore = np.asarray(df.loc[:, (cond, slice(None), 'fore_weight_frac')])
+#     # same for hindlimb data
+#     data_hind = np.asarray(df.loc[:, (cond, slice(None), 'hind_weight_frac')])
+#     # same for headplate data
+#     data_head = np.asarray(df.loc[:, (cond, slice(None), 'headplate_weight_frac')])
+#     # means and sem
+#     mean_fore = np.nanmean(data_fore, axis=1)
+#     mean_hind = np.nanmean(data_hind, axis=1)
+#     mean_head = np.nanmean(data_head, axis=1)
+#     sem_fore = scipy.stats.sem(data_fore, axis=1, nan_policy='omit')
+#     sem_hind = scipy.stats.sem(data_hind, axis=1, nan_policy='omit')
+#     sem_head = scipy.stats.sem(data_head, axis=1, nan_policy='omit')
+#     ci_fore = sem_fore * \
+#         scipy.stats.t.ppf((1 + 0.95) / 2., data_fore.shape[1]-1)
+#     ci_hind = sem_hind * \
+#         scipy.stats.t.ppf((1 + 0.95) / 2., data_hind.shape[1]-1)
+#     ci_head = sem_head * \
+#         scipy.stats.t.ppf((1 + 0.95) / 2., data_head.shape[1]-1)
+#     t_mid = int(mean_fore.shape[0]/2)
+#     print(f"{cond_t}: {mean_fore[t_mid]:.2f} +- {ci_fore[t_mid]:.2f}, {mean_hind[t_mid]:.2f} +- {ci_fore[t_mid]:.2f}")
+#     ax[icon].fill_between(t_smr, mean_fore - np.asarray(ci_fore), mean_fore +
+#                            np.asarray(ci_fore), facecolor=FigConfig.colour_config["forelimbs"], alpha=0.3)
+#     ax[icon].fill_between(t_smr, mean_hind - np.asarray(ci_hind), mean_hind +
+#                            np.asarray(ci_hind), facecolor=FigConfig.colour_config["hindlimbs"], alpha=0.3)
+#     ax[icon].fill_between(t_smr, mean_head - np.asarray(ci_head), mean_head +
+#                            np.asarray(ci_head), facecolor=FigConfig.colour_config["headplate"], alpha=0.3)
+#     ax[icon].plot(t_smr, np.nanmean(data_fore, axis=1), linewidth=1,
+#                    color=FigConfig.colour_config["forelimbs"])
+#     ax[icon].plot(t_smr, np.nanmean(data_hind, axis=1), linewidth=1,
+#                    color=FigConfig.colour_config["hindlimbs"])
+#     ax[icon].plot(t_smr, np.nanmean(data_head, axis=1), linewidth=1,
+#                    color=FigConfig.colour_config["headplate"])
 ax.set_xlabel('Time (s)')
 ax.set_xticks([0,1,2,3,4,5])
 ax.set_ylim(0,0.5)

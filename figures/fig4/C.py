@@ -1,137 +1,151 @@
 import sys
 from pathlib import Path
-import os
 import pandas as pd
+import os
 import numpy as np
+import scipy.stats
 from matplotlib import pyplot as plt
 
-sys.path.append(r"C:\Users\MurrayLab\sensoryDependentGait")
+sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
-from preprocessing import data_loader
-from preprocessing.data_config import Config
+from processing import data_loader, utils_processing, utils_math
+from processing.data_config import Config
 from figures.fig_config import Config as FigConfig
+from figures.fig_config import AnyObjectHandlerDouble
 
 yyyymmdd = '2022-08-18'
-refLimb = 'lH1'
-group_num = 6
-param = 'headHW'
-fig, ax = plt.subplots(1, 1, figsize=(1.2, 1.3))
-#TODO: should load the combined dataset (shoudl save it from R first!) to have correct centred vals!
-df, _ = data_loader.load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"], 
-                                               dataToLoad="locomParams", 
-                                               yyyymmdd = yyyymmdd, 
-                                               appdx = '_FPcomparison')
-modQDRhw = pd.read_csv(Path(Config.paths["passiveOpto_output_folder"])/f"{yyyymmdd}_mixedEffectsModel_quadratic_snoutBodyAngle_vs_headHW_FP_TRDMlocom_TRDMstat_COMPARISON.csv")
-modQDRhw2 = pd.read_csv(Path(Config.paths["passiveOpto_output_folder"])/f"{yyyymmdd}_mixedEffectsModel_quadratic_snoutBodyAngle_vs_headHW_TRDMlocom_FP_TRDMstat_COMPARISON.csv")
+outputDir = Config.paths['passiveOpto_output_folder']
+datafrac = 0.3
+iterations = 1000
+ref = 'COMBINED'
+limb = 'homologous0'
 
-minmaxs = np.asarray((1000, 0), dtype = np.float32)
+appdx_dict = {2: '', 3: '_incline'}
+sample_nums = {'_incline': 9280, '': 10939}
 
-for ic, (lnst, setup) in enumerate(zip(['solid', 'dotted'],
-                                       ['TRDMlocom', 'TRDMstat'])):
-    df_subx = df[df['setup'] == setup]
-    for im, m in enumerate(Config.passiveOpto_config['mice']):
-        df_sub = df_subx[df_subx['mouseID'] == m]
-        param_split = np.linspace(df_sub[param].min()-0.0001, df_sub[param].max(), group_num+1)
-        xvals = [np.nanmean((a,b,)) for a,b in zip(param_split[:-1], param_split[1:])]
-        df_grouped = df_sub.groupby(pd.cut(df_sub[param], param_split)) 
-        group_row_ids = df_grouped.groups
-        
-        yvals = [np.nanmean(df_sub.loc[val,'snoutBodyAngle'].values) for key,val in group_row_ids.items()]
-        ax.plot(xvals, 
-                yvals, 
-                color = FigConfig.colour_config['headbars'],  
-                alpha = 0.4, 
-                linewidth = 0.5, 
-                linestyle = lnst)
-        minmaxs[0] = np.nanmin([minmaxs[0],np.nanmin(xvals)])
-        minmaxs[1] = np.nanmax([minmaxs[1],np.nanmax(xvals)])
+ylim = (-0.3,1.5*np.pi)
+yticks = [0,0.5*np.pi,np.pi, 1.5*np.pi]
+yticklabels = ["0","0.5π", "π", "1.5π"] 
 
-# model: snoutBodyAngle ~ poly(headHW, 2) + setup + 1|mouseID
-x_pred = np.linspace(minmaxs[0]- np.nanmean(df[param]), minmaxs[1]- np.nanmean(df[param]), 100)
+legend_colours = [[],[]]
+legend_linestyles = [[],[]]
 
-y_predQDR_FP = modQDRhw['Estimate'][0] + modQDRhw['Estimate'][1]*x_pred + modQDRhw['Estimate'][2]*x_pred**2 + np.nanmean(df['snoutBodyAngle'])
-y_predQDR_TRDM = modQDRhw['Estimate'][0] + modQDRhw['Estimate'][1]*x_pred + modQDRhw['Estimate'][2]*x_pred**2 + modQDRhw['Estimate'][3] + np.nanmean(df['snoutBodyAngle']) 
-y_predQDR_TRDM_preOpto = modQDRhw['Estimate'][0] + modQDRhw['Estimate'][1]*x_pred + modQDRhw['Estimate'][2]*x_pred**2 + modQDRhw['Estimate'][4] + np.nanmean(df['snoutBodyAngle']) 
+fig, ax = plt.subplots(1,1,figsize = (1.55,1.5), sharey = True) #1.6,1.4 for 4figs S2 bottom row
 
-x_pred += np.nanmean(df['headHW'])
-# p_texts = np.empty(2, dtype = 'object')
-# for i, est in enumerate([1,3]):
-#     if (modQDRhw['Pr(>|t|)'][est] < FigConfig.p_thresholds).sum() != 0:
-#         p_texts[i] = '*' * (modQDRhw['Pr(>|t|)'][est] < FigConfig.p_thresholds).sum()
-#     else:
-#         p_texts[i] = "n.s."
-
-traces_ends = {}
-for i, (y_pred, lnst, lc, lbl) in enumerate(zip(
-        [y_predQDR_FP, y_predQDR_TRDM, y_predQDR_TRDM_preOpto], 
-        ['dashed', 'solid', 'dotted'],
-        [FigConfig.colour_config['main'], FigConfig.colour_config['headbars'], FigConfig.colour_config['headbars']],
-        ['force sensors', 'treadmill locomoting', 'treadmill stationary'])):
-    ax.plot(x_pred, 
-            y_pred, 
-            color = lc, 
-            linewidth = 1, 
-            linestyle = lnst,
-            label = lbl)
-    traces_ends[i] = y_pred[-1]
+predictors = ['speed', 'headHW']
+param_col = 'speed'
+interaction = 'TRUE'
+clrs = 'homologous'
+tlt = 'Head height trials'
+pct_text = 'speed percentile'
     
-p_texts = {} #setupFP_setupTRDMlocom, setupTRDMlocom_setupTRDMstat, setupFP_setupTRDMstat, headHW
-p_thresholds = np.asarray(FigConfig.p_thresholds)/3 # pairwise comparison correction
-for i, (mod, est) in enumerate(zip(
-        [modQDRhw, modQDRhw2, modQDRhw, modQDRhw],
-        ['setupTRDMlocom', 'setupReleveledTRDMstat', 'setupTRDMstat', 'poly(headHW_centred, 2, raw = TRUE)1'])):
-    pval = float(mod[mod['Unnamed: 0'] == est]['Pr(>|t|)'])
-    if (pval < p_thresholds).sum() != 0:
-            p_texts[i] = '*' * (pval < p_thresholds).sum()
-    else:
-            p_texts[i] = "n.s."
+sBA_split_str = 'FALSE'
+    
+appdx = appdx_dict[len(predictors)]
+samples = sample_nums[appdx]
+      
+beta1path = Path(outputDir) / f"{yyyymmdd}_beta1_{limb}_ref{ref}_{predictors[0]}_{predictors[1]}_refLimb_interaction{interaction}_continuous_randMouse_sBAsplitFALSE_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
+beta2path = Path(outputDir) / f"{yyyymmdd}_beta2_{limb}_ref{ref}_{predictors[0]}_{predictors[1]}_refLimb_interaction{interaction}_continuous_randMouse_sBAsplitFALSE_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
+statspath = Path(outputDir) / f"{yyyymmdd}_coefCircCategorical_{limb}_ref{ref}_{predictors[0]}_{predictors[1]}_refLimb_interaction{interaction}_continuous_randMouse_sBAsplitFALSE_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
+
+beta1 = pd.read_csv(beta1path)
+beta2 = pd.read_csv(beta2path)
+stats = pd.read_csv(statspath)
+
+datafull = data_loader.load_processed_data(dataToLoad = 'strideParams', 
+                                           yyyymmdd = yyyymmdd,
+                                           limb = ref, 
+                                           appdx = appdx)[0]
+    
+predictor = 'headHW'
+pred = 'pred2'
+nonpred = 'pred3' #not used in head height trials
+xlim = (0,1.1)
+ax.set_xlim(xlim[0],xlim[1])
+# ax.set_xticks([140,150,160,170,180])
+ax.set_xlabel('Weight-adjusted\nhead height')
+
+y_tr_list = np.empty((0)) # 5 percentiles to plot = 5 pairs to compare!
+x_tr_list = np.empty((0))
+p_tr_list = np.empty((0))
+y_delta_list = np.empty((0))
+    
+# define the range of snout-hump angles or inclines (x axis predictor)
+pred2_relevant = utils_processing.remove_outliers(datafull[predictor]) 
+pred2_centred = pred2_relevant - np.nanmean(pred2_relevant) #centering
+pred2_range = np.linspace(pred2_centred.min(), pred2_centred.max(), num = 100)
+    
+prcnts = [20,50,80]
+prcnts_d = [-0.2,0,0.2]
+
+for iprcnt, (prcnt, iclr) in enumerate(zip(prcnts, [0,2,3])):
+    # find median param (excluding outliers)    
+    param_relevant = utils_processing.remove_outliers(datafull[param_col])
+    param = np.percentile(param_relevant, prcnt) - np.nanmean(param_relevant)
+    
+    # initialise arrays
+    phase2_preds = np.empty((beta1.shape[0], pred2_range.shape[0]))
+    phase2_preds[:] = np.nan
+    
+    unique_traces = np.empty((0))
+    refLimb = ''
+    lnst = 'solid'
             
-stat_dist = [0.01, 0.03, 0.05, 0.08, 0.02, 4, -4 ] # x0 : distance from the traces
-                                            # x1-x0 : length of first horizontal line
-                                            # x2-x1 : length of second horizontal line
-                                            # x3 : extension of horizontal lines
-                                            # x4 : distance from second horiz line to text
-                                            # x5, x6 : y length
-p_y_dist = [0.5, 2, 0.5]                                    
-for iy, y_tr in enumerate(traces_ends.values()):
-    if iy < len(traces_ends)-1:
-        ax.hlines(y_tr, xmin = x_pred[-1]+stat_dist[0], xmax = x_pred[-1]+stat_dist[1], linewidth = 0.5, color = 'black')
-        ax.vlines(x_pred[-1]+stat_dist[1], ymin = traces_ends[iy], ymax = traces_ends[iy+1], linewidth = 0.5, color = 'black')
-        ax.hlines(np.mean((traces_ends[iy], traces_ends[iy+1])), xmin = x_pred[-1]+stat_dist[1], xmax = x_pred[-1]+stat_dist[2], linewidth = 0.5, color = 'black')
-        ax.vlines(x_pred[-1]+stat_dist[2], ymin = np.mean((traces_ends[iy], traces_ends[iy+1])), ymax = np.mean((traces_ends[iy], traces_ends[iy+1]))+stat_dist[iy+5], linewidth = 0.5, color = 'black')
-        ax.hlines(np.mean((traces_ends[iy], traces_ends[iy+1]))+stat_dist[iy+5], xmin = x_pred[-1]+stat_dist[2], xmax = x_pred[-1]+stat_dist[2]+stat_dist[1]-stat_dist[0], linewidth = 0.5, color = 'black')
-        ax.text(x_pred[-1]+stat_dist[2]+stat_dist[1], np.mean((traces_ends[iy], traces_ends[iy+1]))+stat_dist[iy+5]-p_y_dist[iy], p_texts[iy])
-    else:
-        ax.hlines(y_tr, xmin = x_pred[-1]+stat_dist[0], xmax = x_pred[-1]+stat_dist[1], linewidth = 0.5, color = 'black', linestyle = 'solid')
-        ax.hlines(y_tr, xmin = x_pred[-1]+stat_dist[3], xmax = x_pred[-1]+stat_dist[1]+stat_dist[3], linewidth = 0.5, color = 'black', linestyle = 'dashed')
-        ax.hlines(traces_ends[0], xmin = x_pred[-1]+stat_dist[3], xmax = x_pred[-1]+stat_dist[1]+stat_dist[3], linewidth = 0.5, color = 'black', linestyle = 'dashed')
-        ax.vlines(x_pred[-1]+stat_dist[1]+stat_dist[3], ymin = traces_ends[iy], ymax = traces_ends[0], linewidth = 0.5, color = 'black', linestyle = 'dashed')
-        ax.hlines(np.mean((traces_ends[iy], traces_ends[0])), xmin = x_pred[-1]+stat_dist[1]+stat_dist[3], xmax = x_pred[-1]+stat_dist[2]+stat_dist[3], linewidth = 0.5, color = 'black', linestyle = 'dashed')
-        ax.text(x_pred[-1]+stat_dist[2]+stat_dist[3]+stat_dist[4], np.mean((traces_ends[iy], traces_ends[0]))-0.3, p_texts[iy])
+    mu1 = np.asarray(beta1['(Intercept)']).reshape(-1,1) + np.asarray(beta1['pred1']).reshape(-1,1) * param + np.asarray(beta1[pred]).reshape(-1,1) @ pred2_range.reshape(-1,1).T + np.asarray(beta1["pred1:pred2"]).reshape(-1,1) @ (pred2_range.reshape(-1,1).T *param) #the mean of the third predictor (if present) is zero because it was centred before modelling
+    mu2 = np.asarray(beta2['(Intercept)']).reshape(-1,1) + np.asarray(beta2['pred1']).reshape(-1,1) * param + np.asarray(beta2[pred]).reshape(-1,1) @ (pred2_range.reshape(-1,1).T) + np.asarray(beta2["pred1:pred2"]).reshape(-1,1) @ (pred2_range.reshape(-1,1).T *param)
+    phase2_preds[:,:] = np.arctan2(mu2, mu1)
+    
+    # compute and plot mean phases for three circular ranges so that the plots look nice and do not have lines connecting 2pi to 0
+    for k, (lo, hi) in enumerate(zip([-np.pi, 0, np.pi] , [np.pi, 2*np.pi, 3*np.pi])):
+        print(f"{refLimb}: working on data range {k}...")
+        if k == 1:
+            phase2_preds[phase2_preds<0] = phase2_preds[phase2_preds<0]+2*np.pi
+        if k == 2:
+            phase2_preds[phase2_preds<np.pi] = phase2_preds[phase2_preds<np.pi]+2*np.pi
+            legend_colours.append(FigConfig.colour_config[clrs][iclr])
+            legend_linestyles.append(lnst)
+        
+        trace = scipy.stats.circmean(phase2_preds[:,:],high = hi, low = lo, axis = 0)
+        lower = np.zeros_like(trace); higher = np.zeros_like(trace)
+        for x in range(lower.shape[0]):
+            lower[x], higher[x] =  utils_math.hpd_circular(phase2_preds[:,x], 
+                                                            mass_frac = 0.95, 
+                                                            high = hi, 
+                                                            low = lo) #% (np.pi*2)
+        
+        if round(trace[-1],6) not in unique_traces and not np.any(abs(np.diff(trace))>5):
+            unique_traces = np.append(unique_traces, round(trace[-1],6))
+            print('plotting...')    
+            ax.fill_between(pred2_range + np.nanmean(pred2_relevant), 
+                                  lower, 
+                                  higher, 
+                                  alpha = 0.2, 
+                                  facecolor = FigConfig.colour_config[clrs][iclr]
+                                    )
+            ax.plot((pred2_range + np.nanmean(pred2_relevant)), 
+                    trace, 
+                    color = FigConfig.colour_config[clrs][iclr], 
+                    linewidth = 1, 
+                    linestyle = lnst, 
+                    )
+        print(prcnt, trace[-1])
+            
+    ax.text(np.mean(xlim)+((xlim[1]-xlim[0])*0.75/4)*(iprcnt-1), 1.3*np.pi, f"{prcnt}", ha = 'center', color = FigConfig.colour_config[clrs][iclr])
+        
 
-ax.text(0.6, 180, f"head height {p_texts[3]}", ha = 'center', color = FigConfig.colour_config['headbars'])
+ax.text(np.mean(xlim), 1.5*np.pi, pct_text, color = FigConfig.colour_config[clrs][0], ha = 'center')
 
-ax.set_xlim(0,1.2)
-ax.set_ylim(138,180)
-ax.set_ylabel('Snout-body angle (deg)')
-ax.set_xlabel('Weight-adjusted head height')
-ax.set_xticks([0,0.4,0.8,1.2])
-ax.set_yticks([140,150,160,170,180])
+# axes 
+ax.set_ylim(ylim[0], ylim[1])
+ax.set_yticks(yticks)
+ax.set_yticklabels(yticklabels)
+ax.set_title(tlt, pad = 10)
+    
+ax.set_ylabel('Homologous phase,\npelvic girdle (rad)')
 
-lgd = ax.legend(loc = 'upper center',
-                bbox_to_anchor=(-0.2,-0.5,1.2,0.2), #0.055
-                mode="expand", 
-                borderaxespad=0,
-                borderpad = 0.2,
-                handlelength = 1.5,
-                # title = f"Setup ({p_texts[1]})", 
-                ncol = 1)
+plt.tight_layout(w_pad = 0)
 
-lgd._legend_box.align = 'center'
-
-fig.savefig(Path(FigConfig.paths['savefig_folder']) / f"{yyyymmdd}_snoutBodyAngles_vs_headHW_treadmill.svg",
-            bbox_extra_artists = (lgd, ), 
-            bbox_inches = 'tight')
-
-
-
+figtitle = f"MS3_{yyyymmdd}_homologous_headheight_trials_headHW_speeds.svg"
+plt.savefig(os.path.join(FigConfig.paths['savefig_folder'], figtitle), 
+            dpi = 300, 
+            )

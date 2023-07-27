@@ -44,16 +44,16 @@ class Config:
     p_thresholds = [0.05, 0.01, 0.001]
     
     colour_config = {
-        "forelimbs": "#df9b9b", # salmon
-        "hindlimbs": "#a3d4d7", # light teal
-        "headbars": "#7a7a7a", # dark grey
-        "main": "#377a7b", # teal
-        "neutral": "#bdbdbd", # light grey
-        "homologous" : ['#551B1B', '#882A2A', '#BC3939', '#D06767', '#DF9B9B'], # red tones
-        "homolateral": ['#234B4D', '#377A7B', '#4CA7A9', '#75BFC2', '#A3D4D7'], # turquoise tones
-        "diagonal": ['#4A4D23', '#777C37', '#A5AB4A', '#BDC374', '#D3D7A3'], # lime tones
-        "greys": ['#383838', '#595959', '#7A7A7A', '#9C9C9C', '#BDBDBD'],
-        "greys7": ['#CFCFCF', '#B2B2B2', '#969696', '#7A7A7A', '#5E5E5E', '#424242', '#262626'],
+        "forelimbs": "#cc6677", # salmon
+        "hindlimbs": "#44aa99", # light teal
+        "headbars": "#878787", # dark grey
+        "main": "#44aa99", # teal
+        "neutral": '#969696', # light grey
+        "homologous" : ['#993344', '#bf4055', '#cc6677', '#d98c99', '#e5b3bb'], # red tones
+        "homolateral": ['#276358', '#368779', '#44aa99', '#62c0b0', '#87cfc2'], # turquoise tones
+        "diagonal": ['#c0a830', '#d3bd50', '#ddcc77', '#e8dca1', '#f2ebca'], # lime tones
+        "greys": ['#878787', '#a1a1a1', '#bbbbbb', '#d4d4d4', '#ededed'],
+        "greys7": ['#262626','#424242','#7A7A7A', '#969696','#B2B2B2','#CFCFCF'],#'#5E5E5E',
         "mains8": ['#102323', '#21494A', '#326E6F', '#439495', '#59B2B4', '#7FC4C5', '#A4D5D6', '#CBE7E7']
         }
 
@@ -66,12 +66,20 @@ class AnyObjectHandler(HandlerBase):
             l2 = plt.Line2D([x0,y0+width], [0.2*height,0.2*height], linewidth = 1,
                                linestyle = orig_handle[1], color=orig_handle[0][1])
             return [l1, l2]
-        if len(orig_handle[0])>2:
+        if len(orig_handle[0])==3:
             l2 = plt.Line2D([x0,y0+width], [0.2*height,0.2*height], linewidth = 1,
                                linestyle = orig_handle[1], color=orig_handle[0][1])
             l3 = plt.Line2D([x0,y0+width], [0.8*height,0.8*height], linewidth = 1,
                                linestyle = orig_handle[1], color=orig_handle[0][2])
             return [l1, l2, l3]
+        if len(orig_handle[0])>3:
+            l2 = plt.Line2D([x0,y0+width], [0.2*height,0.2*height], linewidth = 1,
+                               linestyle = orig_handle[1], color=orig_handle[0][1])
+            l3 = plt.Line2D([x0,y0+width], [0.8*height,0.8*height], linewidth = 1,
+                               linestyle = orig_handle[1], color=orig_handle[0][2])
+            l4 = plt.Line2D([x0,y0+width], [1.1*height,1.1*height], linewidth = 1,
+                               linestyle = orig_handle[1], color=orig_handle[0][3])
+            return [l1, l2, l3, l4]
         else:
             return [l1]
         
