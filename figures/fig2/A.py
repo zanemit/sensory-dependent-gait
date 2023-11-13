@@ -110,6 +110,6 @@ plt.tight_layout(h_pad = 6)
 plt.text(0.03, 0.1, 'Probability\ndensity', ha = 'center', color = 'lightgrey', size = 6, transform = plt.gcf().transFigure)
 plt.text(0.03, 0.92, 'Snout-hump\nangle', ha = 'center', color = 'black', size = 6, transform = plt.gcf().transFigure)
 
-fig.savefig(Path(FigConfig.paths['savefig_folder']) / f"MS3_{yyyymmdd}_allPhaseHistogramsAVERAGED_POLAR_{param}{group_num}_ALL_{limbRef}_combinedTrials.svg")
+fig.savefig(Path(FigConfig.paths['savefig_folder']) / f"BENZON_{yyyymmdd}_allPhaseHistogramsAVERAGED_POLAR_{param}{group_num}_ALL_{limbRef}_combinedTrials.svg")
     
          

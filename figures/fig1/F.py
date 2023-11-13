@@ -24,7 +24,7 @@ minmaxs = ([],[])
 variable = 'CoMy_mean'
 clr = 'main'
 
-fig, ax = plt.subplots(1, 1, figsize=(1.55, 1.5))
+fig, ax = plt.subplots(1, 1, figsize=(1.55, 1.455))
 for im, m in enumerate(mice):
     df_sub = df[df['mouse'] == m]
     param_split = np.linspace(df_sub['param'].min()-0.0001, df_sub['param'].max(), param_num+1)
@@ -62,7 +62,7 @@ if (modLIN['Pr(>|t|)'][1] < FigConfig.p_thresholds).sum() == 0:
 ax.text(155,0.9, p_text, ha = 'center', color = FigConfig.colour_config[clr])
 
 ax.set_ylabel("Centre of pressure (cm)")
-ax.set_xlabel('Snout-hump angle (deg)')
+ax.set_xlabel('Snout-hump angle (deg)†')
 
 ax.set_xticks([135,145,155,165,175])
 ax.set_xlim(135,175)
@@ -72,4 +72,4 @@ ax.set_title("Head height trials")
 
 plt.tight_layout(w_pad = 0, pad = 0, h_pad = 0)
 
-fig.savefig(os.path.join(FigConfig.paths['savefig_folder'], f'MS2_{yyyymmdd}_CoMy_{param}.svg'))
+fig.savefig(os.path.join(FigConfig.paths['savefig_folder'], f'MS2_{yyyymmdd}_CoMy_{param}.svg'), dpi = 300, transparent = True)

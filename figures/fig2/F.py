@@ -101,8 +101,16 @@ for iprcnt, prcnt in enumerate(prcnts):
     refLimb = ''
     lnst = 'solid'
         
-    mu1 = np.asarray(beta1['(Intercept)']).reshape(-1,1) + np.asarray(beta1['pred1']).reshape(-1,1) * speed + np.asarray(beta1[pred]).reshape(-1,1) @ pred2_range.reshape(-1,1).T + np.asarray(beta1[nonpred]).reshape(-1,1) * param + np.asarray(beta1["pred2:pred3"]).reshape(-1,1) @ (pred2_range.reshape(-1,1).T *param) #the mean of the third predictor (if present) is zero because it was centred before modelling
-    mu2 = np.asarray(beta2['(Intercept)']).reshape(-1,1) + np.asarray(beta2['pred1']).reshape(-1,1) * speed + np.asarray(beta2[pred]).reshape(-1,1) @ pred2_range.reshape(-1,1).T + np.asarray(beta2[nonpred]).reshape(-1,1) * param + np.asarray(beta2["pred2:pred3"]).reshape(-1,1) @ (pred2_range.reshape(-1,1).T *param) 
+    mu1 = np.asarray(beta1['(Intercept)']).reshape(-1,1) +\
+            np.asarray(beta1['pred1']).reshape(-1,1) * speed +\
+            np.asarray(beta1[pred]).reshape(-1,1) @ pred2_range.reshape(-1,1).T +\
+            np.asarray(beta1[nonpred]).reshape(-1,1) * param +\
+            np.asarray(beta1["pred2:pred3"]).reshape(-1,1) @ (pred2_range.reshape(-1,1).T *param) #the mean of the third predictor (if present) is zero because it was centred before modelling
+    mu2 = np.asarray(beta2['(Intercept)']).reshape(-1,1) +\
+            np.asarray(beta2['pred1']).reshape(-1,1) * speed +\
+            np.asarray(beta2[pred]).reshape(-1,1) @ pred2_range.reshape(-1,1).T +\
+            np.asarray(beta2[nonpred]).reshape(-1,1) * param +\
+            np.asarray(beta2["pred2:pred3"]).reshape(-1,1) @ (pred2_range.reshape(-1,1).T *param) 
     phase2_preds[:,:] = np.arctan2(mu2, mu1)
     
     # compute and plot mean phases for three circular ranges so that the plots look nice and do not have lines connecting 2pi to 0
@@ -139,7 +147,10 @@ for iprcnt, prcnt in enumerate(prcnts):
                     linestyle = lnst, 
                     zorder =3
                     )
-        print(prcnt, trace[-1]) 
+        print("CHANGE", prcnt, trace[-1]-trace[0]) 
+        print((pred2_range + np.nanmean(pred2_relevant))[-1]-(pred2_range + np.nanmean(pred2_relevant))[0]) 
+        print("LOWER", lower[-1]-trace[0], lower[-1])
+        print("HIGHER", higher[-1]-trace[0], higher[-1])
     ax.text(np.mean(xlim)+((xlim[1]-xlim[0])*0.75/4)*(iprcnt-1), 1.3*np.pi, f"{prcnt}", ha = 'center', color = FigConfig.colour_config[clrs][iprcnt*2])  
     
 
@@ -230,4 +241,5 @@ plt.tight_layout(w_pad = 3)
 figtitle = f"MS3_{yyyymmdd}_homolateral_sBA_speeds.svg"
 plt.savefig(os.path.join(FigConfig.paths['savefig_folder'], figtitle), 
             dpi = 300, 
+            transparent = True
             )

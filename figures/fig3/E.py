@@ -18,18 +18,19 @@ from figures.fig_config import AnyObjectHandlerDouble
 refLimb = 'COMBINED'
 limb = 'homolateral'
 group_num = 5
+clrs = 'homolateral'
 
 legend_colours = np.empty((2, 0)).tolist()
 legend_linestyles = np.empty((2, 0)).tolist()
 
-fig, ax = plt.subplots(1,1,figsize = (1.5*1,1.5), sharey = True) # (1.7*2,1.7) for 4 columns
-for axid,yyyymmdd, appdx, param, clrs, ploc in zip(
-        [0,0],
-        ['2021-10-23', '2022-05-06'],
-        ['', ''],
-        ['snoutBodyAngle', 'snoutBodyAngle'],
-        ['greys', 'homolateral'],
-        [0.19, 0.205]
+fig, ax = plt.subplots(1,2,figsize = (1.5*2,1.5), sharey = True) # (1.7*2,1.7) for 4 columns
+for axid,yyyymmdd, appdx, param, iclr, ploc in zip(
+        [0,0,1],
+        ['2021-10-23', '2022-05-06', '2022-05-06'],
+        ['', '', ''],
+        ['snoutBodyAngle', 'snoutBodyAngle', 'trialType'],
+        [0, 3, 3],
+        [0.19, 0.205, 0.19]
         ):
     
     # load the combined rH1/lH1 ref dataset
@@ -43,8 +44,9 @@ for axid,yyyymmdd, appdx, param, clrs, ploc in zip(
     trot = idealGaitDict['trot'][limb]
     tgallopR = idealGaitDict['transverse_gallop_R'][limb] #transverse gallop w limbRef entering stance first! "nonref-leading"
     
-    if param == "headLVL":
-        df[param] = [int(d[3:])*-1 for d in df[param]]
+    if param == "trialType":
+        df['incline'] = [int(d[3:])*-1 for d in df[param]]
+        param = 'incline'
         data_split = np.linspace(df[param].min()-0.0000001, df[param].max(), group_num+1)   
     else:
         data_split = [141,147,154,161,167,174]
@@ -73,11 +75,19 @@ for axid,yyyymmdd, appdx, param, clrs, ploc in zip(
                                              ['solid', 'dashed'])):       
         sem = scipy.stats.sem(gait_cots, axis = 0, nan_policy = 'omit')  
         ci = sem * scipy.stats.t.ppf((1 + 0.95) / 2., gait_cots.shape[0]-1)   
-        ax.fill_between(np.arange(group_num), np.nanmean(gait_cots, axis = 0) - ci, np.nanmean(gait_cots, axis = 0) + ci, facecolor = FigConfig.colour_config[clrs][2], alpha = 0.2)
-        ax.plot(np.arange(group_num),  np.nanmean(gait_cots, axis = 0), color = FigConfig.colour_config[clrs][2], linestyle = lnst, linewidth = 1)
+        ax[axid].fill_between(np.arange(group_num), 
+                        np.nanmean(gait_cots, axis = 0) - ci, 
+                        np.nanmean(gait_cots, axis = 0) + ci, 
+                        facecolor = FigConfig.colour_config[clrs][iclr], 
+                        alpha = 0.2)
+        ax[axid].plot(np.arange(group_num),  
+                np.nanmean(gait_cots, axis = 0), 
+                color = FigConfig.colour_config[clrs][iclr], 
+                linestyle = lnst, 
+                linewidth = 1)
         
         if param == 'snoutBodyAngle':
-            legend_colours[ig].append( FigConfig.colour_config[clrs][2])
+            legend_colours[ig].append( FigConfig.colour_config[clrs][iclr])
             legend_linestyles[ig].append(lnst)
             
         
@@ -87,35 +97,41 @@ for axid,yyyymmdd, appdx, param, clrs, ploc in zip(
         p_text = ('*' * (pval < np.asarray(FigConfig.p_thresholds)).sum())
         if (pval < np.asarray(FigConfig.p_thresholds)).sum() == 0 and not np.isnan(pval):
             p_text = "n.s."
-            ax.text(ip, ploc+0.005, p_text, ha = 'center', color = FigConfig.colour_config[clrs][2])
+            ax[axid].text(ip, ploc+0.005, p_text, ha = 'center', color = FigConfig.colour_config[clrs][2])
         else:
-            ax.text(ip, ploc, p_text, ha = 'center', color = FigConfig.colour_config[clrs][2])
+            ax[axid].text(ip, ploc, p_text, ha = 'center', color = FigConfig.colour_config[clrs][2])
     
-    ax.set_yticks(np.linspace(0,0.28,5,endpoint = True))
-    ax.set_ylim(0,0.28)
+    ax[axid].set_yticks(np.linspace(0,0.28,5,endpoint = True))
+    ax[axid].set_ylim(0,0.28)
     
-    ax.set_xlim(-0.5, group_num-1)
-    ax.set_xticks(np.linspace(0, group_num-1, group_num, endpoint =True))
-    ax.set_xticklabels([f'{np.mean([keys[j].left,keys[j].right]):.0f}' for j in range(group_num)])
+    ax[axid].set_xlim(-0.5, group_num-1)
+    ax[axid].set_xticks(np.linspace(0, group_num-1, group_num, endpoint =True))
+    ax[axid].set_xticklabels([f'{np.mean([keys[j].left,keys[j].right]):.0f}' for j in range(group_num)])
 
-ax.set_ylabel("Dissimilarity (a.u.)")
-ax.set_xlabel('Incline (deg)')
-ax.set_xlabel('Snout-hump angle (deg)')
+ax[0].set_ylabel("Dissimilarity (a.u.)")
+ax[1].set_xlabel('Incline (deg)')
+ax[0].set_xlabel('Snout-hump angle (deg)')
 
+# lgd = fig.legend([(legend_colours[0],legend_linestyles[0]), 
+#                   (legend_colours[1],legend_linestyles[1])], 
+#                 ['trot', 'transverse\ngallop'],
+#                 handler_map={tuple: AnyObjectHandlerDouble()}, loc = 'lower left',
+#                 bbox_to_anchor=(0.95,0.3,0.5,0.8), mode="expand", borderaxespad=0.1,
+#                 title = "Idealised gait\nfor comparison", ncol = 1)    
 lgd = fig.legend([(legend_colours[0],legend_linestyles[0]), 
                   (legend_colours[1],legend_linestyles[1])], 
-                ['trot', 'transverse\ngallop'],
+                ['trot', 'transverse gallop'],
                 handler_map={tuple: AnyObjectHandlerDouble()}, loc = 'lower left',
-                bbox_to_anchor=(0.95,0.3,0.5,0.8), mode="expand", borderaxespad=0.1,
-                title = "Idealised gait\nfor comparison", ncol = 1)    
+                bbox_to_anchor=(0.2,0.95,0.7,0.3), mode="expand", borderaxespad=0.1,
+                title = "Idealised gait for comparison", ncol = 2)    
 
-ax.hlines(0.275, xmin = 0.01, xmax = 0.6, linestyle = 'solid', color = FigConfig.colour_config['homolateral'][2], linewidth = 1)
-ax.hlines(0.268, xmin = 0.01, xmax = 0.6, linestyle = 'dashed', color = FigConfig.colour_config['homolateral'][2], linewidth = 1)
-ax.text(0.7, 0.266, "slope trials")
-ax.hlines(0.251, xmin = 0.02, xmax = 0.6, linestyle = 'solid', color = FigConfig.colour_config['greys'][2], linewidth = 1)
-ax.hlines(0.244, xmin = 0.02, xmax = 0.6, linestyle = 'dashed', color = FigConfig.colour_config['greys'][2], linewidth = 1)
-ax.text(0.7, 0.242, "level trials")
-plt.tight_layout(w_pad = 0)    
+ax[0].hlines(0.275, xmin = 0.01, xmax = 0.6, linestyle = 'solid', color = FigConfig.colour_config['homolateral'][2], linewidth = 1)
+ax[0].hlines(0.268, xmin = 0.01, xmax = 0.6, linestyle = 'dashed', color = FigConfig.colour_config['homolateral'][2], linewidth = 1)
+ax[0].text(0.7, 0.266, "slope trials")
+ax[0].hlines(0.251, xmin = 0.02, xmax = 0.6, linestyle = 'solid', color = FigConfig.colour_config['homolateral'][0], linewidth = 1)
+ax[0].hlines(0.244, xmin = 0.02, xmax = 0.6, linestyle = 'dashed', color = FigConfig.colour_config['homolateral'][0], linewidth = 1)
+ax[0].text(0.7, 0.242, "level trials")
+plt.tight_layout(w_pad = 4)    
 
 figtitle = f"MS2_{yyyymmdd}_idealised_comparison_motorised.svg"
 plt.savefig(os.path.join(FigConfig.paths['savefig_folder'], figtitle), 

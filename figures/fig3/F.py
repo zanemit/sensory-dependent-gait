@@ -51,7 +51,7 @@ for i_data, (k, dir_str, param, param_df, data_split, yyyymmdd, appdx, tlt, clr)
                                    ['2022-08-18', '2022-08-18', '2022-08-18', '2021-10-23', '2022-05-06', '2022-05-06'],
                                    ['', '_incline', '_incline', '', '',  ''],
                                    ['Level trials', 'Slope trials', 'Slope trials', 'Level trials', 'Slope trials', 'Slope trials'],
-                                   ['homolateral', 'homolateral', 'homolateral', 'greys', 'greys', 'greys'],
+                                   ['greys', 'greys', 'greys', 'homolateral', 'homolateral', 'homolateral'],
                                    )):
     
     if i_data//3 == 0:

@@ -367,4 +367,27 @@ def WatsonU2_TwoTest(x, y):
     result = {"statistic": u2, "p": p, "n1": n1, "n2": n2}
     return(result)
   
+
+def segments_fit(X, Y, count):
+    """
+    multi-segment piecewise function
+    source: gist.github.com/ruoyu0088/70effade57483355bbd18b31d370f2a
+    """
+    xmin = X.min()
+    xmax = X.max()
+    seg = np.full(count-1, (xmax-xmin)/count)
+    px_init = np.r_[np.r_[xmin, seg].cumsum(), xmax]
+    py_init = np.array([Y[np.abs(X-x) < (xmax - xmin) * 0.01].mean() for x in px_init])
     
+    def func(p):
+        seg = p[:count-1]
+        py = p[count-1:]
+        px = np.r_[np.r_[xmin,seg].cumsum(), xmax]
+        return px, py
+    def err(p):
+        px, py = func(p)
+        Y2 = np.interp(X, px, py)
+        return np.mean((Y-Y2)**2)
+    from scipy import optimize
+    r = optimize.minimize(err, x0 = np.r_[seg, py_init], method = 'Nelder-Mead')
+    return func(r.x)   
