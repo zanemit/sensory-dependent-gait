@@ -12,10 +12,10 @@ import math
 import pickle
 import scipy.signal
 
-sys.path.append(r"C:\Users\MurrayLab\sensoryDependentGait")
+sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
-from preprocessing import data_loader, utils_processing, utils_math, mt_treadmill_data_manager
-from preprocessing.data_config import Config
+from processing import data_loader, utils_processing, utils_math, mt_treadmill_data_manager
+from processing.data_config import Config
 from figures.fig_config import Config as FigConfig
 
 def compute_mouse_speed(outputDir= Config.paths["mtTreadmill_output_folder"]):
@@ -152,8 +152,7 @@ def compute_locomotor_params(outputDir= Config.paths["mtTreadmill_output_folder"
                                                      yyyymmdd = yyyymmdd)
     body_heights, _ = data_loader.load_processed_data(outputDir, 
                                                     dataToLoad = 'bodyHeight', 
-                                                    yyyymmdd = yyyymmdd, 
-                                                    appdx = appdx)
+                                                    yyyymmdd = yyyymmdd)
     movement_dict, _ = data_loader.load_processed_data(outputDir, 
                                                        dataToLoad = 'movementDict', 
                                                        yyyymmdd = yyyymmdd)
@@ -200,7 +199,7 @@ def compute_locomotor_params(outputDir= Config.paths["mtTreadmill_output_folder"
     bodyheight_osc = np.empty((0))
     
     # save npy arrays containing x and y coords during locomotion
-    labels = ['lH1', 'rH1', 'lF1', 'rF1']
+    labels = ['lH1', 'lH2', 'rH1', 'rH2', 'lF1', 'lF2', 'rF1', 'rF2']#['lH1', 'rH1', 'lF1', 'rF1']
     array_x = np.empty((0, len(labels)))
     array_y = np.empty((0, len(labels)))
     array_speed = np.empty(0) # column = speed

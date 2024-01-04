@@ -28,8 +28,15 @@ def get_data(dataDir, outputDir = Config.paths["forceplate_data_folder"], yyyymm
         raise ValueError("Invalid directory entered!")
 
     # mouse weights reorganised with the passiveOpto code and moved to the forceplate dir
-    metadata_df = data_loader.load_processed_data(outputDir, dataToLoad='metadataProcessed')
+    metadata_df = data_loader.load_processed_data(outputDir, 
+                                                  dataToLoad='metadataProcessed',
+                                                  yyyymmdd = yyyymmdd)
     fps_db = pd.read_hdf(os.path.join(dataDir, 'fps_database.h5'))
+    
+    # import weight calibration data (weight-signal relationship)
+    # weightCalib, _ = data_loader.load_processed_data(outputDir = Config.paths["forceplate_output_folder"], 
+    #                                                  dataToLoad = 'weightCalibration', 
+    #                                                  yyyymmdd = yyyymmdd)
 
     # check if all files have the same frame rate
     if not np.all(np.diff(fps_db["fps"].astype(float)) == 0):
@@ -258,27 +265,38 @@ def weight_calibrate_dataframe(df, weightCalib_df, metadata_df, limb_labels = Co
         limb_labels (list) : list correcting load cell-limb association
                                             
     RETURNS:
-        df (multilevel dataframe) : the supplied df but modified to reflect the weight distributions relative to total weight
+        df (multilevel dataframe) : the supplied df but modified to reflect the weights on each sensor, not voltage signals 
+            for slope trials, this is the signal along the vertical axis (hypothenuse)
         headplate_df (multilevel dataframe) : weight fractions on the head fixation apparatus
+        df_bodyweight_frac (multilevel dataframe): the supplied df but modified to reflect the weight distributions relative to total weight
     """
     for limb in list(limb_labels.values()):
         df.loc[:, (slice(None), slice(None), slice(None), limb)] = (df.loc[:, (slice(None), slice(None), slice(None), limb)]  - weightCalib_df.loc['Intercept', limb]) / weightCalib_df.loc['Slope', limb] 
         # this df now represents weight distribution detected by the load cells
-        
+    
+    from copy import deepcopy
+    df_bodyweight_frac = deepcopy(df)
     mice = np.unique(df.columns.get_level_values(0))
     headplate_df = df.loc[:, (slice(None), slice(None), slice(None), 'rF')]
     headplate_df.columns = pd.MultiIndex.from_tuples([(x,y,z,'headplate') for x,y,z,e in headplate_df.columns], names = headplate_df.columns.names) # change 'rF' to 'headplate'
     headplate_df[:] = np.nan
     for m in mice:
         weight, _ = get_weight_age(metadata_df, m, expDate=Config.forceplate_config['head_height_exp'])
-        df.loc[:, (m, slice(None), slice(None), slice(None))] = df.loc[:, (m, slice(None), slice(None), slice(None))] / weight 
+        if 'deg' in headplate_df.columns.get_level_values(1)[0]: # slope trials
+            degs = np.unique(headplate_df.columns.get_level_values(1))    
+            for deg_str in degs:
+                deg = deg_str[3:]
+                df_bodyweight_frac.loc[:, (m, deg_str, slice(None), slice(None))] = df.loc[:, (m, deg_str, slice(None), slice(None))] / (weight / np.cos(abs(int(deg))*np.pi/180))
+        else:    
+            df_bodyweight_frac.loc[:, (m, slice(None), slice(None), slice(None))] = df.loc[:, (m, slice(None), slice(None), slice(None))] / weight 
     unique_trials = np.unique(np.asarray(df.columns.to_list())[:,:-1], axis = 0)
     for unt in unique_trials:
-        detected_weight = np.sum(df.loc[:, (unt[0],unt[1],unt[2], slice(None))], axis = 1)
+        detected_weight = np.sum(df_bodyweight_frac.loc[:, (unt[0],unt[1],unt[2], slice(None))], axis = 1)
         headplate_df.loc[:, (unt[0],unt[1],unt[2])] = 1-detected_weight
     # compute the sum of the four limbs for each trial (from the new df), then subtract that from the total weight
       
-    return df, headplate_df
+    return df, headplate_df, df_bodyweight_frac
+    # return df_bodyweight_frac, headplate_df
 
 
         

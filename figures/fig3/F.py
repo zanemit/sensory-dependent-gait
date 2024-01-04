@@ -43,7 +43,7 @@ for k, (data_split, tlt) in enumerate(zip([datasplit1, datasplit1, datasplit2],
 
 distributions = np.zeros((6, len(datasplit1)-1, 20)) * np.nan
 
-for i_data, (k, dir_str, param, param_df, data_split, yyyymmdd, appdx, tlt, clr) in enumerate(zip([0,1,2,0,1,2],
+for i_data, (k, dir_str, param, param_df, data_split, yyyymmdd, appdx, tlt, clr, clr_id) in enumerate(zip([0,1,2,0,1,2],
                                    [Config.paths["passiveOpto_output_folder"], Config.paths["passiveOpto_output_folder"], Config.paths["passiveOpto_output_folder"], Config.paths["mtTreadmill_output_folder"], Config.paths["mtTreadmill_output_folder"],  Config.paths["mtTreadmill_output_folder"]],
                                    ['snoutBodyAngle', 'snoutBodyAngle', 'incline', 'snoutBodyAngle', 'snoutBodyAngle','incline'],
                                    ['','','headLVL','','', 'trialType'],
@@ -52,6 +52,7 @@ for i_data, (k, dir_str, param, param_df, data_split, yyyymmdd, appdx, tlt, clr)
                                    ['', '_incline', '_incline', '', '',  ''],
                                    ['Level trials', 'Slope trials', 'Slope trials', 'Level trials', 'Slope trials', 'Slope trials'],
                                    ['greys', 'greys', 'greys', 'homolateral', 'homolateral', 'homolateral'],
+                                   [1,1,1,3,3,3]
                                    )):
     
     if i_data//3 == 0:
@@ -119,13 +120,13 @@ for i_data, (k, dir_str, param, param_df, data_split, yyyymmdd, appdx, tlt, clr)
         
     ax[k].fill_between(angles, 
                     radii,
-                    facecolor = FigConfig.colour_config[clr][2],
+                    facecolor = FigConfig.colour_config[clr][clr_id],
                     linewidth = 1,
                     alpha = 0.2)    
         
     ax[k].plot(y,
             x, 
-            color = FigConfig.colour_config[clr][2],
+            color = FigConfig.colour_config[clr][clr_id],
             linewidth = 2,
             zorder = 3)  
 
@@ -162,8 +163,8 @@ for inum, (i, angles, add_num) in enumerate(zip(d_id,
                           color = 'grey')
             
 
-lgd = fig.legend([([FigConfig.colour_config['homolateral'][2]],"solid"), 
-                ([FigConfig.colour_config['greys'][2]],"dashed")], 
+lgd = fig.legend([([FigConfig.colour_config['homolateral'][3]],"solid"), 
+                ([FigConfig.colour_config['greys'][1]],"solid")], 
                 ["head-fixed", "head-free"], 
                 handler_map={tuple: AnyObjectHandler()}, 
                 loc = 'upper center', bbox_to_anchor=(0.3,-0.25,0.5,0.2),

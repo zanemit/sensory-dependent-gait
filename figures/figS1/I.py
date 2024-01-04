@@ -97,7 +97,7 @@ ax.set_xlim(135,175)
 ax.set_ylim(-1.5,1)
 # ax.set_yticks([-0.5,0,0.5,1.0, 1.5])
 ax.set_title("Slope &                     trials", color = FigConfig.colour_config[clr])
-ax.text(148, 1.195, "head height", color = FigConfig.colour_config["diagonal"][2])
+ax.text(148, 1.345, "head height", color = FigConfig.colour_config["diagonal"][2])
 
 plt.tight_layout(w_pad = 0, pad = 0, h_pad = 0)
     

@@ -44,7 +44,7 @@ for im, m in enumerate(mice):
 
 # fore-hind and comxy plot means
 variable_str = 'CoMy'
-title = 'anteroposterior CoP'
+title = 'anteroposterior CoS'
 
 modLIN = pd.read_csv(Path(Config.paths["forceplate_output_folder"]) / f"{yyyymmdd}_mixedEffectsModel_linear_{variable_str}_{param}.csv")
 print(f"{variable} is modulated by {(modLIN['Estimate'][1]*Config.forceplate_config['fore_hind_post_cm']*100/2):.1f} ± {(modLIN['Std. Error'][1]*Config.forceplate_config['fore_hind_post_cm']*100/2):.1f} mm/deg")
@@ -61,7 +61,7 @@ if (modLIN['Pr(>|t|)'][1] < FigConfig.p_thresholds).sum() == 0:
     p_text += "n.s."
 ax.text(155,0.9, p_text, ha = 'center', color = FigConfig.colour_config[clr])
 
-ax.set_ylabel("Centre of pressure (cm)")
+ax.set_ylabel("Centre of support (cm)")
 ax.set_xlabel('Snout-hump angle (deg)†')
 
 ax.set_xticks([135,145,155,165,175])

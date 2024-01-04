@@ -169,7 +169,7 @@ stds = np.nanstd(phase_preds_sum, axis = 0)
 
 CoMy_range = np.linspace(CoMy_sBAmin, CoMy_sBAmax, pred_num)
 meds = []
-for i, (clr, lbl) in enumerate(zip([FigConfig.colour_config['homolateral'][0], FigConfig.colour_config['greys'][2]],
+for i, (clr, lbl) in enumerate(zip([FigConfig.colour_config['homolateral'][2], FigConfig.colour_config['greys7'][0]],
                                  [ 'Surface slope', 'Head height'])): #iterate over conditions
     med = np.nanmedian(phase_preds_sum[:,:,i], axis=0)
     meds.append(med[-1])
@@ -191,7 +191,7 @@ for i, (clr, lbl) in enumerate(zip([FigConfig.colour_config['homolateral'][0], F
                     color = 'black',
                     )
         
-ax.set_xlim(-0.05, -0.5)    
+ax.set_xlim(-0.05, -0.52)    
 ax.set_xticks(np.linspace(-0.1,-0.5,5)[[0,2,4]] )
 ax.tick_params(axis = 'both', which = 'major', labelsize = tsize) 
 ax.set_ylim(-np.pi,0.5*np.pi)
@@ -199,7 +199,7 @@ ax.set_yticks([-np.pi,-0.5*np.pi,0,0.5*np.pi])
 ax.set_yticklabels(["-π", "-0.5π", "0", "0.5π"], size = tsize)
 
 ax.set_ylabel("Homolateral phase\nshift (rad)", size = tsize)
-ax.set_xlabel("Anteroposterior CoP\nshift (cm)", size = tsize)
+ax.set_xlabel("Anteroposterior CoS\nshift (cm)", size = tsize)
 
 ax.vlines(x = CoMy_range[-1]-0.02, 
                 ymin = meds[0], 

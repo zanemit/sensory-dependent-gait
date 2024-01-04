@@ -27,7 +27,7 @@ for axid, appdx, param, clrs, ploc in zip(
         [0,1,1],
         ['_incline', '', '_incline'],
         ['headLVL', 'snoutBodyAngle', 'snoutBodyAngle'],
-        ['homolateral', 'greys', 'homolateral'],
+        ['homolateral', 'greys7', 'homolateral'],
         [0.033, 0.033, 0.046]
         ):
     
@@ -67,16 +67,17 @@ for axid, appdx, param, clrs, ploc in zip(
             
             trot_cots[im, i] = utils_math.circular_optimal_transport(trot*2*np.pi, grouped_dict[gkey]*2*np.pi)
             tgallopR_cots[im, i] = utils_math.circular_optimal_transport(tgallopR*2*np.pi, grouped_dict[gkey]*2*np.pi)
-            
+     
+    clr_id = 2 if clrs == 'homolateral' else 0
     for ig, (gait_cots, lnst) in enumerate(zip([trot_cots, tgallopR_cots],
                                              ['solid', 'dashed'])):       
         sem = scipy.stats.sem(gait_cots, axis = 0, nan_policy = 'omit')  
-        ci = sem * scipy.stats.t.ppf((1 + 0.95) / 2., gait_cots.shape[0]-1)   
-        ax[axid].fill_between(np.arange(group_num), np.nanmean(gait_cots, axis = 0) - ci, np.nanmean(gait_cots, axis = 0) + ci, facecolor = FigConfig.colour_config[clrs][2], alpha = 0.2)
-        ax[axid].plot(np.arange(group_num),  np.nanmean(gait_cots, axis = 0), color = FigConfig.colour_config[clrs][2], linestyle = lnst, linewidth = 1)
+        ci = sem * scipy.stats.t.ppf((1 + 0.95) / 2., gait_cots.shape[0]-1)  
+        ax[axid].fill_between(np.arange(group_num), np.nanmean(gait_cots, axis = 0) - ci, np.nanmean(gait_cots, axis = 0) + ci, facecolor = FigConfig.colour_config[clrs][clr_id], alpha = 0.2)
+        ax[axid].plot(np.arange(group_num),  np.nanmean(gait_cots, axis = 0), color = FigConfig.colour_config[clrs][clr_id], linestyle = lnst, linewidth = 1)
         
         if param == 'snoutBodyAngle':
-            legend_colours[ig].append( FigConfig.colour_config[clrs][2])
+            legend_colours[ig].append( FigConfig.colour_config[clrs][clr_id])
             legend_linestyles[ig].append(lnst)
             
         
@@ -86,9 +87,9 @@ for axid, appdx, param, clrs, ploc in zip(
         p_text = ('*' * (pval < np.asarray(FigConfig.p_thresholds)).sum())
         if (pval < np.asarray(FigConfig.p_thresholds)).sum() == 0 and not np.isnan(pval):
             p_text = "n.s."
-            ax[axid].text(ip, ploc+0.005, p_text, ha = 'center', color = FigConfig.colour_config[clrs][2])
+            ax[axid].text(ip, ploc+0.005, p_text, ha = 'center', color = FigConfig.colour_config[clrs][clr_id])
         else:
-            ax[axid].text(ip, ploc, p_text, ha = 'center', color = FigConfig.colour_config[clrs][2])
+            ax[axid].text(ip, ploc, p_text, ha = 'center', color = FigConfig.colour_config[clrs][clr_id])
     
     ax[axid].set_yticks(np.linspace(0.04,0.28,7,endpoint = True))
     ax[axid].set_ylim(0.03,0.28)
@@ -111,8 +112,8 @@ lgd = fig.legend([(legend_colours[0],legend_linestyles[0]),
 ax[1].hlines(0.275, xmin = 0.01, xmax = 0.6, linestyle = 'solid', color = FigConfig.colour_config['homolateral'][2], linewidth = 1)
 ax[1].hlines(0.268, xmin = 0.01, xmax = 0.6, linestyle = 'dashed', color = FigConfig.colour_config['homolateral'][2], linewidth = 1)
 ax[1].text(0.7, 0.266, "surface slope")
-ax[1].hlines(0.256, xmin = 0.02, xmax = 0.6, linestyle = 'solid', color = FigConfig.colour_config['greys'][2], linewidth = 1)
-ax[1].hlines(0.249, xmin = 0.02, xmax = 0.6, linestyle = 'dashed', color = FigConfig.colour_config['greys'][2], linewidth = 1)
+ax[1].hlines(0.256, xmin = 0.02, xmax = 0.6, linestyle = 'solid', color = FigConfig.colour_config['greys7'][0], linewidth = 1)
+ax[1].hlines(0.249, xmin = 0.02, xmax = 0.6, linestyle = 'dashed', color = FigConfig.colour_config['greys7'][0], linewidth = 1)
 ax[1].text(0.7, 0.247, "head height")
 plt.tight_layout(w_pad = 4)    
 

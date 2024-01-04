@@ -6,12 +6,12 @@ import numpy as np
 import scipy.stats
 from matplotlib import pyplot as plt
 
-sys.path.append(r"C:\Users\MurrayLab\SensoryDependentGait")
+sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
 from processing import data_loader, utils_processing
 from processing.data_config import Config
-from figures_benzon.fig_config import Config as FigConfig
-from figures_benzon.fig_config import AnyObjectHandlerDouble, AnyObjectHandler
+from figures.fig_config import Config as FigConfig
+from figures.fig_config import AnyObjectHandlerDouble, AnyObjectHandler
 
 param = 'speed'
 group_num = 5
@@ -41,7 +41,7 @@ arr = np.empty((mouse_len, group_num, 2)) # mouse_num, group_num, sync/alt, mtTR
 arr[:] = 0
 
 # PLOT
-fig, ax = plt.subplots(1, 1, figsize=(3.25, 3.25))
+fig, ax = plt.subplots(1, 1, figsize=(1.55, 1.5))
 
 legend_colours = np.empty((2, 0)).tolist()
 legend_linestyles = np.empty((2, 0)).tolist()
@@ -92,7 +92,7 @@ for i, (lnst, tlt) in enumerate(zip(['solid', 'dashed'],
     ax.plot(np.arange(group_num),
             np.nanmean(arr[:,:,i], axis = 0),
             color = FigConfig.colour_config[clr][clr_id],  
-            linewidth = 2,
+            linewidth = 1,
             linestyle = lnst,
             label = tlt
             )
@@ -134,7 +134,7 @@ lgd2 = fig.legend([(lgd_actors2[0][0], "dashed"), (lgd_actors2[1][0], "solid")],
 
 plt.tight_layout()
 
-figtitle = f"BENZON_{yyyymmdd}_strict_gait_fractions_homologous_mtTreadmill.svg"
+figtitle = f"MS2_{yyyymmdd}_strict_gait_fractions_homologous_mtTreadmill.svg"
     
 plt.savefig(os.path.join(FigConfig.paths['savefig_folder'], figtitle), 
                 dpi = 300, 

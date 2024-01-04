@@ -452,3 +452,10 @@ def populate_nested_dict(targetDict, dataToAdd, metadataLVL):
         targetDict[a] = dataToAdd
     
     return targetDict
+
+def interpolate_between_vals(vals, points_between):
+    vals_out = []
+    for i in range(len(vals)-1):
+        vals_out = np.concatenate((vals_out, [vals[i]], np.linspace(vals[i], vals[i+1], points_between)))
+    vals_out = np.append(vals_out, vals[-1])
+    return vals_out

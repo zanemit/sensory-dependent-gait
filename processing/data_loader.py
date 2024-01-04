@@ -47,6 +47,7 @@ def load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"],
         limbX_speed (passiveOpto)
         limbX_bodyAngles (passiveOpto)
         supportFractions (passiveOpto/mtTreadmill)
+        supportFractionsMerged (passiveOpto/mtTreadmill)
         modePhases (passiveOpto/mtTreadmill)
         mtLimbData (mtTreadmill)
         mtOtherData (mtTreadmill)
@@ -350,6 +351,18 @@ def load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"],
                 limbs = np.unique([f[-7:-4] for f in os.listdir(outputDir) if f.endswith('.csv') and f'supportFractions{appdx}' in f and yyyymmdd in f])
                 limb = input(limbs)
             path = outputDir / (yyyymmdd + f'_supportFractions{appdx}_{limb}.csv')
+            data = pd.read_csv(path)
+            return data, yyyymmdd, limb
+        elif dataToLoad == 'strideParamsMerged':
+            print("Loading array of support fractions merged with stride params...")
+            if yyyymmdd == None:
+                fileDates = np.unique([f[:10] for f in os.listdir(outputDir) if f.endswith('.csv') and f'strideParamsMerged{appdx}' in f])
+                yyyymmdd = input(fileDates)
+            if limb == None:
+                print("Pick a reference limb!")
+                limbs = np.unique([f[-7:-4] for f in os.listdir(outputDir) if f.endswith('.csv') and f'strideParamsMerged{appdx}' in f and yyyymmdd in f])
+                limb = input(limbs)
+            path = outputDir / (yyyymmdd + f'_strideParamsMerged{appdx}_{limb}.csv')
             data = pd.read_csv(path)
             return data, yyyymmdd, limb
         elif dataToLoad == 'modePhases':

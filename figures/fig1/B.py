@@ -32,7 +32,7 @@ metadata_df = data_loader.load_processed_data(outputDir = Config.paths["forcepla
     
 t_smr = np.linspace(0, Config.forceplate_config["trial_duration"], df.shape[0])
 
-df_v, headplate_df = forceplate_data_manager.weight_calibrate_dataframe(df, weightCalib, metadata_df)
+df, headplate_df, df_v = forceplate_data_manager.weight_calibrate_dataframe(df, weightCalib, metadata_df)
 fig_cols = []
 limbs = ['rF', 'rH', 'lF', 'lH']
 

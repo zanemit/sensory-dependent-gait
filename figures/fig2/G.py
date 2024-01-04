@@ -170,7 +170,7 @@ clr = FigConfig.colour_config[dataLabelDict[limb]][2]
 
 clrs = [ FigConfig.colour_config[dataLabelDict[limb]][2],
         FigConfig.colour_config[dataLabelDict[limb]][2],
-        FigConfig.colour_config['greys'][2],
+        FigConfig.colour_config['greys7'][0],
         FigConfig.colour_config[dataLabelDict[limb]][0]]
 
 for i, (colnum, xpos) in enumerate(zip([-4,-3,-2,-1], [u+0.3, u+1+0.3, u+2+0.3, u+3+0.3])):   

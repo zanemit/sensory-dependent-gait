@@ -38,28 +38,15 @@ for im, m in enumerate(mice):
              alpha=0.4, 
              linewidth = 1)
 
-yyyymmdd = '2022-04-0x'  
-df, _ = data_loader.load_processed_data(outputDir = Config.paths["forceplate_output_folder"], 
-                                               dataToLoad="meanParamDF", 
-                                               yyyymmdd = yyyymmdd, 
-                                               appdx = '_levels_COMBINED')                
+            
 # fore-hind and comxy plot means
 variable_str = 'CoMx'
-title = 'mediolateral CoP'
+title = 'mediolateral CoS'
 meta_p = []
 
-modLINint = pd.read_csv(Path(Config.paths["forceplate_output_folder"]) / f"{yyyymmdd}_mixedEffectsModel_linear_{variable_str}_{param}_interactionTRUE.csv")
-modLINint_aic = pd.read_csv(Path(Config.paths["forceplate_output_folder"]) / f"{yyyymmdd}_mixedEffectsModel_AICRsq_{variable_str}_{param}_interactionTRUE.csv")
-modLIN_aic = pd.read_csv(Path(Config.paths["forceplate_output_folder"]) / f"{yyyymmdd}_mixedEffectsModel_AICRsq_{variable_str}_{param}.csv")
 
-is_int_aic_better = float(modLINint_aic[modLINint_aic['Model'] == 'Linear'][modLINint_aic['Metric'] == 'AIC']['Value']) < \
-                    float(modLIN_aic[modLIN_aic['Model'] == 'Linear'][modLIN_aic['Metric'] == 'AIC']['Value'])
-if (modLINint['Pr(>|t|)'][3] < FigConfig.p_thresholds[0]).sum()>0 and is_int_aic_better:
-    modLIN = modLINint
-    interaction = True
-else:
-    modLIN = pd.read_csv(Path(Config.paths["forceplate_output_folder"]) / f"{yyyymmdd}_mixedEffectsModel_linear_{variable_str}_{param}.csv")
-    interaction = False
+modLIN = pd.read_csv(Path(Config.paths["forceplate_output_folder"]) / f"{yyyymmdd}_mixedEffectsModel_linear_{variable_str}_{param}.csv")
+
 
 print(f"{variable} is modulated by {(modLIN['Estimate'][1]*Config.forceplate_config['fore_hind_post_cm']*100/2):.2f} ± {(modLIN['Std. Error'][1]*Config.forceplate_config['fore_hind_post_cm']*100/2):.2f} mm/deg")
     
@@ -80,9 +67,9 @@ ax.text(0,0.9, p_text, ha = 'center', color = FigConfig.colour_config[clr][2])
 
 
 legend_colours.append(FigConfig.colour_config[clr])
-meta_p.append((modLIN['Pr(>|t|)'][2] < FigConfig.p_thresholds).sum())
+meta_p.append((modLIN['Pr(>|t|)'][1] < FigConfig.p_thresholds).sum())
        
-ax.set_ylabel("Centre of pressure (cm)")
+ax.set_ylabel("Centre of support (cm)")
 ax.set_xlabel('Incline (deg)')
 
 ax.set_xticks([-40,-20,0,20,40])

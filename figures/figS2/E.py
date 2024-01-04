@@ -1,115 +1,115 @@
 import sys
 from pathlib import Path
-import os
 import pandas as pd
+import os
 import numpy as np
-import seaborn as sns
+import scipy.stats
 from matplotlib import pyplot as plt
 
 sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
-from processing import data_loader
+from processing import data_loader, utils_processing, utils_math
 from processing.data_config import Config
 from figures.fig_config import Config as FigConfig
-from figures.fig_config import AnyObjectHandler
+from figures.fig_config import AnyObjectHandlerDouble
 
-yyyymmdd = '2022-08-18'
-param = 'headHW'
-colname = 'medianSpeed'
-clr = FigConfig.colour_config['neutral']
-group_num = 5
-appdx = ''
-p_tlt = 'head height'
+import random
 
-df, yyyymmdd = data_loader.load_processed_data(dataToLoad = 'locomParamsAcrossMice', 
-                                               yyyymmdd = yyyymmdd,
-                                               appdx = '')
+refLimb = 'lH1'
+group_num = 4
+param = 'snoutBodyAngle'
+fig, ax = plt.subplots(3, 1, figsize=(1.7, 1.5), sharex = True)
+bin_num = 20
+xmin = 140
+xmax = 180
+ymax = 0.15
+N_bootstrap = 1000
+N_resample = 100
+bootstrap_arr = np.empty((N_bootstrap, 3)) * np.nan
 
-# subset mice
-for m in np.setdiff1d(np.unique(df['mouseID']), Config.passiveOpto_config['mice']):
-    df = df[df['mouseID'] != m]
+for axid, (cfg, yyyymmdd, clr, lnst, mice, appdx,lbl,a, quintile) in enumerate(zip(
+        [Config.paths["mtTreadmill_output_folder"], Config.paths["passiveOpto_output_folder"], Config.paths["passiveOpto_output_folder"]],
+        ['2021-10-23',  '2022-08-18',  '2022-08-18'],
+        [FigConfig.colour_config['greys'][0],FigConfig.colour_config['homolateral'][0], FigConfig.colour_config['homolateral'][2]],
+        ['solid', 'solid','solid'],
+        [Config.mtTreadmill_config['mice_level'],  Config.passiveOpto_config['mice'], Config.passiveOpto_config['mice']],
+        ['',  '', ''],
+        ['Motorised: level trials', 'Passive: head low', 'Passive: head high'],
+        [0.1,0.1,0.1],
+        [None, 20, 80]
+        )):   
+
+    #TODO: should load the combined dataset (should save it from R first!) to have correct centred vals!
+    df, _, _ = data_loader.load_processed_data(outputDir = cfg, 
+                                                   dataToLoad="strideParams", 
+                                                   yyyymmdd = yyyymmdd, 
+                                                   appdx = appdx,
+                                                   limb = 'lH1')
+        
+    histAcrossMice = np.empty((len(mice), bin_num)) * np.nan
     
-
-df['headLVL'] = [-int(h[3:]) if 'deg' in h else h for h in df['headLVL']]
-df['stimFreq_num'] = [int(x[:-2]) for x in df['stimFreq']]
-
-# df_tt = df[df['trialType']=='headHeight']
-
-fig, ax = plt.subplots(1,1, figsize = (1.55,1.5))
-
-xvals_all = []
-for im, m in enumerate(np.unique(df['mouseID'])):
-    df_m = df[df['mouseID'] == m]
-    param_split = np.linspace(df_m[param].min()-0.0001, df_m[param].max(), group_num+1)
-    xvals = [np.mean((a,b,)) for a,b in zip(param_split[:-1], param_split[1:])]
-    df_grouped = df_m.groupby(pd.cut(df_m[param], param_split)) 
-    group_row_ids = df_grouped.groups
+    if cfg == Config.paths["passiveOpto_output_folder"]:
+        # HH-specific computation
+        hh_quintile = np.percentile(df['headHW'],quintile)
+        df = df[df['headHW'] < hh_quintile]
     
-    yvals = [np.nanmean(df_m.loc[val,colname].values) for key,val in group_row_ids.items()]
-   
-    ax.plot(xvals, 
-                  yvals,   
-                  alpha=0.3, 
-                  linewidth = 0.5, 
-                  color = clr)
+    for im, m in enumerate(mice):
+        df_sub = df[df['mouseID'] == m]
+        
+        values = df_sub[param][~np.isnan(df_sub[param])] 
+            
+        print(len(values))
+        if values.shape[0] < (2*bin_num): # accept only mouse-condition subsets that contain >3sd entries
+            print(f"Mouse {m} excluded because there are only {values.shape[0]} valid trials!")
+            continue
+                
+        # histograms
+        n, bins, patches = ax[axid].hist(values, 
+                                         bin_num, 
+                                         range = (xmin,xmax), 
+                                         color = clr, 
+                                         density = True, 
+                                         alpha = a) #hatch='////', fill=True, edgecolor = Config.colour_config[d],
+        bins_mean = bins[:-1] + np.diff(bins)
+        histAcrossMice[im,:] = n
+    histAcrossMice_mean = np.nanmean(histAcrossMice, axis = 0)    
+    bins_points = np.concatenate(([bins[0]], np.repeat(bins[1:-1],2), [bins[-1]]))
+    histo_points = np.repeat(histAcrossMice_mean,2)
+    ax[axid].plot(bins_points, 
+                  histo_points, 
+                  color = clr, 
+                  linewidth = 2,
+                  linestyle = lnst)
+    ax[axid].set_ylim(0,ymax)
+    ax[axid].text(xmin+0.005*xmin, ymax, lbl, color = clr)
+    ax[axid].set_yticks([0,0.15])
     
-    xvals_all.append(np.min(xvals))
-    xvals_all.append(np.max(xvals))   
+    # for ni in range(N_bootstrap):
+    #     sample = np.empty(len(mice) * N_resample) * np.nan
+    #     for im, m in enumerate(mice):
+    #         df_sub = df[df['mouseID'] == m]
+    #         values = df_sub[param][~np.isnan(df[param])] 
+    #         if len(values) > N_resample:
+    #             sample[(im*N_resample): (im*N_resample+N_resample)] = random.sample(list(values), N_resample)
+    #     bootstrap_arr[ni, axid] = np.nanmean(sample)
 
-ax.set_ylim(0,100)
-ax.set_yticks(np.linspace(0,100,6,endpoint=True))
-      
-mod_types = ['linear', 'quadratic']
-mod_AIC = pd.read_csv(os.path.join(Config.paths['passiveOpto_output_folder'], f"{yyyymmdd}_mixedEffectsModel_AICRsq_{colname}_v_stimFreq_{param}{appdx}.csv"))
-AICs = [mod_AIC['Value'].loc[np.where((mod_AIC['Model']==mod_types[0].capitalize()) & (mod_AIC['Metric']=='AIC'))[0][0]],
-        mod_AIC['Value'].loc[np.where((mod_AIC['Model']==mod_types[1].capitalize()) & (mod_AIC['Metric']=='AIC'))[0][0]]]
-
-selected_type = mod_types[np.argmin(AICs)]
-
-mod = pd.read_csv(os.path.join(Config.paths['passiveOpto_output_folder'], f"{yyyymmdd}_mixedEffectsModel_{selected_type}_{colname}_v_stimFreq_{param}{appdx}.csv"))
-
-x_centered = np.asarray(df[param])-np.mean(df[param])
-mean_stimFreq = np.nanmean(df['stimFreq_num'])
-
-x_pred = np.linspace(np.min(xvals_all)-np.mean(df[param]), np.max(xvals_all)-np.mean(df[param]), endpoint=True)
-# if param == 'headLVL' or trialType == 'headHeight':
-if selected_type == 'linear':
-    y_pred = mod['Estimate'][0] + mod['Estimate'][2] * x_pred + np.nanmean(df[colname])
-elif selected_type == 'quadratic':
-    y_pred = mod['Estimate'][0] + mod['Estimate'][2]*x_pred + mod['Estimate'][3]*x_pred**2 + np.nanmean(df[colname])    
-
-x_pred += np.mean(df[param])
-ax.plot(x_pred, 
-           y_pred, 
-           linewidth=1, 
-           color = clr)
-
-# p-values
-p_text = p_tlt + ' ' + ('*' * (mod['Pr(>|t|)'][2] < FigConfig.p_thresholds).sum())
-if (mod['Pr(>|t|)'][2] < FigConfig.p_thresholds).sum() == 0:
-    p_text += "n.s."
-ax.text(0.52, 1.05-0.13, p_text, ha = 'center', 
-        color = clr, 
-        transform=ax.transAxes)
-
-
-# try:
-#     ax.get_legend().remove()  
-# except:
-#     pass
-
-    
-ax.set_xlabel('Weight-adjusted head height')
-ax.set_xticks(np.linspace(0,1.2,4,endpoint = True))
-
-ax.set_ylabel('Median speed (cm/s)')
-
+# bootstrap_df = pd.DataFrame(bootstrap_arr, columns = ['motorised', 'passive-low', 'passive-high'])
+        
+ax[2].set_xlabel("Snout-hump angle (deg)")
+ax[1].set_ylabel("Probability density")
 plt.tight_layout()
-# # plt.tight_layout()
 
-
-fig.savefig(Path(FigConfig.paths['savefig_folder']) / f"MS2_{yyyymmdd}_locomParamsAcrossMice_medSpeed_vs_stimFreq_headHW.svg", dpi=300)
-
-
-
- 
+# STATISTICS
+import scipy.stats
+import itertools
+combs = list(itertools.combinations(np.arange(axid+1), 2))
+n_c = len(combs)
+# for c in combs:
+#     t,p = scipy.stats.ttest_ind(bootstrap_df.iloc[:,c[0]], 
+#                                 bootstrap_df.iloc[:,c[1]], 
+#                                 nan_policy = 'omit')  
+#     print(f"{bootstrap_df.columns[c[0]]} vs {bootstrap_df.columns[c[1]]}: t = {t:.2f}, p = {p:E}")
+        
+fig.savefig(Path(FigConfig.paths['savefig_folder']) / f"passiveOpto_SBA_motorised_v_passive_HISTOGRAMS.svg",
+            dpi =300)
+            

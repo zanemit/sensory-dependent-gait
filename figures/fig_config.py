@@ -48,12 +48,13 @@ class Config:
         "hindlimbs": "#44aa99", # light teal
         "headbars": "#878787", # dark grey
         "main": "#44aa99", # teal
+        "main2": "#103B34", # dark teal 
         "neutral": '#969696', # light grey
         "homologous" : ['#993344', '#bf4055', '#cc6677', '#d98c99', '#e5b3bb'], # red tones
         "homolateral": ['#276358', '#368779', '#44aa99', '#62c0b0', '#87cfc2'], # turquoise tones
         "diagonal": ['#c0a830', '#d3bd50', '#ddcc77', '#e8dca1', '#f2ebca'], # lime tones
-        "greys": ['#878787', '#a1a1a1', '#bbbbbb', '#d4d4d4', '#ededed'],
-        "greys7": ['#262626','#424242','#7A7A7A', '#969696','#B2B2B2','#CFCFCF'],#'#5E5E5E',
+        "greys": ['#676667', '#878787', '#a1a1a1', '#bbbbbb', '#d4d4d4', '#ededed'],
+        "greys7": ['#262626','#424242','#7A7A7A', '#969696','#B2B2B2','#CFCFCF', '#5E5E5E'],
         "mains8": ['#102323', '#21494A', '#326E6F', '#439495', '#59B2B4', '#7FC4C5', '#A4D5D6', '#CBE7E7']
         }
 

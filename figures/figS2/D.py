@@ -36,7 +36,7 @@ for axi, (outputDir, expDate, tlt) in enumerate(zip([Config.paths["passiveOpto_o
                                                ['2022-08-18', '2021-10-23'],
                                                ['Passive treadmill', 'Motorised treadmill'])):
     df, yyyymmdd, limb = data_loader.load_processed_data(outputDir = outputDir,
-                                                         dataToLoad = 'supportFractions', 
+                                                         dataToLoad = 'supportFractionsMerged', 
                                                          yyyymmdd = expDate,
                                                          appdx = appdx,
                                                          limb = refLimb)
@@ -88,6 +88,6 @@ ax[0].set_ylabel('Fraction of limb support')
 
 fig.tight_layout(pad=0.5)
 
-fig.savefig(Path(FigConfig.paths['savefig_folder']) / f"MS2_{yyyymmdd}_limbSupports.svg",
-            bbox_extra_artists = (lgd, ), 
-            bbox_inches = 'tight')
+# fig.savefig(Path(FigConfig.paths['savefig_folder']) / f"MS2_{yyyymmdd}_limbSupports.svg",
+#             bbox_extra_artists = (lgd, ), 
+#             bbox_inches = 'tight')

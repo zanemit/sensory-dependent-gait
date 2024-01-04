@@ -36,7 +36,7 @@ for im, m in enumerate(mice):
              
 # fore-hind and comxy plot means
 variable_str = 'CoMy'
-title = 'anteroposterior CoP'
+title = 'anteroposterior CoS'
 
 modQDR = pd.read_csv(Path(Config.paths["forceplate_output_folder"]) / f"{yyyymmdd}_mixedEffectsModel_quadratic_{variable_str}_{param}.csv")
 
@@ -54,7 +54,7 @@ if (modQDR['Pr(>|t|)'][1] < FigConfig.p_thresholds).sum() == 0:
     p_text += "n.s."
 ax.text(0.6,0.9, p_text, ha = 'center', color = FigConfig.colour_config[clr])
         
-ax.set_ylabel("Centre of pressure (cm)")
+ax.set_ylabel("Centre of support (cm)")
 ax.set_xlabel('Weight-adjusted head height')
 
 ax.set_xticks([0,0.6,1.2])

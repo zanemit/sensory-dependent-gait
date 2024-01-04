@@ -65,12 +65,12 @@ for icon, (cond, cond_t) in enumerate(zip(conditions, cond_titles)):  # loop ove
                       linewidth=2, 
                       zorder=3)
 
-    ax[icon].set_xlabel('Mediolateral\ncentre of pressure')
+    ax[icon].set_xlabel('Mediolateral\ncentre of support')
     ax[icon].xaxis.labelpad = 10
     ax[icon].set_title(cond_t)
 ax[0].set_ylim(-1, 1)
 ax[0].set_yticks([])
-ax[0].set_ylabel('Anteroposterior\ncentre of pressure')
+ax[0].set_ylabel('Anteroposterior\ncentre of support')
 ax[0].yaxis.labelpad = 15
 fig.text(0,0.85,"Weight-\nadjusted\nhead\nheight", ha = 'center')
 

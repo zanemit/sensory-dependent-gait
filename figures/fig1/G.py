@@ -46,7 +46,7 @@ df, _ = data_loader.load_processed_data(outputDir = Config.paths["forceplate_out
                                                appdx = '_levels_COMBINED')                
 # fore-hind and comxy plot means
 variable_str = 'CoMy'
-title = 'anteroposterior CoP'
+title = 'anteroposterior CoS'
 meta_p = []
 
 modLINint = pd.read_csv(Path(Config.paths["forceplate_output_folder"]) / f"{yyyymmdd}_mixedEffectsModel_linear_{variable_str}_{param}_interactionTRUE.csv")
@@ -83,7 +83,7 @@ ax.text(0,0.9, p_text, ha = 'center', color = FigConfig.colour_config[clr][2])
 legend_colours.append(FigConfig.colour_config[clr][2])
 meta_p.append((modLIN['Pr(>|t|)'][2] < FigConfig.p_thresholds).sum())
                
-ax.set_ylabel("Centre of pressure (cm)")
+ax.set_ylabel("Centre of support (cm)")
 ax.set_xlabel('Incline (deg)')
 
 ax.set_xticks([-40,-20,0,20,40])

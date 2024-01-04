@@ -18,18 +18,18 @@ from figures.fig_config import AnyObjectHandlerDouble
 refLimb = 'COMBINED'
 limb = 'homolateral'
 group_num = 5
-clrs = 'homolateral'
+c = 'homolateral'
 
 legend_colours = np.empty((2, 0)).tolist()
 legend_linestyles = np.empty((2, 0)).tolist()
 
 fig, ax = plt.subplots(1,2,figsize = (1.5*2,1.5), sharey = True) # (1.7*2,1.7) for 4 columns
-for axid,yyyymmdd, appdx, param, iclr, ploc in zip(
+for axid,yyyymmdd, appdx, param, clr, ploc in zip(
         [0,0,1],
         ['2021-10-23', '2022-05-06', '2022-05-06'],
         ['', '', ''],
         ['snoutBodyAngle', 'snoutBodyAngle', 'trialType'],
-        [0, 3, 3],
+        [FigConfig.colour_config["main2"], FigConfig.colour_config[c][3], FigConfig.colour_config[c][3]],
         [0.19, 0.205, 0.19]
         ):
     
@@ -78,16 +78,16 @@ for axid,yyyymmdd, appdx, param, iclr, ploc in zip(
         ax[axid].fill_between(np.arange(group_num), 
                         np.nanmean(gait_cots, axis = 0) - ci, 
                         np.nanmean(gait_cots, axis = 0) + ci, 
-                        facecolor = FigConfig.colour_config[clrs][iclr], 
+                        facecolor = clr, 
                         alpha = 0.2)
         ax[axid].plot(np.arange(group_num),  
                 np.nanmean(gait_cots, axis = 0), 
-                color = FigConfig.colour_config[clrs][iclr], 
+                color = clr, 
                 linestyle = lnst, 
                 linewidth = 1)
         
         if param == 'snoutBodyAngle':
-            legend_colours[ig].append( FigConfig.colour_config[clrs][iclr])
+            legend_colours[ig].append(clr)
             legend_linestyles[ig].append(lnst)
             
         
@@ -97,9 +97,9 @@ for axid,yyyymmdd, appdx, param, iclr, ploc in zip(
         p_text = ('*' * (pval < np.asarray(FigConfig.p_thresholds)).sum())
         if (pval < np.asarray(FigConfig.p_thresholds)).sum() == 0 and not np.isnan(pval):
             p_text = "n.s."
-            ax[axid].text(ip, ploc+0.005, p_text, ha = 'center', color = FigConfig.colour_config[clrs][2])
+            ax[axid].text(ip, ploc+0.005, p_text, ha = 'center', color = clr)
         else:
-            ax[axid].text(ip, ploc, p_text, ha = 'center', color = FigConfig.colour_config[clrs][2])
+            ax[axid].text(ip, ploc, p_text, ha = 'center', color = clr)
     
     ax[axid].set_yticks(np.linspace(0,0.28,5,endpoint = True))
     ax[axid].set_ylim(0,0.28)

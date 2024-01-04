@@ -188,8 +188,8 @@ predictor = 'snoutBodyAngle'
 pred = 'pred2'
 nonpred = 'pred3' #not used in head height trials
 refLimb = 'lH1'
-lnst = 'solid'
-clrs = 'greys'
+lnst = 'dashed'
+clrs = 'greys7'
 
 pred2_relevant = utils_processing.remove_outliers(datafull[predictor]) 
 pred2_centred = pred2_relevant - np.nanmean(pred2_relevant) #centering
@@ -229,7 +229,7 @@ for k, (lo, hi) in enumerate(zip([-np.pi, 0, np.pi] , [np.pi, 2*np.pi, 3*np.pi])
         print('plotting...')    
         ax.plot((pred2_range + np.nanmean(pred2_relevant)), 
                 trace, 
-                color = FigConfig.colour_config[clrs][2], 
+                color = FigConfig.colour_config[clrs][0], 
                 linewidth = 1, 
                 linestyle = lnst, 
                 )
