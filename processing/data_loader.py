@@ -16,7 +16,7 @@ def load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"],
     outputDir (str, optional) : path to output folder
     yyyymmdd (str or None, optional) : date of experiment
     appdx (str, optional) : "" (empty) or "_incline" for head height and incline trials respectively
-    limb (str or None, optional) : reference limb
+    limb (str or None, optional) : reference limb (or "bodypart" more broadly for open field)
     
     dataToLoad options :
         passiveOptoData (default)
@@ -36,8 +36,8 @@ def load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"],
         dlcPostureY (forceplate)
         dlcPosts (forceplate)
         locomFrameDict (passiveOpto)
-        bodyAngles (passiveOpto)
         strideParams (passiveOpto)
+        strideParamsMerged (passiveOpto)
         beltSpeedData (passiveOpto)
         limbX (passiveOpto)
         limbY (passiveOpto)
@@ -47,13 +47,15 @@ def load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"],
         limbX_speed (passiveOpto)
         limbX_bodyAngles (passiveOpto)
         supportFractions (passiveOpto/mtTreadmill)
-        supportFractionsMerged (passiveOpto/mtTreadmill)
         modePhases (passiveOpto/mtTreadmill)
         mtLimbData (mtTreadmill)
         mtOtherData (mtTreadmill)
         mouseSpeed (mtTreadmill)
         movementDict (mtTreadmill)
         bodyHeight (mtTreadmill)
+        {limb}_params (openField)
+        optoTrigDF (openField)
+        limbPhases (openField) : param "stim", "no_stim"
               
 
     """
@@ -92,7 +94,10 @@ def load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"],
                 fileDates = [f[:10] for f in os.listdir(outputDir) if f.endswith('.csv') and 'forceplateData' in f]
                 yyyymmdd = input(fileDates)
             path = outputDir / (yyyymmdd + '_forceplateData.csv')
-            data = pd.read_csv(path, header=[0, 1, 2, 3], index_col=0)
+            if int(yyyymmdd[:4])>=2023:
+                data = pd.read_csv(path, header=[0, 1, 2, 3, 4], index_col=0)
+            else:
+                data = pd.read_csv(path, header=[0, 1, 2, 3], index_col=0)
             return data, yyyymmdd
         elif dataToLoad == 'forceplateAngles':
             print("Loading forceplate angles...")
@@ -100,7 +105,10 @@ def load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"],
                 fileDates = [f[:10] for f in os.listdir(outputDir) if f.endswith('.csv') and 'forceplateAngles' in f]
                 yyyymmdd = input(fileDates)
             path = outputDir / (yyyymmdd + '_forceplateAngles.csv')
-            data = pd.read_csv(path, header=[0, 1, 2, 3], index_col=0)
+            if int(yyyymmdd[:4])>=2023:
+                data = pd.read_csv(path, header=[0, 1, 2, 3, 4], index_col=0)
+            else:
+                data = pd.read_csv(path, header=[0, 1, 2, 3], index_col=0)
             return data, yyyymmdd
         elif dataToLoad == 'forceplateHeadHW':
             print("Loading forceplate HW...")
@@ -108,7 +116,10 @@ def load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"],
                 fileDates = [f[:10] for f in os.listdir(outputDir) if f.endswith('.csv') and 'forceplateHeadHW' in f]
                 yyyymmdd = input(fileDates)
             path = outputDir / (yyyymmdd + '_forceplateHeadHW.csv')
-            data = pd.read_csv(path, header=[0, 1, 2, 3], index_col=0)
+            if int(yyyymmdd[:4])>=2023:
+                data = pd.read_csv(path, header=[0, 1, 2, 3, 4], index_col=0)
+            else:
+                data = pd.read_csv(path, header=[0, 1, 2, 3], index_col=0)
             return data, yyyymmdd
         elif dataToLoad == 'forceplateData_groupedby':
             print("Loading forceplate HW...")
@@ -159,7 +170,9 @@ def load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"],
             if yyyymmdd == None:
                 fileDates = [f[:10] for f in os.listdir(outputDir) if f.endswith('.csv') and 'forceplateData' in f]
                 yyyymmdd = input(fileDates)
-            if int(yyyymmdd[:4]) >= 2022:
+            if int(yyyymmdd[:4]) >= 2023:
+                yyyymmddCalib = yyyymmdd
+            elif int(yyyymmdd[:4]) >= 2022:
                 yyyymmddCalib = '2022-05-25'
             else:
                 yyyymmddCalib = '2020-06-22'
@@ -173,7 +186,7 @@ def load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"],
                 fileDates = [f[:10] for f in os.listdir(outputDir) if f.endswith('.csv') and f'bodyAngles{appdx}' in f]
                 yyyymmdd = input(fileDates)
             path = outputDir / (yyyymmdd + f'_bodyAngles{appdx}.csv')
-            if yyyymmdd == '2022-05-06':
+            if yyyymmdd == '2022-05-06' or yyyymmdd == '2023-09-25' or yyyymmdd == '2023-08-19':
                 data = pd.read_csv(path, header = [0,1,2,3,4,5], index_col = 0)
             else:
                 data = pd.read_csv(path, header = [0,1,2,3,4], index_col = 0)
@@ -192,7 +205,10 @@ def load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"],
                 fileDates = [f[:10] for f in os.listdir(outputDir) if f.endswith('.csv') and 'dlcPostureX' in f]
                 yyyymmdd = input(fileDates)
             path = outputDir / (yyyymmdd + '_dlcPostureX.csv')
-            data = pd.read_csv(path, header=[0, 1, 2, 3], index_col=0)
+            if int(yyyymmdd[:4]) >= 2023:
+                data = pd.read_csv(path, header=[0, 1, 2, 3, 4], index_col=0)
+            else:
+                data = pd.read_csv(path, header=[0, 1, 2, 3], index_col=0)
             return data, yyyymmdd
         elif dataToLoad == 'dlcPostureY':
             print("Loading dlcPostureY data...")
@@ -200,7 +216,10 @@ def load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"],
                 fileDates = [f[:10] for f in os.listdir(outputDir) if f.endswith('.csv') and 'dlcPostureY' in f]
                 yyyymmdd = input(fileDates)
             path = outputDir / (yyyymmdd + '_dlcPostureY.csv')
-            data = pd.read_csv(path, header=[0, 1, 2, 3], index_col=0)
+            if int(yyyymmdd[:4]) >= 2023:
+                data = pd.read_csv(path, header=[0, 1, 2, 3, 4], index_col=0)
+            else:
+                data = pd.read_csv(path, header=[0, 1, 2, 3], index_col=0)
             return data, yyyymmdd
         elif dataToLoad == 'dlcPosts':
             print("Loading dlcPosts data...")
@@ -208,7 +227,10 @@ def load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"],
                 fileDates = [f[:10] for f in os.listdir(outputDir) if f.endswith('.csv') and 'dlcPosts' in f]
                 yyyymmdd = input(fileDates)
             path = outputDir / (yyyymmdd + '_dlcPosts.csv')
-            data = pd.read_csv(path, header=[0, 1, 2, 3, 4], index_col=0)
+            if int(yyyymmdd[:4]) >= 2023:
+                data = pd.read_csv(path, header=[0, 1, 2, 3, 4, 5], index_col=0)
+            else:
+                data = pd.read_csv(path, header=[0, 1, 2, 3, 4], index_col=0)
             return data, yyyymmdd
         elif dataToLoad == 'locomFrameDict':
             print("Loading locomotor frame dictionary...")
@@ -217,14 +239,6 @@ def load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"],
                 yyyymmdd = input(fileDates)
             path = outputDir / (yyyymmdd + f'_locomFrameDict{appdx}.pkl')
             data = pickle.load(open(path, "rb" ))
-            return data, yyyymmdd
-        elif dataToLoad == 'bodyAngles':
-            print("Loading body angles array...")
-            if yyyymmdd == None:
-                fileDates = [f[:10] for f in os.listdir(outputDir) if f.endswith('.csv') and f'bodyAngles{appdx}' in f]
-                yyyymmdd = input(yyyymmdd)
-            path = outputDir / (yyyymmdd + f'_bodyAngles{appdx}.csv')
-            data = pd.read_csv(path, header = [0,1,2,3,4], index_col = 0)
             return data, yyyymmdd
         elif dataToLoad == 'limbX':
             print("Loading array of limb x coordinates...")
@@ -244,6 +258,18 @@ def load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"],
                 limbs = np.unique([f[-7:-4] for f in os.listdir(outputDir) if f.endswith('.csv') and f'strideParams{appdx}' in f and yyyymmdd in f])
                 limb = input(limbs)
             path = outputDir / (yyyymmdd + f'_strideParams{appdx}_{limb}.csv')
+            data = pd.read_csv(path)
+            return data, yyyymmdd, limb
+        elif dataToLoad == 'strideParamsMerged':
+            print("Loading array of support fractions merged with stride params...")
+            if yyyymmdd == None:
+                fileDates = np.unique([f[:10] for f in os.listdir(outputDir) if f.endswith('.csv') and f'strideParamsMerged{appdx}' in f])
+                yyyymmdd = input(fileDates)
+            if limb == None:
+                print("Pick a reference limb!")
+                limbs = np.unique([f[-7:-4] for f in os.listdir(outputDir) if f.endswith('.csv') and f'strideParamsMerged{appdx}' in f and yyyymmdd in f])
+                limb = input(limbs)
+            path = outputDir / (yyyymmdd + f'_strideParamsMerged{appdx}_{limb}.csv')
             data = pd.read_csv(path)
             return data, yyyymmdd, limb
         elif dataToLoad =='locomParamsAcrossMice':
@@ -353,18 +379,6 @@ def load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"],
             path = outputDir / (yyyymmdd + f'_supportFractions{appdx}_{limb}.csv')
             data = pd.read_csv(path)
             return data, yyyymmdd, limb
-        elif dataToLoad == 'strideParamsMerged':
-            print("Loading array of support fractions merged with stride params...")
-            if yyyymmdd == None:
-                fileDates = np.unique([f[:10] for f in os.listdir(outputDir) if f.endswith('.csv') and f'strideParamsMerged{appdx}' in f])
-                yyyymmdd = input(fileDates)
-            if limb == None:
-                print("Pick a reference limb!")
-                limbs = np.unique([f[-7:-4] for f in os.listdir(outputDir) if f.endswith('.csv') and f'strideParamsMerged{appdx}' in f and yyyymmdd in f])
-                limb = input(limbs)
-            path = outputDir / (yyyymmdd + f'_strideParamsMerged{appdx}_{limb}.csv')
-            data = pd.read_csv(path)
-            return data, yyyymmdd, limb
         elif dataToLoad == 'modePhases':
             print("Loading array of support fractions...")
             if yyyymmdd == None:
@@ -398,7 +412,10 @@ def load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"],
                 fileDates = np.unique([f[:10] for f in os.listdir(outputDir) if f.endswith('.csv') and 'motoTreadmillOtherData' in f])
                 yyyymmdd = input(fileDates)
             path = outputDir / (yyyymmdd + '_motoTreadmillOtherData.csv')
-            data = pd.read_csv(path, header = [0,1,2,3,4,5,6], index_col = 0)
+            if '2021' in yyyymmdd:
+                data = pd.read_csv(path, header = [0,1,2,3,4,5], index_col = 0)
+            else:
+                data = pd.read_csv(path, header = [0,1,2,3,4,5,6], index_col = 0)
             return data, yyyymmdd
         elif dataToLoad == 'mouseSpeed':
             print("Loading mouse speed...")
@@ -406,7 +423,10 @@ def load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"],
                 fileDates = [f[:10] for f in os.listdir(outputDir) if f.endswith('.csv') and 'mouseSpeed' in f]
                 yyyymmdd = input(fileDates)
             path = outputDir / (yyyymmdd + '_mouseSpeed.csv')
-            data = pd.read_csv(path, header = [0,1,2,3,4], index_col = 0)
+            if "Motorised" in str(outputDir) and '2021' in yyyymmdd:
+                data = pd.read_csv(path, header = [0,1,2,3], index_col = 0)
+            else:
+                data = pd.read_csv(path, header = [0,1,2,3,4], index_col = 0)
             return data, yyyymmdd
         elif dataToLoad == 'movementDict':
             print("Loading treadmill and locomotion onset/offset dictionary...")
@@ -421,8 +441,30 @@ def load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"],
             if yyyymmdd == None:
                 fileDates = [f[:10] for f in os.listdir(outputDir) if f.endswith('.csv') and 'bodyHeight' in f]
                 yyyymmdd = input(fileDates)
-            path = outputDir / (yyyymmdd + '_bodyHeight.csv')
-            if '2021' in yyyymmdd:
+            path = outputDir / (yyyymmdd + f'_bodyHeight{appdx}.csv')
+            if '2021' in yyyymmdd or 'PassiveOpto' in str(outputDir):
+                data = pd.read_csv(path, header = [0,1,2,3], index_col = 0)
+            else:
+                data = pd.read_csv(path, header = [0,1,2,3,4], index_col = 0)
+            return data, yyyymmdd
+        elif dataToLoad == 'tailbaseHeight':
+            print("Loading body heights...")
+            if yyyymmdd == None:
+                fileDates = [f[:10] for f in os.listdir(outputDir) if f.endswith('.csv') and 'tailbaseHeight' in f]
+                yyyymmdd = input(fileDates)
+            path = outputDir / (yyyymmdd + f'_tailbaseHeight{appdx}.csv')
+            if '2021' in yyyymmdd or 'PassiveOpto' in str(outputDir):
+                data = pd.read_csv(path, header = [0,1,2,3], index_col = 0)
+            else:
+                data = pd.read_csv(path, header = [0,1,2,3,4], index_col = 0)
+            return data, yyyymmdd
+        elif dataToLoad == 'tailbaseHeight':
+            print("Loading tailbase heights...")
+            if yyyymmdd == None:
+                fileDates = [f[:10] for f in os.listdir(outputDir) if f.endswith('.csv') and 'tailbaseHeight' in f]
+                yyyymmdd = input(fileDates)
+            path = outputDir / (yyyymmdd + '_tailbaseHeight.csv')
+            if '2021' in yyyymmdd or 'PassiveOpto' in str(outputDir):
                 data = pd.read_csv(path, header = [0,1,2,3], index_col = 0)
             else:
                 data = pd.read_csv(path, header = [0,1,2,3,4], index_col = 0)
@@ -435,4 +477,41 @@ def load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"],
             path = outputDir / (yyyymmdd + f'_limbX_bodyHeights_rel{appdx}.npy')
             data = np.load(path)
             return data, yyyymmdd
+        elif dataToLoad == 'limbX_tailbaseHeights_rel':
+            print("Loading array of limb x coordinates...")
+            if yyyymmdd == None:
+                fileDates = [f[:10] for f in os.listdir(outputDir) if f.endswith('.npy') and f'limbX_tailbaseHeights_rel{appdx}' in f]
+                yyyymmdd = input(fileDates)
+            path = outputDir / (yyyymmdd + f'_limbX_tailbaseHeights_rel{appdx}.npy')
+            data = np.load(path)
+            return data, yyyymmdd
+        elif dataToLoad == f'{limb}_params':
+            print(f'Loading {limb} params...')
+            if yyyymmdd == None:
+                fileDates = np.unique([f[:10] for f in os.listdir(outputDir) if f.endswith('.csv') and f'{limb}' in f])
+                yyyymmdd = input(fileDates)
+            files = [f for f in os.listdir(outputDir) if f.endswith('.csv') and f'{limb}' in f and yyyymmdd in f]
+            loaded_files = []
+            for f in files:
+                loaded_files.append(pd.read_csv( outputDir / f, header = [0,1,2,3,4,5], index_col = 0))
+            return loaded_files   
+        elif dataToLoad == 'optoTrigDF':
+            print("Loading open field optoTrig dataframe...")
+            if yyyymmdd == None:
+                fileDates = np.unique([f[:10] for f in os.listdir(outputDir) if f.endswith('.csv') and f'optoTrigDF' in f])
+                yyyymmdd = input(fileDates)
+            path = outputDir / (yyyymmdd + f'_optoTrigDF_{appdx}.csv')
+            data = pd.read_csv(path, header = [0,1,2,3,4,5], index_col =0)
+            return data, yyyymmdd
+        elif dataToLoad == 'limbPhases':
+            print("Loading limb phase dataframe...")
+            reflimb = limb
+            stimtype = param
+            if yyyymmdd == None:
+                fileDates = np.unique([f[:10] for f in os.listdir(outputDir) if f.endswith('.csv') and f'limbPhases_{stimtype}' in f])
+                yyyymmdd = input(fileDates)
+            path = outputDir / (yyyymmdd + f'_limbPhases_{stimtype}_ref{reflimb}{appdx}.csv')
+            data = pd.read_csv(path,  index_col = 0)
+            return data, yyyymmdd
         
+    

@@ -17,8 +17,9 @@ from processing.data_config import Config
 from processing.data_quality_checkers import *
 from processing.data_loader import *
 from processing.utils_processing import downsample_data, populate_nested_dict
+from processing.data_quality_checkers import *
 
-def get_trials_and_optotriggers(trigger_array):
+def get_trials_and_optotriggers(trigger_array, optotrig=False):
     """
     finds trial onsets and offsets
     
@@ -35,7 +36,7 @@ def get_trials_and_optotriggers(trigger_array):
         frame_num_per_trial (1d array) : number of camera frames per trial
     """
     camera_triggers, _, _ = get_trigger_times(trigger_array[:,0])
-    interframe_int = scipy.stats.mode(np.diff(camera_triggers))[0][0] # assumes that most frames are acquired at a constant rate
+    interframe_int = scipy.stats.mode(np.diff(camera_triggers))[0] # assumes that most frames are acquired at a constant rate
     trial_onsets = np.concatenate(([0], np.where(np.diff(camera_triggers)>(interframe_int+10))[0]+1)) #+10 allows for a bit of jitter
     trial_offsets = np.concatenate((np.where(np.diff(camera_triggers)>(interframe_int+10))[0], [len(camera_triggers)-1])) #+10 allows for a bit of jitter
     frame_num_per_trial = trial_offsets-trial_onsets+1
@@ -49,7 +50,10 @@ def get_trials_and_optotriggers(trigger_array):
     if len(rising_opto_triggers) == len(trial_onsets):
         stimType = 'tonic'        
     else: # what if the stimulus is a frequency pattern? must find the grand onset/offset first!
-        stimType = str(int(scipy.stats.mode(rising_opto_triggers)[0][0])) + 'Hz'
+        try:    
+            stimType = str(int(scipy.stats.mode(rising_opto_triggers)[0][0])) + 'Hz'
+        except:
+            stimType = str(int(scipy.stats.mode(rising_opto_triggers)[0])) + 'Hz'
         
     optoONframes_per_trial = np.zeros_like(trial_onsets)
     optoOFFframes_per_trial = np.zeros_like(trial_onsets)    
@@ -442,7 +446,9 @@ def get_metadata_from_df(df, col):
     mouseID = df.columns.get_level_values(0)[col]
     expDate  = df.columns.get_level_values(1)[col]
     trialNum  = df.columns.get_level_values(2)[col]
-    trialType = df.columns.get_level_values(3)[col]
-    stimType = df.columns.get_level_values(4)[col]
-    
-    return mouseID, expDate, trialNum, trialType, stimType
+    trialType = df.columns.get_level_values(3)[col] # this is actually stimType for 2021 dataset
+    if expDate[:2] == '21': 
+        return mouseID, expDate, trialNum, trialType
+    else:
+        stimType = df.columns.get_level_values(4)[col]
+        return mouseID, expDate, trialNum, trialType, stimType

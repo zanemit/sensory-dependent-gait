@@ -453,9 +453,84 @@ def populate_nested_dict(targetDict, dataToAdd, metadataLVL):
     
     return targetDict
 
-def interpolate_between_vals(vals, points_between):
-    vals_out = []
-    for i in range(len(vals)-1):
-        vals_out = np.concatenate((vals_out, [vals[i]], np.linspace(vals[i], vals[i+1], points_between)))
-    vals_out = np.append(vals_out, vals[-1])
-    return vals_out
+def transform_dict_into_df(dictionary):
+    """
+    takes a dictionary that stores dataframes and returns a single dataframe
+    
+    index and colnames of those arrays gets transformed into a single column each
+    
+    keys of the dictionary become column names
+    
+    useful for pre-regression processing 
+    """
+    
+    num_rows = [arr.shape[0] for arr in dictionary.values()]
+    if not np.all(num_rows == np.mean(num_rows)):
+        raise ValueError("The supplied dict stores arrays of different row numbers")
+    
+    for i, (key, val) in enumerate(dictionary.items()):
+        col_idx = np.tile(val.index, len(val.columns))
+        col_cln = np.repeat(val.columns, len(val.index))
+        col_vals = np.asarray(val).T.reshape((val.size,1)).reshape(-1)
+        col_key = [f"{c}_{d}" for c,d in zip(col_cln, col_idx)]
+        
+        df_i = pd.DataFrame(
+            zip(col_key, col_vals),
+            columns = ('key', key)
+            )
+        
+        if i == 0: 
+            # this is the first value in the dictionary
+            df = df_i
+        else:
+            df = pd.merge(df, df_i, on = 'key', how = 'outer')
+    
+    col_cln = [k.split("_")[0] for k in df['key']]
+    col_idx = [k.split("_")[-1] for k in df['key']]
+    df['cln'] = col_cln
+    df['idx'] = col_idx
+    
+    df.drop('key', axis = 1, inplace = True)
+    
+    return df
+    
+def transform_multicolumn_df_for_regression(df, cols_to_keep):
+    """
+    takes a dataframe with multiple columns and stacks those columns,
+        adding their names as another column one can use as a categorical
+        variable in regression
+        
+    df : pandas dataframe
+    cols_to_keep (list) : names of columns to keep, not stack    
+    """
+    if len(np.intersect1d(['values', 'condition'], df.columns)) > 0:
+        import warnings
+        warnings.warn("At least one of cols_to_keep is named after a column\
+                         that will be hard-coded into the final dataframe!")
+        
+    cols_to_stack = np.setdiff1d(df.columns, cols_to_keep)
+    
+    cols_stacked = np.empty(0)
+    cols_identified = np.empty(0)
+    for c in cols_to_stack:
+        cols_stacked = np.concatenate((cols_stacked,df[c]))
+        col_id = np.repeat(c, df.shape[0])
+        cols_identified = np.concatenate((cols_identified, col_id))
+    
+    df_stacked = pd.DataFrame(
+        zip(cols_stacked, cols_identified),
+        columns = ('values', 'condition')
+        )
+    
+    for c in cols_to_keep:
+        df_stacked[c] = np.tile(df[c], len(cols_to_stack))
+        
+    return df_stacked
+        
+    
+    
+        
+    
+
+
+    

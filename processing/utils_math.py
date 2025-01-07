@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 def derivative(x):
     """
@@ -44,6 +45,15 @@ def circular_stats(linear_phase, stat = 'median'): # linear_phase is a number in
         raise ValueError("Invalid 'stat' parameter! Only 'mean' and 'median' allowed!")
     return computed_phase /(2*np.pi)
 
+def cohen_d(x, y):
+    x = np.asarray(x); y = np.asarray(y)
+    x = x[~np.isnan(x)]; y = y[~np.isnan(y)]
+    nx = len(x)
+    ny = len(y)
+    dof = nx + ny -2
+    pooled_std = np.sqrt(((nx-1)*np.var(x,ddof=1) + (ny-1) * np.var(y,ddof=1)) / dof)
+    return (np.mean(x)-np.mean(y))/pooled_std
+    
 def temporal_angle(x, y):
     '''
     compute the angular changes in the position of a given bodypart over frames
@@ -66,7 +76,28 @@ def temporal_angle(x, y):
     return np.prod(angles_and_signs, axis = 1)
 
 def get_vector(ax, ay, bx, by):
-    return np.vstack((bx-ax, by-ay)).T
+    if type(ax) == int or type(ax) == float:
+        return np.vstack((bx-ax, by-ay)).T
+    elif type(ax) == list:
+        ax = np.asarray(ax); ay = np.asarray(ay)
+        bx = np.asarray(bx); by = np.asarray(by)
+    if type(ax) == np.ndarray or isinstance(ax, pd.DataFrame) or isinstance(ax, pd.Series):
+        dimx = bx-ax
+        dimy = by-ay
+        return np.stack((dimx, dimy), axis = ax.ndim)
+    else:
+        raise ValueError("Data type not supported!")
+    
+
+def get_vector_length(ax, ay, bx, by):
+    vec = get_vector(ax, ay, bx, by)
+    if type(ax) == int or type(ax) == float:
+        return np.sqrt(vec[0]**2 + vec[1]**2)
+    elif type(ax) == list or type(ax) == np.ndarray or isinstance(ax, pd.DataFrame): 
+        return np.sqrt(vec[...,0]**2 + vec[...,1]**2)
+    else:
+        raise ValueError("Data type not supported!")
+        
     
 def angle_with_x(x1, y1, x2, y2):
     bpX = x2-x1
@@ -250,6 +281,23 @@ def hpd_circular(trace, mass_frac, low = -np.pi, high = np.pi) :
     # Return interval
     return np.array([lower_hpd_bound, upper_hpd_bound]) + shift
 
+def mean_resultant_length(phases):
+    """
+    computes the mean resultant length of 1D phase data
+    
+    mean resultant length is a measure of variability
+    
+    RETURNS : mean resultant length (float)
+
+    """
+    phases = phases[~np.isnan(phases)]
+
+    sin = np.sum(np.sin(phases))
+    cos = np.sum(np.cos(phases))
+    resultant_length = np.sqrt(sin**2 + cos**2)/len(phases)
+    return resultant_length
+    
+    
 def hpd(trace, mass_frac) :
     """
     (c) http://bebi103.caltech.edu.s3-website-us-east-1.amazonaws.com/2015/tutorials/l06_credible_regions.html
@@ -367,27 +415,4 @@ def WatsonU2_TwoTest(x, y):
     result = {"statistic": u2, "p": p, "n1": n1, "n2": n2}
     return(result)
   
-
-def segments_fit(X, Y, count):
-    """
-    multi-segment piecewise function
-    source: gist.github.com/ruoyu0088/70effade57483355bbd18b31d370f2a
-    """
-    xmin = X.min()
-    xmax = X.max()
-    seg = np.full(count-1, (xmax-xmin)/count)
-    px_init = np.r_[np.r_[xmin, seg].cumsum(), xmax]
-    py_init = np.array([Y[np.abs(X-x) < (xmax - xmin) * 0.01].mean() for x in px_init])
     
-    def func(p):
-        seg = p[:count-1]
-        py = p[count-1:]
-        px = np.r_[np.r_[xmin,seg].cumsum(), xmax]
-        return px, py
-    def err(p):
-        px, py = func(p)
-        Y2 = np.interp(X, px, py)
-        return np.mean((Y-Y2)**2)
-    from scipy import optimize
-    r = optimize.minimize(err, x0 = np.r_[seg, py_init], method = 'Nelder-Mead')
-    return func(r.x)   

@@ -41,7 +41,7 @@ for k, (data_split, tlt) in enumerate(zip([datasplit1, datasplit1, datasplit2],
     ax[k].set_xticklabels(['π','0.5π', '0', '1.5π'])
     ax[k].set_title(tlt)
 
-distributions = np.zeros((6, len(datasplit1)-1, 20)) * np.nan
+distributions = np.zeros((6, len(datasplit1)-1, 20)) * np.nan # exp condition, num categories, num mice (with excess spots to be safe)
 
 for i_data, (k, dir_str, param, param_df, data_split, yyyymmdd, appdx, tlt, clr, clr_id) in enumerate(zip([0,1,2,0,1,2],
                                    [Config.paths["passiveOpto_output_folder"], Config.paths["passiveOpto_output_folder"], Config.paths["passiveOpto_output_folder"], Config.paths["mtTreadmill_output_folder"], Config.paths["mtTreadmill_output_folder"],  Config.paths["mtTreadmill_output_folder"]],
@@ -97,7 +97,7 @@ for i_data, (k, dir_str, param, param_df, data_split, yyyymmdd, appdx, tlt, clr,
             values = grouped_dict[gkey][~np.isnan(grouped_dict[gkey])]
             if values.shape[0] < (Config.passiveOpto_config["stride_num_threshold"]):
                 print(f"Mouse {m} data excluded from group {gkey} because there are only {values.shape[0]} valid trials!")
-                arr[i, im] = np.nan
+                # arr[i, im] = np.nan
                 continue
             
             # polar data

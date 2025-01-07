@@ -95,8 +95,8 @@ for irow, (yyyymmdd,output_folder, appendix, appendix2, param) in enumerate(zip(
             xpos = xpos+1 
 
 fig.text(0, 0.5, 'Horizontal position of the foot (cm)', va='center', rotation='vertical')
-fig.text(0.56, 0.94, 'force sensors', ha='center')
-fig.text(0.56, 0.48, 'passive treadmill', ha='center')
+fig.text(0.56, 0.48, 'force sensors', ha='center')
+fig.text(0.56, 0.94, 'passive treadmill', ha='center')
 fig.text(0.56, 0, 'Incline (deg)', ha='center')
 
 

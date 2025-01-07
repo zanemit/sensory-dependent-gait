@@ -5,13 +5,14 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 
+sys.path.append(r"C:\Users\MurrayLab\thesis")
 
-sys.path.append(r"C:\Users\MurrayLab\sensoryDependentGait")
-
-from processing import data_loader, utils_processing,forceplate_data_manager
+from processing import data_loader, utils_processing, forceplate_data_manager
 from processing.data_config import Config
 
-def get_angles_vs_param(outputDir=Config.paths["forceplate_output_folder"], param = 'headHW', yyyymmdd = None):
+def get_angles_vs_param(outputDir=Config.paths["forceplate_output_folder"], 
+                        param = 'headHW', 
+                        yyyymmdd = None):
     """
     reorganises the weight-adjusted head height/head levels and body tilt angle dataframes
     
@@ -26,11 +27,18 @@ def get_angles_vs_param(outputDir=Config.paths["forceplate_output_folder"], para
     outputDir = Path(outputDir).resolve()
     if outputDir.exists():
         angles_df, yyyymmdd = data_loader.load_processed_data(outputDir, dataToLoad='forceplateAngles')
+        if angles_df.columns.nlevels == 5:
+            angles_df.columns = angles_df.columns.droplevel(0)
     else:
         raise ValueError("The supplied output directory does not exist!")
-        
+        #TODO need to check if weight calibration is required here!
     if param == 'headHW':
-        headHW_df, _ = data_loader.load_processed_data(outputDir, dataToLoad='forceplateHeadHW', yyyymmdd=yyyymmdd)
+        headHW_df, _ = data_loader.load_processed_data(outputDir, 
+                                                       dataToLoad='forceplateHeadHW', 
+                                                       yyyymmdd=yyyymmdd)
+        if headHW_df.columns.nlevels == 5:
+             headHW_df.columns = headHW_df.columns.droplevel(0)
+   
         if 'rl' not in angles_df.columns.get_level_values(1)[0]:
             raise ValueError("param = 'headHW' requires a head height dataset!")
 
@@ -75,8 +83,9 @@ def get_angles_vs_param(outputDir=Config.paths["forceplate_output_folder"], para
 
     if param == 'headHW':
         df = pd.DataFrame(zip(mouseIDs[1:], angles_all[1:], headHWs_all[1:], lvl_all[1:]), columns=['mouseID', 'snoutBodyAngle', 'headHW', 'headLVL'])
-    else:   
-        df.to_csv(os.path.join(outputDir, yyyymmdd + f'_forceplateAngleParamsR_{param}.csv'))
+        
+     
+    df.to_csv(os.path.join(outputDir, yyyymmdd + f'_forceplateAngleParamsR_{param}.csv'))
         
 def group_data_by_param(outputDir=Config.paths["forceplate_output_folder"], 
                         param = 'headHW', 
@@ -93,15 +102,33 @@ def group_data_by_param(outputDir=Config.paths["forceplate_output_folder"],
         "{yyyymmdd}_forceplateData_{param}.csv" : parameters to reconstruct the fitted calibration equation
     """
     outputDir = Path(outputDir).resolve()
-    # loads raw sensor readouts
     if outputDir.exists():
         df, yyyymmdd = data_loader.load_processed_data(outputDir, 
                                                        dataToLoad='forceplateData', 
                                                        yyyymmdd = yyyymmdd)
+        # import mouse weight metadata
+        metadata_df = data_loader.load_processed_data(outputDir = Config.paths["forceplate_output_folder"], 
+                                                      dataToLoad = 'metadataProcessed', 
+                                                      yyyymmdd = yyyymmdd)
+        # weight calibration
+        df_v, headplate_df = forceplate_data_manager.weight_calibrate_dataframe(
+                                                        df, 
+                                                        metadata_df,
+                                                        yyyymmdd = yyyymmdd,
+                                                        outputDir = Config.paths["forceplate_output_folder"]
+                                                        )
     else:
         raise ValueError("The supplied output directory does not exist!")
-
+    
+    if df.columns.nlevels == 5:
+         df.columns = df.columns.droplevel(0)
+    if df_v.columns.nlevels == 5:
+         df_v.columns = df_v.columns.droplevel(0)   
+    
     mice = np.unique(df.columns.get_level_values(0))
+    # if int(yyyymmdd[:4])>=2023:
+    #     levels = np.unique(df.columns.get_level_values(2))
+    # else:
     levels = np.unique(df.columns.get_level_values(1))
 
     # make level values more interpretable
@@ -114,49 +141,50 @@ def group_data_by_param(outputDir=Config.paths["forceplate_output_folder"],
         lvl_str_drop = 3
         levels = np.sort([int(x[lvl_str_drop:]) for x in levels])[::-1]
         levels = ['deg' + str(x) for x in levels]
-
-    # import weight-voltage calibration files
-    weightCalib, _ = data_loader.load_processed_data(outputDir = Config.paths["forceplate_output_folder"], 
-                                                     dataToLoad = 'weightCalibration', 
-                                                     yyyymmdd = yyyymmdd)
-    # import mouse weight metadata
-    metadata_df = data_loader.load_processed_data(outputDir = Config.paths["forceplate_output_folder"], 
-                                                  dataToLoad = 'metadataProcessed', 
-                                                  yyyymmdd = yyyymmdd)
+        
 
     if param == 'snoutBodyAngle':
         angles_df, _ = data_loader.load_processed_data(outputDir, dataToLoad='forceplateAngles', yyyymmdd= yyyymmdd)
+        if int(yyyymmdd[:4])>=2023:
+            angles_df.columns = angles_df.columns.droplevel(0)
         paramCont_noOutliers = angles_noOutliers = utils_processing.remove_outliers(angles_df.mean())
-        paramCont_num = 5
+        paramCont_num = 3
     elif param == 'headHW':
         if not 'rl' in levels[0]:
             raise ValueError("param == 'headHW' is allowed only for head height datasets!")     
         headHW_df, _ = data_loader.load_processed_data(outputDir = Config.paths["forceplate_output_folder"], 
                                                        dataToLoad='forceplateHeadHW', 
                                                        yyyymmdd = yyyymmdd)
+        if int(yyyymmdd[:4])>=2023:
+            headHW_df.columns = headHW_df.columns.droplevel(0)
         paramCont_noOutliers = utils_processing.remove_outliers(headHW_df.mean())
-        paramCont_num = 4
+        mice = np.unique(paramCont_noOutliers.index.get_level_values(0)) # repeated because some mice get lost here <_<
+        paramCont_num = 3
     else:
         raise ValueError("Invalid param supplied!")
         
-    paramCont_split = np.linspace(paramCont_noOutliers.min(), paramCont_noOutliers.max(), paramCont_num+1)
-
-    # weight calibration
-    df, headplate_df, df_v = forceplate_data_manager.weight_calibrate_dataframe(df, weightCalib, metadata_df)
-    fore = df.loc[:, (slice(None), slice(None), slice(None), 'rF')] + df.loc[:, (slice(None), slice(None), slice(None), 'lF')].values
-    hind = df.loc[:, (slice(None), slice(None), slice(None), 'rH')] + df.loc[:, (slice(None), slice(None), slice(None), 'lH')].values
+    # paramCont_split = np.linspace(paramCont_noOutliers.min(), paramCont_noOutliers.max(), paramCont_num+1)
+    paramCont_split = [0.12844037, 0.44404985, 0.75965933, 1.07526882] # natural split for egr3
+    # paramCont_split = [0.12844037, 0.37665906, 0.62487775, 0.87309645] # natural split for egr3...? (added Oct2024)
+    # paramCont_split = [0.04255319, 0.41035078, 0.77814836, 1.14594595] # natural split for hhmice
+    print(paramCont_split)
+    
+    slices = (slice(None), slice(None), slice(None))
+    fore = df.loc[:, slices+('rF',)] + df.loc[:, slices+('lF',)].values
+    hind = df.loc[:, slices+('rH',)] + df.loc[:, slices+('lH',)].values
     total = fore.values + hind.values
     fore_frac = fore / total
     hind_frac = np.ones_like(hind) - fore_frac
     total_df = pd.DataFrame(total, columns = fore.columns)
-    fore_v = df_v.loc[:, (slice(None), slice(None), slice(None), 'rF')] + df_v.loc[:, (slice(None), slice(None), slice(None), 'lF')].values
-    hind_v = df_v.loc[:, (slice(None), slice(None), slice(None), 'rH')] + df_v.loc[:, (slice(None), slice(None), slice(None), 'lH')].values
+                                                                            
+    fore_v = df_v.loc[:, slices+('rF',)] + df_v.loc[:, slices+('lF',)].values
+    hind_v = df_v.loc[:, slices+('rH',)] + df_v.loc[:, slices+('lH',)].values
 
     # CoM computation
-    x = df.loc[:, (slice(None), slice(None), slice(None), 'rF')] + \
-        df.loc[:, (slice(None), slice(None), slice(None), 'rH')].values - \
-        df.loc[:, (slice(None), slice(None), slice(None), 'lF')].values - \
-        df.loc[:, (slice(None), slice(None), slice(None), 'lH')].values
+    x = df.loc[:, slices+('rF',)] + \
+        df.loc[:, slices+('rH',)].values - \
+        df.loc[:, slices+('lF',)].values - \
+        df.loc[:, slices+('lH',)].values
     y = fore - hind.values
     x = x/total  # normalise by the elementwise total
     y = y/total
@@ -178,10 +206,24 @@ def group_data_by_param(outputDir=Config.paths["forceplate_output_folder"],
         paramCont_grouped = paramCont_noOut_mouse.groupby(pd.cut(paramCont_noOut_mouse, paramCont_split))  # group data based on angles
         group_col_ids = paramCont_grouped.groups  # same
         # group smr data based on angles
-        grouped_dict_fore = {key: fore_frac[mouse].loc[:, val] for key, val in group_col_ids.items()}
-        grouped_dict_hind = {key: hind_frac[mouse].loc[:, val] for key, val in group_col_ids.items()}
-        grouped_dict_total = {key: total_df[mouse].loc[:, val] for key, val in group_col_ids.items()}
-        grouped_dict_foreV = {key: fore_v[mouse].loc[:, val] for key, val in group_col_ids.items()}
+        grouped_dict_fore = {}; grouped_dict_hind = {}
+        grouped_dict_total = {}; grouped_dict_foreV = {}
+        for key, val in group_col_ids.items():
+            val = group_col_ids[key]
+            if len(val)>0:
+                grouped_dict_fore[key] = fore_frac[mouse].loc[:,val]
+                grouped_dict_hind[key] = hind_frac[mouse].loc[:,val]
+                grouped_dict_total[key] = total_df[mouse].loc[:,val]
+                grouped_dict_foreV[key] = fore_v[mouse].loc[:,val]
+            else:
+                grouped_dict_fore[key] = pd.DataFrame(np.empty((fore_frac.shape[0],0)))
+                grouped_dict_hind[key] = pd.DataFrame(np.empty((hind_frac.shape[0],0)))
+                grouped_dict_total[key] = pd.DataFrame(np.empty((total_df.shape[0],0)))
+                grouped_dict_foreV[key] = pd.DataFrame(np.empty((fore_v.shape[0],0)))
+        # grouped_dict_fore = {key: fore_frac[mouse].loc[:, val] for key, val in group_col_ids.items()}
+        # grouped_dict_hind = {key: hind_frac[mouse].loc[:, val] for key, val in group_col_ids.items()}
+        # grouped_dict_total = {key: total_df[mouse].loc[:, val] for key, val in group_col_ids.items()}
+        # grouped_dict_foreV = {key: fore_v[mouse].loc[:, val] for key, val in group_col_ids.items()}
         hind_v.columns = pd.MultiIndex.from_tuples([(x,y,z,'rF') for x,y,z,e in hind.columns], names = hind.columns.names) # change 'rH' to 'rF'
         headplate_df.columns = pd.MultiIndex.from_tuples([(x,y,z,'rF') for x,y,z,e in headplate_df.columns], names = headplate_df.columns.names) # change 'headplate' to 'rF'
         grouped_dict_hindV = {key: hind_v[mouse].loc[:, val] for key, val in group_col_ids.items()}
@@ -238,7 +280,7 @@ def group_data_by_param(outputDir=Config.paths["forceplate_output_folder"],
     data_CoM = pd.DataFrame(data_CoM, columns=index) 
     data_CoM.to_csv(os.path.join(outputDir, f"{yyyymmdd}_forceplateData_CoMgrouped_{param}.csv"))
   
-def get_foot_placement_array(outputDir = Config.paths["forceplate_output_folder"]):
+def get_foot_placement_array(outputDir = Config.paths["forceplate_output_folder"], param=None):
     """
     stacks limb xy position data during locomotion or before optostim
     
@@ -256,18 +298,63 @@ def get_foot_placement_array(outputDir = Config.paths["forceplate_output_folder"
     # LOAD THE DATA
     dfX, yyyymmdd = data_loader.load_processed_data(outputDir, dataToLoad = 'dlcPostureX')
     dfY, _ = data_loader.load_processed_data(outputDir, dataToLoad = 'dlcPostureY', yyyymmdd = yyyymmdd)
-    bodyparts_in_df = np.unique(dfX.columns.get_level_values(3))
+    
+    bp_level = 3 if int(yyyymmdd[:4])<2023 else 4
+    bodyparts_in_df = np.unique(dfX.columns.get_level_values(bp_level))
     
     limbX = np.empty((dfX.shape[0]*int(dfX.shape[1]/len(bodyparts_in_df)), 4)) # 4 limb coordinates
     limbY = np.empty((dfY.shape[0]*int(dfY.shape[1]/len(bodyparts_in_df)), 4)) # 4 limb coordinates
-    arrIDer = np.repeat(np.asarray(list(dfX.loc[:, (slice(None), slice(None), slice(None), 'rH1')].columns))[:,:3], dfX.shape[0], axis = 0)
-    for i, limb in enumerate(limbs):
-        limbX[:,i] = np.concatenate(np.vstack((np.asarray(dfX.loc[:, (slice(None), slice(None), slice(None), limb)]))).T)
-        limbY[:,i] = np.concatenate(np.vstack((np.asarray(dfY.loc[:, (slice(None), slice(None), slice(None), limb)]))).T)
+    if int(yyyymmdd[:4])<2023:
+        arrIDer = np.repeat(np.asarray(list(dfX.loc[:, (slice(None), slice(None), slice(None), 'rH1')].columns))[:,:3], dfX.shape[0], axis = 0)
+        for i, limb in enumerate(limbs):
+            limbX[:,i] = np.concatenate(np.vstack((np.asarray(dfX.loc[:, (slice(None), slice(None), slice(None), limb)]))).T)
+            limbY[:,i] = np.concatenate(np.vstack((np.asarray(dfY.loc[:, (slice(None), slice(None), slice(None), limb)]))).T)
+                
+    else:
+        arrIDer = np.repeat(np.asarray(list(dfX.loc[:, (slice(None), slice(None), slice(None), slice(None),'rH1')].columns))[:,:4], dfX.shape[0], axis = 0)
+        for i, limb in enumerate(limbs):
+            limbX[:,i] = np.concatenate(np.vstack((np.asarray(dfX.loc[:, (slice(None), slice(None), slice(None), slice(None), limb)]))).T)
+            limbY[:,i] = np.concatenate(np.vstack((np.asarray(dfY.loc[:, (slice(None), slice(None), slice(None), slice(None), limb)]))).T)
+        
+        
+    if param == 'snoutBodyAngle':
+        bodyAngles, _ = data_loader.load_processed_data(outputDir, 
+                                                        dataToLoad = 'forceplateAngles', 
+                                                        yyyymmdd = yyyymmdd)
+        multiindex_cols = bodyAngles.columns.droplevel(-1)
+        
+        if int(yyyymmdd[:4])<2023:
+            arrIDer_df = pd.DataFrame(arrIDer, columns=['mouse', 'level', 'trial'])
+            bodyAngles_col_df = pd.DataFrame(bodyAngles.columns.to_flat_index().map(lambda x: x[:-1]).tolist(),
+                                             columns=['mouse', 'level', 'trial'])
+        else:
+            arrIDer_df = pd.DataFrame(arrIDer, columns=['date','mouse', 'level', 'trial'])
+            bodyAngles_col_df = pd.DataFrame(bodyAngles.columns.to_flat_index().map(lambda x: x[:-1]).tolist(),
+                                             columns=['date','mouse', 'level', 'trial'])
+            
+        SBA_means = bodyAngles.mean(axis=0)
+        
+        SBA_means = pd.DataFrame({
+            'mean': SBA_means.values,
+            'mouse': bodyAngles_col_df['mouse'],
+            'level': bodyAngles_col_df['level'],
+            'trial': bodyAngles_col_df['trial']
+            })
+        
+        if int(yyyymmdd[:4])<2023:
+            merged_DF = arrIDer_df.merge(SBA_means, on=['mouse', 'level', 'trial'], how='left')
+            df_reg = pd.DataFrame(np.hstack((arrIDer, limbX, limbY)), columns = np.concatenate((['mouseID'],['level'],['trial'],[param], [x+'x' for x in limbs], [x+'y' for x in limbs])) ) 
+        else:
+            SBA_means['date'] = bodyAngles_col_df['date']
+            merged_DF = arrIDer_df.merge(SBA_means, on=['date','mouse', 'level', 'trial'], how='left')
+            df_reg = pd.DataFrame(np.hstack((arrIDer, limbX, limbY)), columns = np.concatenate((['expDate','mouseID'],['level'],['trial'],[param], [x+'x' for x in limbs], [x+'y' for x in limbs])) ) 
+          
+        arrIDer = merged_DF
+        param = f"_{param}"
+    else:
+        df_reg = pd.DataFrame(np.hstack((arrIDer, limbX, limbY)), columns = np.concatenate((['mouseID'],['level'],['trial'], [x+'x' for x in limbs], [x+'y' for x in limbs])) )   
+    df_reg.to_csv(os.path.join(outputDir, yyyymmdd + f'_limbPositionRegressionArray{param}.csv'))
     
-    df_reg = pd.DataFrame(np.hstack((arrIDer, limbX, limbY)), columns = np.concatenate((['mouseID'],['level'],['trial'], [x+'x' for x in limbs], [x+'y' for x in limbs])) )   
-    df_reg.to_csv(os.path.join(outputDir, yyyymmdd + '_limbPositionRegressionArray.csv'))
-
 def compute_mean_params(outputDir=Config.paths["forceplate_output_folder"], 
                         param='snoutBodyAngle', 
                         yyyymmdd = None,
@@ -284,14 +371,30 @@ def compute_mean_params(outputDir=Config.paths["forceplate_output_folder"],
     """
     outputDir = Path(outputDir).resolve()
     if outputDir.exists():
-        smr_df, yyyymmdd = data_loader.load_processed_data(outputDir, 
+        df, yyyymmdd = data_loader.load_processed_data(outputDir, 
                                                            dataToLoad='forceplateData',
                                                            yyyymmdd = yyyymmdd)
+        # import mouse weight metadata
+        metadata_df = data_loader.load_processed_data(outputDir = Config.paths["forceplate_output_folder"], 
+                                                      dataToLoad = 'metadataProcessed', 
+                                                      yyyymmdd = yyyymmdd)
+        # weight calibration
+        df_v, headplate_df = forceplate_data_manager.weight_calibrate_dataframe(
+                                                        df, 
+                                                        metadata_df,
+                                                        yyyymmdd = yyyymmdd,
+                                                        outputDir = Config.paths["forceplate_output_folder"]
+                                                        )
     else:
         raise ValueError("The supplied output directory does not exist!")
+    
+    if df.columns.nlevels == 5:
+         df.columns = df.columns.droplevel(0)
+    if df_v.columns.nlevels == 5:
+         df_v.columns = df_v.columns.droplevel(0) 
 
-    mice = np.unique(smr_df.columns.get_level_values(0))
-    levels = np.unique(smr_df.columns.get_level_values(1))
+    mice = np.unique(df.columns.get_level_values(0))
+    levels = np.unique(df.columns.get_level_values(1))
     if 'rl' in levels[0]:
         lvl_str_drop = 2
         levels = np.sort([int(x[lvl_str_drop:]) for x in levels])[::-1]
@@ -304,26 +407,19 @@ def compute_mean_params(outputDir=Config.paths["forceplate_output_folder"],
 
     # check that columns are matching before summing dataframes
     for r in range(3):
-        if np.all(smr_df.loc[:, (slice(None), slice(None), slice(None), 'rF')].columns.get_level_values(r) != smr_df.loc[:, (slice(None), slice(None), slice(None), 'lF')].columns.get_level_values(r)) \
-            or np.all(smr_df.loc[:, (slice(None), slice(None), slice(None), 'rF')].columns.get_level_values(r) != smr_df.loc[:, (slice(None), slice(None), slice(None), 'lH')].columns.get_level_values(r)) \
-                or np.all(smr_df.loc[:, (slice(None), slice(None), slice(None), 'rF')].columns.get_level_values(r) != smr_df.loc[:, (slice(None), slice(None), slice(None), 'rH')].columns.get_level_values(r)):
+        if np.all(df.loc[:, (slice(None), slice(None), slice(None), 'rF')].columns.get_level_values(r) != df.loc[:, (slice(None), slice(None), slice(None), 'lF')].columns.get_level_values(r)) \
+            or np.all(df.loc[:, (slice(None), slice(None), slice(None), 'rF')].columns.get_level_values(r) != df.loc[:, (slice(None), slice(None), slice(None), 'lH')].columns.get_level_values(r)) \
+                or np.all(df.loc[:, (slice(None), slice(None), slice(None), 'rF')].columns.get_level_values(r) != df.loc[:, (slice(None), slice(None), slice(None), 'rH')].columns.get_level_values(r)):
             raise ValueError(
                 "Will not be able to sum the dataframes! Columns do not match!")
-    
-    # import weight-voltage calibration files
-    weightCalib, _ = data_loader.load_processed_data(outputDir, 
-                                                     dataToLoad = 'weightCalibration', 
-                                                     yyyymmdd = yyyymmdd)
-    # import mouse weight metadata
-    metadata_df = data_loader.load_processed_data(outputDir, 
-                                                  dataToLoad = 'metadataProcessed', 
-                                                  yyyymmdd = yyyymmdd)
     
     if param == 'levels':
         try:  # load everything related to snoutBodyAngles
             angles_df, _ = data_loader.load_processed_data(outputDir, 
                                                            dataToLoad='forceplateAngles', 
                                                            yyyymmdd=yyyymmdd)
+            if int(yyyymmdd[:4])>=2023:
+                angles_df.columns = angles_df.columns.droplevel(0)
             angles_noOutliers = utils_processing.remove_outliers(angles_df.mean())
         except:
             angles_df = None
@@ -333,6 +429,8 @@ def compute_mean_params(outputDir=Config.paths["forceplate_output_folder"],
                                             outputDir, 
                                             dataToLoad='forceplateAngles', 
                                             yyyymmdd=yyyymmdd)
+            if int(yyyymmdd[:4])>=2023:
+                angles_df.columns = angles_df.columns.droplevel(0)
             paramCont_noOutliers = angles_noOutliers = utils_processing.remove_outliers(angles_df.mean())
         else:
             if param == 'headHW':
@@ -341,12 +439,16 @@ def compute_mean_params(outputDir=Config.paths["forceplate_output_folder"],
                 headHW_df, _ = data_loader.load_processed_data(outputDir, 
                                                                dataToLoad='forceplateHeadHW', 
                                                                yyyymmdd=yyyymmdd)
+                if int(yyyymmdd[:4])>=2023:
+                    headHW_df.columns = headHW_df.columns.droplevel(0)
                 paramCont_noOutliers = utils_processing.remove_outliers(headHW_df.mean())
             elif param == 'posX':
                 try:
                     dlc_posX, _ = data_loader.load_processed_data(outputDir, 
                                                                   dataToLoad = 'dlcPostureX', 
                                                                   yyyymmdd = yyyymmdd)
+                    if int(yyyymmdd[:4])>=2023:
+                        dlc_posX.columns = dlc_posX.columns.droplevel(0)
                 except:
                     raise ValueError (f"Limb X position data not found at {outputDir}!")
                 dlc_posX_sub = dlc_posX.loc[:, (slice(None), slice(None), slice(None), bp)]
@@ -356,30 +458,34 @@ def compute_mean_params(outputDir=Config.paths["forceplate_output_folder"],
                 angles_df, _ = data_loader.load_processed_data(outputDir, 
                                                                dataToLoad='forceplateAngles', 
                                                                yyyymmdd=yyyymmdd)
-                angles_noOutliers = utils_processing.remove_outliers(angles_df.mean())
+                if int(yyyymmdd[:4])>=2023:
+                    angles_df.columns = angles_df.columns.droplevel(0)
+                angles_noOutliers = angles_df.mean()
+                # angles_noOutliers = utils_processing.remove_outliers(angles_df.mean())
             except:
                 angles_df = None
                 raise ValueError ('Angles not found! Problems could arise - this condition has not been tested!')
     
     # weight calibration
-    smr_df, headplate_df, smr_df_v = forceplate_data_manager.weight_calibrate_dataframe(smr_df, weightCalib, metadata_df)
-    fore = smr_df.loc[:, (slice(None), slice(None), slice(None), 'rF')] +\
-            smr_df.loc[:, (slice(None), slice(None), slice(None), 'lF')].values
-    hind = smr_df.loc[:, (slice(None), slice(None), slice(None), 'rH')] +\
-            smr_df.loc[:, (slice(None), slice(None), slice(None), 'lH')].values
+    fore = df.loc[:, (slice(None), slice(None), slice(None), 'rF')] +\
+            df.loc[:, (slice(None), slice(None), slice(None), 'lF')].values
+    hind = df.loc[:, (slice(None), slice(None), slice(None), 'rH')] +\
+            df.loc[:, (slice(None), slice(None), slice(None), 'lH')].values
     total = fore.values + hind.values
     fore_frac = fore / total
     hind_frac = np.ones_like(hind) - fore_frac
     total_df = pd.DataFrame(total, columns = fore.columns)
     # smr_df_v, headplate_df = forceplate_data_manager.weight_calibrate_dataframe(smr_df, weightCalib, metadata_df)
-    fore_v = smr_df_v.loc[:, (slice(None), slice(None), slice(None), 'rF')] + smr_df_v.loc[:, (slice(None), slice(None), slice(None), 'lF')].values
-    hind_v = smr_df_v.loc[:, (slice(None), slice(None), slice(None), 'rH')] + smr_df_v.loc[:, (slice(None), slice(None), slice(None), 'lH')].values
+    fore_v = df_v.loc[:, (slice(None), slice(None), slice(None), 'rF')] +\
+            df_v.loc[:, (slice(None), slice(None), slice(None), 'lF')].values
+    hind_v = df_v.loc[:, (slice(None), slice(None), slice(None), 'rH')] +\
+            df_v.loc[:, (slice(None), slice(None), slice(None), 'lH')].values
     
     # CoM computation
-    x = smr_df.loc[:, (slice(None), slice(None), slice(None), 'rF')] + \
-        smr_df.loc[:, (slice(None), slice(None), slice(None), 'rH')].values - \
-        smr_df.loc[:, (slice(None), slice(None), slice(None), 'lF')].values - \
-        smr_df.loc[:, (slice(None), slice(None), slice(None), 'lH')].values
+    x = df.loc[:, (slice(None), slice(None), slice(None), 'rF')] + \
+        df.loc[:, (slice(None), slice(None), slice(None), 'rH')].values - \
+        df.loc[:, (slice(None), slice(None), slice(None), 'lF')].values - \
+        df.loc[:, (slice(None), slice(None), slice(None), 'lH')].values
     y = fore - hind.values
     x = x/total  # normalise by the elementwise total
     y = y/total
@@ -483,7 +589,7 @@ def compute_mean_params(outputDir=Config.paths["forceplate_output_folder"],
                 param_means.append(paramCont_noOut_mouse[tup])
                 try:
                     # same as param_means in the snoutBodyAngle condition!
-                    angle_means.append(angles_noOut_mouse[tup])
+                    angle_means.append(angles_noOut_mouse[(tup[0], tup[1], 'snoutBodyAngle')])
                 except:
                     # same as param_means in the snoutBodyAngle condition!
                     angle_means.append(np.nan)
@@ -557,4 +663,100 @@ def compute_mean_params(outputDir=Config.paths["forceplate_output_folder"],
                                      'CoMy_std'])
     df_means.to_csv(os.path.join(outputDir, f"{yyyymmdd}_meanParamDF_{param}{bp}.csv"))
 
+def get_dlc_posture_data(directory = r"F:\Forceplate\batch_egr3", 
+                         yyyymmdd = None, 
+                         output_directory = r"C:\Users\MurrayLab\Documents\Forceplate"):
+    if type(directory) == str:
+        dlc_files = [f for f in os.listdir(directory) if "video" in f and f.endswith('.h5')]
+    else:
+        raise ValueError("DLC file directory not supplied!")
+
+    # load sample data to get fps
+    dlc_tuples = []
+    post_tuples = []
+    trial_duration = 5
+    fps = Config.forceplate_config["fps"]
+    trig_num = trial_duration * fps
+    bps_posture_polygon = ['b2','b3','body','b4','b5','b6','b7','b8','tailbase','rH2','rH1','rF2','rF1','snout']  
+    bps_posts = ['postF1', 'postF2', 'postH1', 'postH2']
+    
+    dlc_posture_polygon_X = np.empty((trig_num, len(dlc_files)*len(bps_posture_polygon)))
+    dlc_posture_polygon_Y = np.empty((trig_num, len(dlc_files)*len(bps_posture_polygon)))
+    dlc_posts = np.empty((trig_num, len(dlc_files)*len(bps_posts)*2))
+    dlc_column = 0; post_column = 0
+    for f in dlc_files:
+        if 'deg' in f:
+            print(f"Grabbing data from file: {f[:18]}...")
+        elif 'rl' in f:
+            print(f"Grabbing data from file: {f[:24]}...")
+        path = os.path.join(directory, f)
+        dlc, _ = utils_processing.preprocess_dlc_data(path)
+        
+        # metadata
+        fsplit = f.split('_')
+        if int(yyyymmdd[:4])>= 2023:
+            d_exp = fsplit[0]
+            mouse_id = fsplit[1]
+            level = fsplit[2]
+            if 'deg' in f:
+                trial = fsplit[3]
+            elif 'rl' in f:
+                trial = fsplit[3]
+        else:
+            mouse_id = fsplit[0]
+            level = fsplit[1]
+            if 'deg' in f:
+                trial = fsplit[2]
+            elif 'rl' in f:
+                trial = fsplit[3]
+        
+        for bp in bps_posture_polygon:
+            if int(yyyymmdd[:4])>= 2023:
+                dlc_tuples.append((d_exp, mouse_id, level, trial, bp))
+            else:
+                dlc_tuples.append((mouse_id, level, trial, bp))
+            dlc_posture_polygon_X[:,dlc_column] = dlc[bp]['x'][:trig_num]
+            dlc_posture_polygon_Y[:,dlc_column] = -dlc[bp]['y'][:trig_num] +600
+            dlc_column += 1
+        
+        for bp in bps_posts:
+            if int(yyyymmdd[:4])>= 2023:
+                post_tuples.append((d_exp, mouse_id, level, trial, bp, 'x'))
+                post_tuples.append((d_exp, mouse_id, level, trial, bp, 'y'))
+            else:
+                post_tuples.append((mouse_id, level, trial, bp, 'x'))
+                post_tuples.append((mouse_id, level, trial, bp, 'y'))
+            dlc_posts[:, post_column] = dlc[bp]['x'][:trig_num]
+            dlc_posts[:, post_column+1] = -dlc[bp]['y'][:trig_num] +600
+            post_column += 2
+    
+    if yyyymmdd == None:
+        yyyymmdd = input(['2023-11-06', '2022-04-02', '2022-04-04', '2021-10-26']) #rl12 on 2nd Apr, rl5 on 4th Apr
+    
+    if int(yyyymmdd[:4])>= 2023:
+        dlc_index = pd.MultiIndex.from_tuples(
+                                dlc_tuples, 
+                                names=["expDate", "mouse", "level", "trial", "bodypart"]
+                                )
+        post_index = pd.MultiIndex.from_tuples(
+                                post_tuples, 
+                                names=["expDate", "mouse", "level", "trial", "bodypart", "coord"]
+                                )
+        
+    else:
+        dlc_index = pd.MultiIndex.from_tuples(
+                                dlc_tuples, 
+                                names=["mouse", "level", "trial", "bodypart"]
+                                )
+        post_index = pd.MultiIndex.from_tuples(
+                                post_tuples, 
+                                names=["mouse", "level", "trial", "bodypart", "coord"]
+                                )
+    dlcX_df = pd.DataFrame(dlc_posture_polygon_X, columns=dlc_index)
+    dlcX_df.to_csv(os.path.join(output_directory, yyyymmdd + '_dlcPostureX.csv'))  
+    dlcY_df = pd.DataFrame(dlc_posture_polygon_Y, columns=dlc_index)  
+    dlcY_df.to_csv(os.path.join(output_directory, yyyymmdd + '_dlcPostureY.csv')) 
+    
+    post_df = pd.DataFrame(dlc_posts, columns=post_index)
+    post_df.to_csv(os.path.join(output_directory, yyyymmdd + '_dlcPosts.csv'))
 

@@ -16,6 +16,7 @@ from figures.fig_config import Config as FigConfig
 
 def get_body_angles(outputDir = Config.paths["passiveOpto_output_folder"],
                     treadmill_type = 'passive',
+                    yyyymmdd = '2022-08-18',
                     appdx = None):
     """
     compute snout-body-xaxis and snout-body-tail angles for the whole interval 
@@ -38,12 +39,16 @@ def get_body_angles(outputDir = Config.paths["passiveOpto_output_folder"],
         appdx = ""
     
     if treadmill_type == 'passive':
-        data, yyyymmdd = data_loader.load_processed_data(outputDir, dataToLoad = 'passiveOptoData', appdx = appdx)
+        data, _ = data_loader.load_processed_data(outputDir, dataToLoad = 'passiveOptoData', appdx = appdx, yyyymmdd = yyyymmdd)
         data_relevant = data.loc[:, (slice(None), slice(None), slice(None), slice(None), ['snout', 'body', 'tailbase'])]
         tup_num = 4
         tuple_names = ["mouseID", "expDate", "stimFreq", "headLVL", "angle"]
+    elif '2021' in yyyymmdd and treadmill_type == 'motorised':
+        data_relevant, _ = data_loader.load_processed_data(outputDir, dataToLoad = 'mtOtherData', yyyymmdd = yyyymmdd)
+        tup_num = 4
+        tuple_names = ["mouseID", "expDate", "trial", "stimType", "angle"]
     elif treadmill_type == 'motorised':
-        data_relevant, yyyymmdd = data_loader.load_processed_data(outputDir, dataToLoad = 'mtOtherData')
+        data_relevant, _ = data_loader.load_processed_data(outputDir, dataToLoad = 'mtOtherData', yyyymmdd = yyyymmdd)
         tup_num = 5
         tuple_names = ["mouseID", "expDate", "trial", "trialType", "stimType", "angle"]
         appdx = ""
@@ -54,12 +59,15 @@ def get_body_angles(outputDir = Config.paths["passiveOpto_output_folder"],
     data_tuples = np.asarray([tup[:tup_num] for tup in data_tuples])
     data_tuples = np.unique(data_tuples, axis = 0)
     
-    angles_array = np.empty((data_relevant.shape[0], data_relevant.shape[1]//3))
+    angles_array = np.empty((data_relevant.shape[0], data_relevant.shape[1]//2))*np.nan
     tuples = []
     for itup in range(data_tuples.shape[0]):
         if treadmill_type == 'passive':
             mouseID, expDate, stimFreq, headLVL = data_tuples[itup,:]
             data_relevant_sub = data_relevant[mouseID][expDate][stimFreq][headLVL]
+        elif '2021' in yyyymmdd and treadmill_type == 'motorised':
+            mouseID, expDate, trialNum, stimType = data_tuples[itup,:]
+            data_relevant_sub = data_relevant[mouseID][expDate][trialNum][stimType]
         else: #motorised
             mouseID, expDate, trialNum, trialType, stimType = data_tuples[itup,:]
             data_relevant_sub = data_relevant[mouseID][expDate][trialNum][trialType][stimType]
@@ -72,18 +80,98 @@ def get_body_angles(outputDir = Config.paths["passiveOpto_output_folder"],
            
         snoutBodyAngle = utils_math.angle_with_x(snoutX, snoutY, bodyX, bodyY)
         snoutBodyTailAngle = utils_math.angle_between_vectors_2d(bodyX, bodyY, snoutX, snoutY, bodyX, bodyY, tailbaseX, tailbaseY)
-
-        newcol = int(2*itup)
-        for k, (arr, label) in enumerate(zip([snoutBodyAngle, snoutBodyTailAngle], 
-                                             ["snoutBody", "snoutBodyTail"])):
-            tuples.append((mouseID, expDate, stimFreq, headLVL, label))
+        tailBodyAngle = utils_math.angle_with_x(tailbaseX, tailbaseY,bodyX, bodyY)
+        
+        newcol = int(3*itup)
+        for k, (arr, label) in enumerate(zip([snoutBodyAngle, snoutBodyTailAngle, tailBodyAngle], 
+                                             ["snoutBody", "snoutBodyTail", "tailBodyAngle"])):
+            if treadmill_type == 'passive':
+                tuples.append((mouseID, expDate, stimFreq, headLVL, label))
+            elif '2021' in yyyymmdd and treadmill_type == 'motorised':
+                tuples.append((mouseID, expDate, trialNum, stimType, label))
+            else:
+                tuples.append((mouseID, expDate, trialNum, trialType, stimType, label))
             angles_array[:, newcol+k] = arr
      
     index = pd.MultiIndex.from_tuples(tuples, names = tuple_names)
     df = pd.DataFrame(angles_array, columns=index)
     
     df.to_csv(os.path.join(outputDir, yyyymmdd + f'_bodyAngles{appdx}.csv'))  
+ 
+def get_relative_body_height(outputDir= Config.paths["passiveOpto_output_folder"], 
+                             appdx = None, 
+                             yyyymmdd = '2022-08-18'):
+    import statistics
+    if appdx != None:
+        appdx = f"_{appdx}"
+    else:
+        appdx = ""
+    if "Passive" in outputDir:
+        data, _ = data_loader.load_processed_data(outputDir, dataToLoad = 'passiveOptoData', appdx = appdx, yyyymmdd = yyyymmdd)
+        mouse_speed,_ = data_loader.load_processed_data(outputDir, dataToLoad = 'beltSpeedData', appdx = appdx, yyyymmdd = yyyymmdd)
+        
+        d = 4
+        tup_names = ['mouseID', 'expDate', 'stimFreq', 'headLVL']
+        locom_threshold = 0.01 * 150/3.3
+        
+        data_body_y = data.loc[:, (slice(None), slice(None), slice(None), slice(None), 'body', 'y')]
+        data_tailbase_y = data.loc[:, (slice(None), slice(None), slice(None), slice(None), 'tailbase', 'y')]
+        data_rH1_y = data.loc[:, (slice(None), slice(None), slice(None), slice(None), 'rH1', 'y')]
+        
+        data_tuples = data_body_y.columns.values
+        
+    elif "Motorised" in outputDir:
+        data_other, _ = data_loader.load_processed_data(outputDir, dataToLoad = 'mtOtherData', appdx = appdx, yyyymmdd = yyyymmdd)
+        data_limbs, _ = data_loader.load_processed_data(outputDir, dataToLoad = 'mtLimbData', appdx = appdx, yyyymmdd = yyyymmdd)
+        mouse_speed, _ = data_loader.load_processed_data(outputDir, appdx = appdx, dataToLoad = 'mouseSpeed', yyyymmdd = yyyymmdd)
+        locom_threshold=5
+        if '2021' in yyyymmdd:
+            d = 4
+            tup_names = ['mouseID', 'expDate', 'trial', 'stimType']
+            
+            data_body_y = data_other.loc[:, (slice(None), slice(None), slice(None), slice(None), 'body', 'y')]
+            data_tailbase_y = data_other.loc[:, (slice(None), slice(None), slice(None), slice(None), 'tailbase', 'y')]
+            data_rH1_y = data_limbs.loc[:, (slice(None), slice(None), slice(None), slice(None), 'rH1', 'y')]
+        else:
+            d = 5
+            tup_names = ['mouseID', 'expDate', 'trial', 'trialType', 'stimType']
+            
+            data_body_y = data_other.loc[:, (slice(None), slice(None), slice(None), slice(None), slice(None), 'body', 'y')]
+            data_tailbase_y = data_other.loc[:, (slice(None), slice(None), slice(None), slice(None), slice(None), 'tailbase', 'y')]
+            data_rH1_y = data_limbs.loc[:, (slice(None), slice(None), slice(None), slice(None), slice(None), 'rH1', 'y')]
+        data_tuples = mouse_speed.columns.values
     
+    data_tuples = np.asarray([tup[:d] for tup in data_tuples]) # was :5 before incorporation of 'deg' level (5s for old data?)
+    data_tuples = np.unique(data_tuples, axis = 0)
+    
+    body_relative = np.zeros_like(data_body_y) * np.nan
+    tailbase_relative = np.zeros_like(data_tailbase_y) * np.nan
+    new_tuples = []
+    for c in range(mouse_speed.shape[1]):
+        tup = mouse_speed.columns[c][:d]
+        new_tuples.append(tup)
+        body_y = np.asarray(data_body_y.loc[:,tup]).flatten()
+        tailbase_y = np.asarray(data_tailbase_y.loc[:,tup]).flatten()
+        rH1_y = np.asarray(data_rH1_y.loc[:,tup]).flatten()
+        is_locomoting = np.asarray(mouse_speed.loc[:,tup]).flatten()>locom_threshold
+        if "Motorised" in outputDir and '2021' not in yyyymmdd:
+            is_locomoting = np.concatenate((is_locomoting, [False])) # for 2022-05-06/2023-09-25 mtTreadmill
+        rH1_y_locom = utils_processing.remove_outliers(rH1_y[is_locomoting])
+        if rH1_y_locom.shape[0] == 0:
+            body_relative[:,c] = [np.nan] * body_relative.shape[0]
+            tailbase_relative[:,c] = [np.nan] * tailbase_relative.shape[0]
+        else:
+            rH1_y_locom_mode = statistics.mode(rH1_y_locom)
+            body_relative[:,c] = body_y-rH1_y_locom_mode  
+            tailbase_relative[:,c] = tailbase_y-rH1_y_locom_mode 
+    
+    index = pd.MultiIndex.from_tuples(new_tuples, names = tup_names)
+    body_relative_DF = pd.DataFrame(body_relative*-1, columns = index)
+    body_relative_DF.to_csv(os.path.join(outputDir, yyyymmdd + f'_bodyHeight{appdx}.csv'))  
+    
+    tailbase_relative_DF = pd.DataFrame(tailbase_relative*-1, columns = index)
+    tailbase_relative_DF.to_csv(os.path.join(outputDir, yyyymmdd + f'_tailbaseHeight{appdx}.csv'))  
+   
 def reformat_data(outputDir = Config.paths["passiveOpto_output_folder"], appdx = None):
     """
     uses the opto-ON DLC .csv file to generate a Tx8 array where T = the number of
@@ -114,6 +202,9 @@ def reformat_data(outputDir = Config.paths["passiveOpto_output_folder"], appdx =
     locomFrameDict, _ = data_loader.load_processed_data(outputDir, dataToLoad = 'locomFrameDict', yyyymmdd = yyyymmdd, appdx = appdx)
     speed, _ = data_loader.load_processed_data(outputDir, dataToLoad = 'beltSpeedData', yyyymmdd = yyyymmdd, appdx = appdx)
     bodyAngles, _ = data_loader.load_processed_data(outputDir, dataToLoad = 'bodyAngles', yyyymmdd = yyyymmdd, appdx = appdx)
+    body_heights, _ = data_loader.load_processed_data(outputDir, dataToLoad = 'bodyHeight', yyyymmdd = yyyymmdd, appdx = appdx)
+    tailbase_heights, _ = data_loader.load_processed_data(outputDir, dataToLoad = 'tailbaseHeight', yyyymmdd = yyyymmdd, appdx = appdx)
+    
     
     labels = ['lH1', 'lH2', 'rH1', 'rH2', 'lF1', 'lF2', 'rF1', 'rF2']
     
@@ -123,7 +214,9 @@ def reformat_data(outputDir = Config.paths["passiveOpto_output_folder"], appdx =
     array_x = np.empty((0, len(labels)))
     array_y = np.empty((0, len(labels)))
     array_speed = np.empty(0) # column = speed
-    array_bodyAngles = np.empty((0, 2)) # columns = bodySnout, snoutBodyTail
+    array_bodyAngles = np.empty((0, 3)) # columns = bodySnout, snoutBodyTail, tailBody
+    array_bodyHeights_rel = np.empty((0))
+    array_tailbaseHeights_rel = np.empty((0))
     mouse = []; date = []; freq = []; level = []
     
     # loop over mouseID-expDate-stimFreq-headLVL combinations to find the corresponding locomON/OFF and subset the data accordingly
@@ -182,13 +275,17 @@ def reformat_data(outputDir = Config.paths["passiveOpto_output_folder"], appdx =
                         
                     speed_sub = np.asarray(speed.loc[locomIDs, (mouseID, expDate, stimFreq, headLVL)])
                     bodyAngles_sub = np.asarray(bodyAngles.loc[locomIDs, (mouseID, expDate, stimFreq, headLVL)])
-                                       
+                    body_heights_sub = np.asarray(body_heights.loc[locomIDs, (mouseID, expDate, stimFreq, headLVL)]).flatten()
+                    tailbase_heights_sub = np.asarray(tailbase_heights.loc[locomIDs, (mouseID, expDate, stimFreq, headLVL)]).flatten()               
+                    
                     # APPENDING
                     # array_ang = np.append(array_ang, angles_arr, axis = 0)
                     array_x = np.append(array_x, xcoords_arr, axis = 0)
                     array_y = np.append(array_y, ycoords_arr, axis = 0)
                     array_speed = np.append(array_speed, speed_sub)
                     array_bodyAngles = np.append(array_bodyAngles, bodyAngles_sub, axis = 0)
+                    array_bodyHeights_rel = np.append(array_bodyHeights_rel, body_heights_sub, axis = 0)
+                    array_tailbaseHeights_rel = np.append(array_tailbaseHeights_rel, tailbase_heights_sub, axis = 0)
                     mouse.append(np.repeat(mouseID, angles_arr.shape[0]))
                     date.append(np.repeat(expDate, angles_arr.shape[0]))
                     freq.append(np.repeat(stimFreq, angles_arr.shape[0]))
@@ -206,6 +303,8 @@ def reformat_data(outputDir = Config.paths["passiveOpto_output_folder"], appdx =
     np.save(Path(outputDir)/ (yyyymmdd + f"_limbY{appdx}.npy"), array_y)  #   'lH1', 'lH2', 'rH1', 'rH2', 'lF1', 'lF2', 'rF1', 'rF2'
     np.save(Path(outputDir) / (yyyymmdd + f"_limbX_speed{appdx}.npy"), array_speed)
     np.save(Path(outputDir) / (yyyymmdd + f"_limbX_bodyAngles{appdx}.npy"), array_bodyAngles)
+    np.save(Path(outputDir) / (yyyymmdd + f"_limbX_bodyHeights_rel{appdx}.npy"), array_bodyHeights_rel)
+    np.save(Path(outputDir) / (yyyymmdd + f"_limbX_tailbaseHeights_rel{appdx}.npy"), array_tailbaseHeights_rel)
 
 def compute_gait_params_from_xcoords(limb = 'lH1', 
                                      appdx = "", 
@@ -232,7 +331,15 @@ def compute_gait_params_from_xcoords(limb = 'lH1',
     bodyAngles, _ = data_loader.load_processed_data(outputDir, 
                                                     dataToLoad = 'limbX_bodyAngles', 
                                                     yyyymmdd = yyyymmdd, 
-                                                    appdx = appdx) #'snoutBody' 'snoutBodyTail'
+                                                    appdx = appdx) #'snoutBody' 'snoutBodyTail', 'tailBody
+    bodyHeights_rel, _ = data_loader.load_processed_data(outputDir, 
+                                                         dataToLoad = 'limbX_bodyHeights_rel', 
+                                                         yyyymmdd = yyyymmdd, 
+                                                         appdx = appdx)
+    tailbaseHeights_rel, _ = data_loader.load_processed_data(outputDir, 
+                                                         dataToLoad = 'limbX_tailbaseHeights_rel', 
+                                                         yyyymmdd = yyyymmdd, 
+                                                         appdx = appdx)
     if os.path.exists(Path(outputDir)/"metadataPyRAT_processed.csv"):
         metadata_df = data_loader.load_processed_data(outputDir, 
                                                       dataToLoad = 'metadataProcessed', 
@@ -240,6 +347,10 @@ def compute_gait_params_from_xcoords(limb = 'lH1',
                                                       appdx = appdx)
         if 'rl' in arrayIDer[0,3]:
             headHeight_scaled = [(-int(x[2:])+24.5)/Config.passiveOpto_config["mm_per_g"] for x in arrayIDer[:,3]]
+            # rl-8 is the max comfortable height for a 26g mouse
+            # rl-3 is the max comfortable height for a 22g mouse
+            # i.e. plugging in -3 or -8 for x will result in 22 and 26 respectively
+            # when divided by mouse weight later, this will yield headHW = 1
     
     # filter the xcoord array to smoothen out tracking imprecisions
     print("Filtering the coord data...")
@@ -278,6 +389,7 @@ def compute_gait_params_from_xcoords(limb = 'lH1',
     lF1 = []; lF2 = []; lF0 = []
     rF1 = []; rF2 = []; rF0 = []
     speed_arr = []; snoutBody_arr = []; bodyAngleRange_arr = []
+    bodyHeight_arr = []; tailbaseHeight_arr = []; tailBody_arr = []
     
     if limb == 'lH1':
         limb_list = [lH2, rH1, rH2, lF1, lF2, rF1, rF2]
@@ -289,6 +401,11 @@ def compute_gait_params_from_xcoords(limb = 'lH1',
         limb_list_str = ['rH2', 'lH1', 'lH2', 'lF1', 'lF2', 'rF1', 'rF2']
         mean_limb_list = [lH0, lF0, rF0] # for storage of mean of (lH1,lH2) etc
         mean_limb_str = ['lH0', 'lF0', 'rF0']
+    elif limb == 'lF1':
+        limb_list = [lF2, rH1, rH2, lH1, lH2, rF1, rF2]
+        limb_list_str = ['lF2','rH1', 'rH2', 'lH1', 'lH2', 'rF1', 'rF2']
+        mean_limb_list = [rH0, lH0, rF0] # for storage of mean of (lH1,lH2) etc
+        mean_limb_str = ['rH0', 'lH0', 'rF0']
     
     stride_pt_max = Config.passiveOpto_config['fps']
     arrayX_strides = np.empty((stride_pt_max,0)) # for coordinate data per stride
@@ -310,18 +427,25 @@ def compute_gait_params_from_xcoords(limb = 'lH1',
             continue
         peaks_filt, troughs_filt = utils_processing.are_arrays_alternating(peaks_filt, troughs_filt)
         if type(peaks_filt) != bool :
-            peaks_true = []
+            peaks_true = []; peak_ids_to_remove= []
             troughs_true = []
             [peaks_true.append(np.argmax(arr_seg[(pf-13):(pf+13)])+pf-13) for pf in peaks_filt if (pf >= 13 and pf+13 < len(arrayX[fon:foff, limb_id_dict[limb]]))]
-            for pt in troughs_filt:
+            peaks_true = np.asarray(peaks_true)
+            for i_pt, pt in enumerate(troughs_filt):
                 if (pt >= 13 and pt+13 < len(arrayX[fon:foff, limb_id_dict[limb]])):
-                    troughs_true.append(np.argmin(arr_seg[(pt-13):(pt+13)])+pt-13)
+                    if np.argmin(arr_seg[(pt-13):(pt+13)])+pt-13 not in troughs_true:
+                        troughs_true.append(np.argmin(arr_seg[(pt-13):(pt+13)])+pt-13)
+                    else:
+                        print("AVOIDING DUPLICATE TROUGHS...")
+                        peak_ids_to_remove.append(i_pt-1)
+                        peaks_true[i_pt] = int(np.mean((peaks_true[i_pt-1], peaks_true[i_pt])))
                 elif pt >= 13:
                     troughs_true.append(np.argmin(arr_seg[(pt-13):(len(arrayX[fon:foff, 0])-1)])+pt-13)
                 else:
                     troughs_true.append(np.argmin(arr_seg[:(pt+13)])) 
-            
-            peaks_true = np.asarray(peaks_true)
+
+            if len(peaks_true)>0:
+                peaks_true = peaks_true[~np.isin(peaks_true, peaks_true[peak_ids_to_remove])]
             troughs_true =np.asarray(troughs_true)
         else:
             print(f"Could not get peaks from {'_'.join(arrayIDer[fon,:])}!")
@@ -357,6 +481,9 @@ def compute_gait_params_from_xcoords(limb = 'lH1',
                 # matched speed and snout-body angles
                 speed_arr.append(np.nanmean(speed[fon:foff][(stepStart+delays[0]):(stepEnd+delays[-1])]))
                 snoutBody_arr.append(np.nanmean(bodyAngles[fon:foff, 0][(stepStart+delays[0]):(stepEnd+delays[-1])]))
+                tailBody_arr.append(np.nanmean(bodyAngles[fon:foff, 2][(stepStart+delays[0]):(stepEnd+delays[-1])]))
+                bodyHeight_arr.append(np.nanmean(bodyHeights_rel[fon:foff][(stepStart+delays[0]):(stepEnd+delays[-1])]))
+                tailbaseHeight_arr.append(np.nanmean(tailbaseHeights_rel[fon:foff][(stepStart+delays[0]):(stepEnd+delays[-1])]))
                 if len(bodyAngles[fon:foff, 0][(stepStart+delays[0]):(stepEnd+delays[-1])]) > 0:
                     bodyAngleRange_arr.append(np.nanmax(bodyAngles[fon:foff,0][(stepStart+delays[0]):(stepEnd+delays[-1])]) - np.nanmin(bodyAngles[fon:foff,0][(stepStart+delays[0]):(stepEnd+delays[-1])]))
                 else:
@@ -383,7 +510,10 @@ def compute_gait_params_from_xcoords(limb = 'lH1',
                 stride_freqs = np.append(stride_freqs, np.nan)
                 speed_arr.append(np.nan)
                 snoutBody_arr.append(np.nan)
+                tailBody_arr.append(np.nan)
                 bodyAngleRange_arr.append(np.nan)
+                bodyHeight_arr.append(np.nan)
+                tailbaseHeight_arr.append(np.nan)
                 arrayX_strides = np.append(arrayX_strides, (np.zeros(stride_pt_max) + np.nan).reshape(-1,1), axis = 1)
                 arrayX_strides2 = np.append(arrayX_strides2, (np.zeros(stride_pt_max) + np.nan).reshape(-1,1), axis = 1)
                 arrayY_strides = np.append(arrayY_strides, (np.zeros(stride_pt_max) + np.nan).reshape(-1,1), axis = 1)
@@ -425,6 +555,8 @@ def compute_gait_params_from_xcoords(limb = 'lH1',
         mean_corr[diff>0.05] = np.nan # if difference between the two markers big, at least one is poorly tracked
         [mean_limb_arr.append(m) for m in mean_corr]
         
+        # run to here
+        
     yremv = np.where(np.nanmin(arrayY_strides, axis = 0) < 200)[0]
     arrayY_strides[:, yremv] = np.zeros((arrayY_strides.shape[0], len(yremv))) + np.nan
     arrayX_strides[:, yremv] = np.zeros((arrayY_strides.shape[0], len(yremv))) + np.nan
@@ -440,25 +572,27 @@ def compute_gait_params_from_xcoords(limb = 'lH1',
                                      strideNum, strideFreq, strideLength, limb_list[0], limb_list[1],
                                      limb_list[2], limb_list[3], limb_list[4], limb_list[5], 
                                      limb_list[6], mean_limb_list[0], mean_limb_list[1], mean_limb_list[2],
-                                     speed_arr, snoutBody_arr, dists, bodyAngleRange_arr)).T,
+                                     speed_arr, snoutBody_arr, tailBody_arr, dists, bodyHeight_arr, 
+                                     bodyAngleRange_arr, tailbaseHeight_arr)).T,
                           columns = ['mouseID', 'expDate', 'stimFreq', 'headLVL', 'weight','age', 'headHW',
                                      'sex','strideNum', 'strideFreq', 'strideLength',  limb_list_str[0], 
                                      limb_list_str[1], limb_list_str[2], limb_list_str[3], 
                                      limb_list_str[4], limb_list_str[5], limb_list_str[6], mean_limb_str[0],
-                                     mean_limb_str[1], mean_limb_str[2], 'speed', 'snoutBodyAngle', 'limbDist',
-                                     'bodyAngleRange'])
+                                     mean_limb_str[1], mean_limb_str[2], 'speed', 'snoutBodyAngle', 'tailBodyAngle', 
+                                     'limbDist', 'bodyHeight_rel', 'bodyAngleRange', 'tailbaseHeight_rel'])
     else:
         df = pd.DataFrame(np.vstack((mouseID, expDate, stimFreq, headLVL, weights, ages, sexes,strideNum, 
                                      strideFreq, strideLength, limb_list[0], limb_list[1], 
                                      limb_list[2], limb_list[3], limb_list[4], limb_list[5], 
                                      limb_list[6], mean_limb_list[0], mean_limb_list[1], mean_limb_list[2],
-                                     speed_arr, snoutBody_arr, dists, bodyAngleRange_arr)).T,
+                                     speed_arr, snoutBody_arr, tailBody_arr, dists, bodyHeight_arr, 
+                                     bodyAngleRange_arr, tailbaseHeight_arr)).T,
                           columns = ['mouseID', 'expDate', 'stimFreq', 'headLVL', 'weight','age', 
                                      'sex','strideNum', 'strideFreq', 'strideLength',  limb_list_str[0], 
                                      limb_list_str[1], limb_list_str[2], limb_list_str[3], 
                                      limb_list_str[4], limb_list_str[5], limb_list_str[6], mean_limb_str[0],
-                                     mean_limb_str[1], mean_limb_str[2], 'speed', 'snoutBodyAngle', 'limbDist',
-                                     'bodyAngleRange'])
+                                     mean_limb_str[1], mean_limb_str[2], 'speed', 'snoutBodyAngle', 'tailBodyAngle',
+                                     'limbDist', 'bodyHeight_rel', 'bodyAngleRange', 'tailbaseHeight_rel'])
     df.to_csv(os.path.join(outputDir, yyyymmdd + f'_strideParams{appdx}_{limb}.csv'))
     
     np.save(Path(outputDir)/ f"{yyyymmdd}_limbX_strides{appdx}_{limb}.npy", arrayX_strides2) 
@@ -500,11 +634,35 @@ def get_foot_placement_array(param = 'levels',
             limbX[:,i] = np.concatenate(np.vstack((np.asarray(preOpto.loc[:, (slice(None), slice(None), slice(None), slice(None), limb, 'x')]))).T)
             limbY[:,i] = np.concatenate(np.vstack((np.asarray(preOpto.loc[:, (slice(None), slice(None), slice(None), slice(None), limb, 'y')]))).T)
         
-    elif data == 'locom':
+    elif data == 'locom':            
         limbX, yyyymmdd = data_loader.load_processed_data(outputDir, dataToLoad = 'limbX', appdx = appdx)
-        limbY, _ = data_loader.load_processed_data(outputDir, dataToLoad = 'limbY', appdx = appdx, userInput = yyyymmdd)
-        arrIDer, _ = data_loader.load_processed_data(outputDir, dataToLoad = 'arrayIdentifier', appdx = appdx, userInput = yyyymmdd)       
-    
+        limbY, _ = data_loader.load_processed_data(outputDir, dataToLoad = 'limbY', appdx = appdx, yyyymmdd = yyyymmdd)
+        arrIDer, _ = data_loader.load_processed_data(outputDir, dataToLoad = 'arrayIdentifier', appdx = appdx, yyyymmdd = yyyymmdd)       
+        
+    if param == 'snoutBodyAngle':
+        bodyAngles, _ = data_loader.load_processed_data(outputDir, 
+                                                        dataToLoad = 'bodyAngles', 
+                                                        yyyymmdd = yyyymmdd, 
+                                                        appdx = appdx)
+        bodyAngles_sub = bodyAngles.loc[:, (slice(None), slice(None), slice(None), slice(None), 'snoutBody')]
+        multiindex_cols = bodyAngles_sub.columns.droplevel(-1)
+        
+        arrIDer_df = pd.DataFrame(arrIDer, columns=['mouseID', 'expDate', 'stimFreq', 'headLVL'])
+        bodyAngles_col_df = pd.DataFrame(bodyAngles_sub.columns.to_flat_index().map(lambda x: x[:-1]).tolist(),
+                                         columns=['mouseID', 'expDate', 'stimFreq', 'headLVL'])
+        SBA_means = bodyAngles_sub.mean(axis=0)
+        
+        SBA_means = pd.DataFrame({
+            'mean': SBA_means.values,
+            'mouseID': bodyAngles_col_df['mouseID'],
+            'expDate': bodyAngles_col_df['expDate'],
+            'stimFreq': bodyAngles_col_df['stimFreq'],
+            'headLVL': bodyAngles_col_df['headLVL'],
+            })
+        
+        merged_DF = arrIDer_df.merge(SBA_means, on=['mouseID', 'expDate', 'stimFreq', 'headLVL'], how='left')
+        arrIDer = merged_DF.drop(['headLVL'], axis=1)
+           
     df_reg = pd.DataFrame(np.hstack((arrIDer, limbX, limbY)), columns = np.concatenate((['mouseID'],['expDate'],['stimFreq'], ['trialType'], [x+'x' for x in limbs], [x+'y' for x in limbs])) )   
     df_reg.to_csv(os.path.join(outputDir, yyyymmdd + f'_limbPositionRegressionArray_{data}_{param}{appdx}.csv'))
  
@@ -1125,32 +1283,95 @@ def get_limb_amplitudes(param,
     pickle.dump(grouped_dict_inv, open(os.path.join(outputDir, f'{yyyymmdd}_limbKinematicsDict_{param}_{limbRef}{appdx}.pkl'), "wb" ))    
 
 def get_egocentric_limb_positions(outputDir = Config.paths["mtTreadmill_output_folder"],
-                                  yyyymmdd = '2022-05-06'):
+                                  yyyymmdd = '2022-05-06',
+                                  param = None):
     df_limbs, yyyymmdd = data_loader.load_processed_data(outputDir = outputDir,
                                                    dataToLoad = 'mtLimbData',
                                                    yyyymmdd = yyyymmdd)
     df_others, _ = data_loader.load_processed_data(outputDir = outputDir,
                                                    dataToLoad = 'mtOtherData',
                                                    yyyymmdd = yyyymmdd)
+    if param == 'snoutBodyAngle':
+        bodyAngles, _ = data_loader.load_processed_data(outputDir=outputDir, 
+                                                        dataToLoad = 'bodyAngles', 
+                                                        yyyymmdd = yyyymmdd, 
+                                                        appdx = '')
     
-    limbs = np.unique(df_limbs.columns.get_level_values(5))
+    lvl = 4 if '2021' in yyyymmdd else 5
+    limbs = np.unique(df_limbs.columns.get_level_values(lvl))
     for i, limb in enumerate(limbs):
         for ic, coord in enumerate(['x','y']):
-            df_limb_x = df_limbs.loc[:,(slice(None),slice(None),slice(None),slice(None),slice(None),limb,coord)]
+            if lvl == 5:
+                df_limb_x = df_limbs.loc[:,(slice(None),slice(None),slice(None),slice(None),slice(None),limb,coord)]
+            else:
+                df_limb_x = df_limbs.loc[:,(slice(None),slice(None),slice(None),slice(None),limb,coord)]
+            
             limb_x_means = np.mean(df_limb_x, axis = 0)
             
             if i == 0 and ic == 0:
-                df_body_x = df_others.loc[:,(slice(None),slice(None),slice(None),slice(None),slice(None),'body',coord)]
+                if lvl == 5:
+                    df_body_x = df_others.loc[:,(slice(None),slice(None),slice(None),slice(None),slice(None),'body',coord)]
+                else:
+                    df_body_x = df_others.loc[:,(slice(None),slice(None),slice(None),slice(None),'body',coord)]
+               
                 body_x_means = np.mean(df_body_x, axis = 0)
                 
                 mouseIDs = df_limb_x.columns.get_level_values(0)
                 expDates = df_limb_x.columns.get_level_values(1)
                 trialNums = df_limb_x.columns.get_level_values(2)
-                trialTypes = df_limb_x.columns.get_level_values(3)
+                
+                if param == 'snoutBodyAngle':
+                    bodyAngles_deg = bodyAngles.loc[:, (slice(None),slice(None),slice(None),slice(None),slice(None),'snoutBody')]
+                    trialTypes = np.mean(bodyAngles_deg, axis=0)
+                else:
+                    trialTypes = df_limb_x.columns.get_level_values(3)
                 
                 egocentricDF = pd.DataFrame(np.vstack((mouseIDs, expDates, trialNums,trialTypes)).T, 
                                             columns = ['mouseID', 'expDate', 'trialNum', 'trialType'])
             egocentricDF[f'{limb}{coord}'] = np.asarray(limb_x_means) - np.asarray(body_x_means)
 
     egocentricDF.to_csv(os.path.join(outputDir, f'{yyyymmdd}_limbPositionRegressionArray_egocentric.csv'))
+    
+def add_CoMy_to_strideParams(yyyymmdd,
+                             appdx = '',
+                             refLimb = 'lH1',
+                             merged = False,
+                             outputDir = Config.paths["passiveOpto_output_folder"]):
+    """
+    Takes a passive opto "strideParams" table and uses forceplate data to convert
+    the "snoutBodyAngle" column into CoMy
+    
+    appdx should be supplied with a leading underscore (unless appdx = '')
+    
+    !!! overwrites the input file
+    """
+    
+   # load passive opto data
+    m = 'Merged' if merged else ''
+    filepath = Path(outputDir)/f"{yyyymmdd}_strideParams{m}{appdx}_{refLimb}.csv"
+    df = pd.read_csv(filepath)
+    
+    # load forceplate data
+    tx = 'incline' if 'incline' in appdx else 'snoutBodyAngle'
+    predictor = 'levels' if 'incline' in appdx else 'snoutBodyAngle'
+    yyyymmdd_fp = Config.forceplate_config["passiveOpto_relations"][yyyymmdd][tx]
+    filepath_fp = Path(Config.paths["forceplate_output_folder"]) / f"{yyyymmdd_fp}_mixedEffectsModel_linear_COMy_{predictor}.csv"
+    CoMy_pred = pd.read_csv(filepath_fp)
+    CoMy_pred_intercept = CoMy_pred.iloc[0,1]
+    CoMy_pred_slope = CoMy_pred.iloc[1,1]
+    # load data that the model is based on for centering of sBA data
+    df_fp = pd.read_csv(os.path.join(
+        Config.paths["forceplate_output_folder"], f"{yyyymmdd_fp}_meanParamDF_{predictor}.csv")
+        )
+    
+    comys = ((((df[tx]-np.nanmean(df_fp['param'])) * CoMy_pred_slope)
+                + CoMy_pred_intercept)
+                + np.nanmean(df_fp['CoMy_mean']))
+    df["CoMy"] = comys
+    df.to_csv(filepath)
+
+    
+    
+    
+    
     

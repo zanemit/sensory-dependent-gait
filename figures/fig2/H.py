@@ -110,9 +110,10 @@ for im, m in enumerate(mice):
     incline_sBAmax = ((CoMy_sBAmax - np.nanmean(datafp2['CoMy_mean']) - CoMy_incline_intercept) / CoMy_incline_slope) + np.nanmean(datafp2['param'])
     incline_range = np.linspace(incline_sBAmin, incline_sBAmax, pred_num, endpoint= True)
     
-    for i, (phaselist1, phaselist2, title) in enumerate(zip([phase1_incT_sBA,phase1_incT_inc, phase1_hhT_sBA], 
-                                                            [phase2_incT_sBA, phase2_incT_inc, phase2_hhT_sBA], 
-                                                            ["incline trials: body tilt", "incline trials: incline", "head height trials: body tilt"]
+    for i, (phaselist1, phaselist2, title) in enumerate(zip(
+            [phase1_incT_sBA,phase1_incT_inc, phase1_hhT_sBA], 
+            [phase2_incT_sBA, phase2_incT_inc, phase2_hhT_sBA], 
+            ["incline trials: body tilt", "incline trials: incline", "head height trials: body tilt"]
                                                             )):
         if i == 0: #body angle incline trials
             mu1 = np.asarray(glm_inclineTrials[f'{m}_beta1_intercept']).reshape(-1,1) + \

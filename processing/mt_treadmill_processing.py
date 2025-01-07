@@ -35,52 +35,7 @@ def compute_mouse_speed(outputDir= Config.paths["mtTreadmill_output_folder"]):
     df = pd.DataFrame(mouse_speed, columns = trdm_speed.columns)
     
     df.to_csv(os.path.join(outputDir, yyyymmdd + '_mouseSpeed.csv'))
-    
-def get_relative_body_height(outputDir= Config.paths["mtTreadmill_output_folder"]):
-    import statistics
-        
-    data_other, yyyymmdd = data_loader.load_processed_data(outputDir,
-                                                           dataToLoad = 'mtOtherData')
-    data_limbs, _ = data_loader.load_processed_data(outputDir, 
-                                                    dataToLoad = 'mtLimbData',
-                                                    yyyymmdd = yyyymmdd)
-    mouse_speed, _ = data_loader.load_processed_data(outputDir, 
-                                                     dataToLoad = 'mouseSpeed', 
-                                                     yyyymmdd = yyyymmdd)
-    
-    if '2021' in yyyymmdd:
-        d = 4
-        tup_names = ['mouseID', 'expDate', 'trial', 'stimType']
-    else:
-        d = 5
-        tup_names = ['mouseID', 'expDate', 'trial', 'trialType', 'stimType']
-        
-    data_tuples = mouse_speed.columns.values
-    data_tuples = np.asarray([tup[:d] for tup in data_tuples]) # was :5 before incorporation of 'deg' level (5s for old data?)
-    data_tuples = np.unique(data_tuples, axis = 0)
-    
-    if d == 4:
-        data_body_y = data_other.loc[:, (slice(None), slice(None), slice(None), slice(None), 'body', 'y')]
-        data_rH1_y = data_limbs.loc[:, (slice(None), slice(None), slice(None), slice(None), 'rH1', 'y')]
-    else:
-        data_body_y = data_other.loc[:, (slice(None), slice(None), slice(None), slice(None), slice(None), 'body', 'y')]
-        data_rH1_y = data_limbs.loc[:, (slice(None), slice(None), slice(None), slice(None), slice(None), 'rH1', 'y')]
-    
-    body_relative = np.zeros_like(data_body_y) * np.nan
-    new_tuples = []
-    for c in range(mouse_speed.shape[1]):
-        tup = mouse_speed.columns[c][:d]
-        new_tuples.append(tup)
-        body_y = np.asarray(data_body_y.loc[:,tup]).flatten()
-        rH1_y = np.asarray(data_rH1_y.loc[:,tup]).flatten()
-        is_locomoting = np.asarray(mouse_speed.loc[:,tup]).flatten()>5
-        rH1_y_locom = utils_processing.remove_outliers(rH1_y[1:][is_locomoting])
-        rH1_y_locom_mode = statistics.mode(rH1_y_locom)
-        body_relative[:,c] = body_y-rH1_y_locom_mode  
-    
-    index = pd.MultiIndex.from_tuples(new_tuples, names = tup_names)
-    body_relative_DF = pd.DataFrame(body_relative*-1, columns = index)
-    body_relative_DF.to_csv(os.path.join(outputDir, yyyymmdd + f'_bodyHeight.csv')) 
+
     
 def get_trdm_mouse_movement_boundaries(outputDir= Config.paths["mtTreadmill_output_folder"], yyyymmdd = None):
     """
@@ -136,9 +91,13 @@ def get_trdm_mouse_movement_boundaries(outputDir= Config.paths["mtTreadmill_outp
     
 def compute_locomotor_params(outputDir= Config.paths["mtTreadmill_output_folder"], 
                              ref_limb = 'lH1',
-                             yyyymmdd = None):
+                             yyyymmdd = '2021-10-23',
+                             appdx = ""):
     from scipy.stats import pearsonr
-    limb_data, yyyymmdd = data_loader.load_processed_data(outputDir, 
+    if appdx != "":
+        appdx = f"_{appdx}"
+             
+    limb_data, _ = data_loader.load_processed_data(outputDir, 
                                                           dataToLoad = 'mtLimbData',
                                                           yyyymmdd = yyyymmdd) 
     other_data, yyyymmdd = data_loader.load_processed_data(outputDir, 
@@ -152,7 +111,12 @@ def compute_locomotor_params(outputDir= Config.paths["mtTreadmill_output_folder"
                                                      yyyymmdd = yyyymmdd)
     body_heights, _ = data_loader.load_processed_data(outputDir, 
                                                     dataToLoad = 'bodyHeight', 
-                                                    yyyymmdd = yyyymmdd)
+                                                    yyyymmdd = yyyymmdd, 
+                                                    appdx = appdx)
+    tailbase_heights, _ = data_loader.load_processed_data(outputDir, 
+                                                    dataToLoad = 'tailbaseHeight', 
+                                                    yyyymmdd = yyyymmdd, 
+                                                    appdx = appdx)
     movement_dict, _ = data_loader.load_processed_data(outputDir, 
                                                        dataToLoad = 'movementDict', 
                                                        yyyymmdd = yyyymmdd)
@@ -175,6 +139,11 @@ def compute_locomotor_params(outputDir= Config.paths["mtTreadmill_output_folder"
         limb_list_str = ['lH1', 'lH2', 'rH2', 'lF1', 'lF2', 'rF1', 'rF2']
         mean_limb_list = [lH0, lF0, rF0] # for storage of mean of (lH1,lH2) etc
         mean_limb_str = ['lH0', 'lF0', 'rF0']
+    elif ref_limb == 'lF1':
+        limb_list = [lF2, rH1, rH2, lH1, lH2, rF1, rF2]
+        limb_list_str = ['lF2','rH1', 'rH2', 'lH1', 'lH2', 'rF1', 'rF2']
+        mean_limb_list = [rH0, lH0, rF0] # for storage of mean of (lH1,lH2) etc
+        mean_limb_str = ['rH0', 'lH0', 'rF0']
     else:
         raise ValueError("Invalid reference limb supplied!")
     
@@ -194,8 +163,10 @@ def compute_locomotor_params(outputDir= Config.paths["mtTreadmill_output_folder"
     stridefreqs = np.empty((0))
     meanspeeds = np.empty((0))
     meansnoutbody = np.empty((0))
+    meantailbody = np.empty((0))
     meansnoutbodytail = np.empty((0))
     meanbodyheight = np.empty((0))
+    meantailbaseheight = np.empty((0))
     bodyheight_osc = np.empty((0))
     
     # save npy arrays containing x and y coords during locomotion
@@ -204,25 +175,34 @@ def compute_locomotor_params(outputDir= Config.paths["mtTreadmill_output_folder"
     array_y = np.empty((0, len(labels)))
     array_speed = np.empty(0) # column = speed
     array_bodyAngles = np.empty((0)) # columns = bodySnout, snoutBodyTail
+    array_tailAngles = np.empty((0))
     array_bodyHeights_rel = np.empty((0))
+    array_tailbaseHeights_rel = np.empty((0))
     
     for col in range(mouse_speed.shape[1]):
-        mouseID, expDate, trialNum, trialType, stimType = mt_treadmill_data_manager.get_metadata_from_df(mouse_speed, col)
         if '2021' in yyyymmdd:
-            limb_data_sub = limb_data.loc[:, (mouseID, expDate, trialNum, trialType)]
-            mouse_speed_sub = mouse_speed.loc[:, (mouseID, expDate, trialNum, trialType)]
-            snoutbody_angles_sub = body_angles.loc[:, (mouseID, expDate, trialNum, trialType, 'snoutBody')]
-            snoutbodytail_angles_sub = body_angles.loc[:, (mouseID, expDate, trialNum, trialType, 'snoutBodyTail')]
-            bodyheight_rel_sub = body_heights.loc[:, (mouseID, expDate, trialNum, trialType)]
-            bodyHeight_sub = other_data.loc[:, (mouseID, expDate, trialNum, trialType, 'body', 'y')]
-            trdmON, trdmOFF, locomONs, locomOFFs = movement_dict[mouseID][expDate][trialNum][trialType]
+            mouseID, expDate, trialNum, stimType = mt_treadmill_data_manager.get_metadata_from_df(mouse_speed, col)
+            limb_data_sub = limb_data.loc[:, (mouseID, expDate, trialNum, stimType)]
+            mouse_speed_sub = mouse_speed.loc[:, (mouseID, expDate, trialNum, stimType)]
+            snoutbody_angles_sub = body_angles.loc[:, (mouseID, expDate, trialNum, stimType, 'snoutBody')]
+            snoutbodytail_angles_sub = body_angles.loc[:, (mouseID, expDate, trialNum, stimType, 'snoutBodyTail')]
+            tailbody_angles_sub = body_angles.loc[:, (mouseID, expDate, trialNum, stimType, 'tailBodyAngle')]
+            bodyheight_rel_sub = body_heights.loc[:, (mouseID, expDate, trialNum, stimType)]
+            tailbaseheight_rel_sub = tailbase_heights.loc[:, (mouseID, expDate, trialNum, stimType)]
+            bodyHeight_sub = other_data.loc[:, (mouseID, expDate, trialNum, stimType, 'body', 'y')]
+            tailbase_sub = other_data.loc[:, (mouseID, expDate, trialNum, stimType, 'tailbase', 'y')]
+            trdmON, trdmOFF, locomONs, locomOFFs = movement_dict[mouseID][expDate][trialNum][stimType]
         else:
+            mouseID, expDate, trialNum, trialType, stimType = mt_treadmill_data_manager.get_metadata_from_df(mouse_speed, col)
             limb_data_sub = limb_data.loc[:, (mouseID, expDate, trialNum, trialType, stimType)]
             mouse_speed_sub = mouse_speed.loc[:, (mouseID, expDate, trialNum, trialType, stimType)]
             snoutbody_angles_sub = body_angles.loc[:, (mouseID, expDate, trialNum, trialType, stimType, 'snoutBody')]
             snoutbodytail_angles_sub = body_angles.loc[:, (mouseID, expDate, trialNum, trialType, stimType, 'snoutBodyTail')]
+            tailbody_angles_sub = body_angles.loc[:, (mouseID, expDate, trialNum, trialType, stimType, 'tailBodyAngle')]
             bodyheight_rel_sub = body_heights.loc[:, (mouseID, expDate, trialNum, trialType, stimType)] 
+            tailbaseheight_rel_sub = tailbase_heights.loc[:, (mouseID, expDate, trialNum, trialType, stimType)]
             bodyHeight_sub = other_data.loc[:, (mouseID, expDate, trialNum, trialType, stimType, 'body', 'y')]
+            tailbaseHeight_sub = other_data.loc[:, (mouseID, expDate, trialNum, trialType, stimType, 'tailbase', 'y')]
             trdmON, trdmOFF, locomONs, locomOFFs = movement_dict[mouseID][expDate][trialNum][trialType][stimType]
         print(f"Processing mouse {mouseID} from {expDate} trial {trialNum}...")
         
@@ -302,7 +282,9 @@ def compute_locomotor_params(outputDir= Config.paths["mtTreadmill_output_folder"
                         meanspeeds = np.append(meanspeeds, np.mean(mouse_speed_sub[on:off][stepStart:stepEnd]))
                         meansnoutbody = np.append(meansnoutbody, np.mean(snoutbody_angles_sub[on:off][stepStart:stepEnd]))
                         meansnoutbodytail = np.append(meansnoutbodytail, np.mean(snoutbodytail_angles_sub[on:off][stepStart:stepEnd]))
+                        meantailbody = np.append(meantailbody, np.mean(tailbody_angles_sub[on:off][stepStart:stepEnd]))
                         meanbodyheight = np.append(meanbodyheight, np.mean(bodyheight_rel_sub[on:off][stepStart:stepEnd]))
+                        meantailbaseheight = np.append(meantailbaseheight, np.mean(tailbaseheight_rel_sub[on:off][stepStart:stepEnd]))
                         bodyheight_osc = np.append(bodyheight_osc, np.max(bodyHeight_sub[on:off][stepStart:stepEnd]) - np.min(bodyHeight_sub[on:off][stepStart:stepEnd]))
                     
                     stride_freqs = 1/(np.diff(xtroughs)/Config.mtTreadmill_config['fps']) #the number of data points from swing-on to swing-on
@@ -313,7 +295,9 @@ def compute_locomotor_params(outputDir= Config.paths["mtTreadmill_output_folder"
                         meanspeeds = np.append(meanspeeds, np.nan)
                         meansnoutbody = np.append(meansnoutbody, np.nan)
                         meansnoutbodytail = np.append(meansnoutbodytail, np.nan)
+                        meantailbody = np.append(meantailbody, np.nan)
                         meanbodyheight = np.append(meanbodyheight, np.nan)
+                        meantailbaseheight = np.append(meantailbaseheight, np.nan)
                         bodyheight_osc = np.append(bodyheight_osc, np.nan)
                         for corr_arr in limb_list:
                             corr_arr.append(np.nan)
@@ -330,7 +314,9 @@ def compute_locomotor_params(outputDir= Config.paths["mtTreadmill_output_folder"
                 array_y = np.append(array_y, np.asarray(limb_data_sub.loc[on:off, (labels, 'y')]), axis = 0)
                 array_speed = np.append(array_speed, np.asarray(mouse_speed_sub.loc[on:off]))
                 array_bodyAngles = np.append(array_bodyAngles, np.asarray(snoutbody_angles_sub.loc[on:off]))
+                array_tailAngles = np.append(array_tailAngles, np.asarray(tailbody_angles_sub.loc[on:off]))
                 array_bodyHeights_rel = np.append(array_bodyHeights_rel, np.asarray(bodyheight_rel_sub.loc[on:off]))
+                array_tailbaseHeights_rel = np.append(array_tailbaseHeights_rel, np.asarray(tailbaseheight_rel_sub.loc[on:off]))
                 mice_long = np.append(mice_long, np.repeat(mouseID, len(limb_data_sub.loc[on:off, (labels, 'x')])))
                 expdates_long =  np.append(expdates_long, np.repeat(expDate, len(limb_data_sub.loc[on:off, (labels, 'x')])))
                 trialnums_long =  np.append(trialnums_long, np.repeat(trialNum, len(limb_data_sub.loc[on:off, (labels, 'x')])))
@@ -371,18 +357,21 @@ def compute_locomotor_params(outputDir= Config.paths["mtTreadmill_output_folder"
                                  limb_list[2], limb_list[3], limb_list[4], limb_list[5], 
                                  limb_list[6], mean_limb_list[0], mean_limb_list[1],
                                  mean_limb_list[2], meanspeeds, meansnoutbody, meansnoutbodytail,
-                                 meanbodyheight, bodyheight_osc)).T,
+                                 meantailbody, meanbodyheight, meantailbaseheight, bodyheight_osc)).T,
                       columns = ['mouseID', 'expDate', 'trialNum', 'trialType','stimType', 'strideNum', 
                                  'strideLength', 'strideFreq',  limb_list_str[0], 
                                  limb_list_str[1], limb_list_str[2], limb_list_str[3], 
                                  limb_list_str[4], limb_list_str[5], limb_list_str[6],
                                  mean_limb_str[0], mean_limb_str[1], mean_limb_str[2],
-                                 'speed', 'snoutBodyAngle', 'snoutBodyTailAngle', 'bodyHeight_rel','bodyHeightOscillation'])
+                                 'speed', 'snoutBodyAngle', 'snoutBodyTailAngle', 'tailBodyAngle',
+                                 'bodyHeight_rel', 'tailbaseHeight_rel', 'bodyHeightOscillation'])
     df.to_csv(os.path.join(outputDir, yyyymmdd + f'_strideParams_{ref_limb}.csv'))
     
     np.save(Path(outputDir)/ (yyyymmdd + "_limbX.npy"), array_x)  #   'lH1', 'rH1', 'lF1', 'rF1'
     np.save(Path(outputDir)/ (yyyymmdd + "_limbY.npy"), array_y)  #   'lH1', 'rH1', 'lF1', 'rF1'  
     np.save(Path(outputDir)/ (yyyymmdd + "_limbX_speed.npy"), array_speed) 
     np.save(Path(outputDir)/ (yyyymmdd + "_limbX_bodyAngles.npy"), array_bodyAngles) 
+    np.save(Path(outputDir)/ (yyyymmdd + "_limbX_tailAngles.npy"), array_tailAngles) 
     np.save(Path(outputDir)/ (yyyymmdd + "_limbX_bodyHeights_rel.npy"), array_bodyHeights_rel) 
+    np.save(Path(outputDir)/ (yyyymmdd + "_limbX_tailbaseHeights_rel.npy"), array_tailbaseHeights_rel) 
     

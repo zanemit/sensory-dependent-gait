@@ -53,7 +53,7 @@ x_pred = np.linspace(np.nanmin(minmaxs[0])-np.nanmean(df['param']), np.nanmax(mi
 ax.set_xlim(np.nanmin(minmaxs[0])-(0.1*(np.nanmax(minmaxs[1])-np.nanmin(minmaxs[0]))),
             np.nanmax(minmaxs[1])+(0.1*(np.nanmax(minmaxs[1])-np.nanmin(minmaxs[0]))))
 
-y_predLIN = (modLIN['Estimate'][0] + modLIN['Estimate'][1] * x_pred + np.nanmean(df[variable])) * Config.forceplate_config['fore_hind_post_cm']/2
+y_predLIN = (modLIN['Estimate'][0] + modLIN['Estimate'][1] * x_pred + np.nanmean(df[variable])) #* Config.forceplate_config['fore_hind_post_cm']/2
 x_pred += np.nanmean(df['param'])
 ax.plot(x_pred, y_predLIN, linewidth=2, color=FigConfig.colour_config[clr]) 
 p_text = title + ' ' + ('*' * (modLIN['Pr(>|t|)'][1] < FigConfig.p_thresholds).sum())
@@ -61,7 +61,7 @@ if (modLIN['Pr(>|t|)'][1] < FigConfig.p_thresholds).sum() == 0:
     p_text += "n.s."
 ax.text(155,0.9, p_text, ha = 'center', color = FigConfig.colour_config[clr])
 
-ax.set_ylabel("Centre of support (cm)")
+ax.set_ylabel("Centre of support (extremes)")
 ax.set_xlabel('Snout-hump angle (deg)†')
 
 ax.set_xticks([135,145,155,165,175])

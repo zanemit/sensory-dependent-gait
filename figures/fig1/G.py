@@ -68,7 +68,7 @@ x_centered = df['param'] - np.nanmean(df['param'])
 x_pred = np.linspace(np.nanmin(x_centered), np.nanmax(x_centered), endpoint=True)
 
 
-y_predLIN = (modLIN['Estimate'][0] + modLIN['Estimate'][1]*x_pred + np.nanmean(df[variable]))*Config.forceplate_config['fore_hind_post_cm']/2
+y_predLIN = (modLIN['Estimate'][0] + modLIN['Estimate'][1]*x_pred + np.nanmean(df[variable]))#*Config.forceplate_config['fore_hind_post_cm']/2
 x_pred += np.nanmean(df['param'])
 ax.plot(x_pred, 
         y_predLIN, 
