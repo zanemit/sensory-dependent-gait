@@ -3,6 +3,7 @@ from pathlib import Path
 import os
 import pandas as pd
 import numpy as np
+import scipy.stats
 from matplotlib import pyplot as plt
 
 sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
@@ -17,14 +18,20 @@ df, _ = data_loader.load_processed_data(outputDir = Config.paths["forceplate_out
                                                dataToLoad="meanParamDF", 
                                                yyyymmdd = yyyymmdd, 
                                                appdx = f'_{param}')
+
 mice = np.unique(df['mouse'])
 param_num = 5
 minmaxs = ([],[])
 
-variable = 'CoMy_mean'
-clr = 'main'
+fig, axes = plt.subplots(1,1, figsize=(1.45, 1.47))
 
-fig, ax = plt.subplots(1, 1, figsize=(1.55, 1.455))
+variable = 'CoMy_mean'
+clr = 'homolateral'
+variable_str = 'CoMy'
+tlt = 'Head height trials'
+
+    
+diffs = np.empty(len(mice))
 for im, m in enumerate(mice):
     df_sub = df[df['mouse'] == m]
     param_split = np.linspace(df_sub['param'].min()-0.0001, df_sub['param'].max(), param_num+1)
@@ -36,40 +43,43 @@ for im, m in enumerate(mice):
     minmaxs[1].append(np.nanmax(xvals))
     
     yvals = [np.mean(df_sub.loc[val,variable].values)*Config.forceplate_config['fore_hind_post_cm']/2 for key,val in group_row_ids.items()]
-    ax.plot(xvals, 
+    diffs[im] = yvals[-1]-yvals[0]
+    axes.plot(xvals, 
              yvals, 
-             color=FigConfig.colour_config[clr],  
+             color=FigConfig.colour_config[clr][2],  
              alpha=0.4, 
-             linewidth = 1)
+             linewidth = 0.7)
 
-# fore-hind and comxy plot means
-variable_str = 'CoMy'
-title = 'anteroposterior CoS'
+print(f"Mean change over 80 degrees: {np.mean(diffs):.3f} ± {scipy.stats.sem(diffs):.3f}")
 
-modLIN = pd.read_csv(Path(Config.paths["forceplate_output_folder"]) / f"{yyyymmdd}_mixedEffectsModel_linear_{variable_str}_{param}.csv")
+modLIN = pd.read_csv(Path(Config.paths["forceplate_output_folder"]) / f"{yyyymmdd}_mixedEffectsModel_linear_BEST_{variable_str}_{param}.csv")
 print(f"{variable} is modulated by {(modLIN['Estimate'][1]*Config.forceplate_config['fore_hind_post_cm']*100/2):.1f} ± {(modLIN['Std. Error'][1]*Config.forceplate_config['fore_hind_post_cm']*100/2):.1f} mm/deg")
 
 x_pred = np.linspace(np.nanmin(minmaxs[0])-np.nanmean(df['param']), np.nanmax(minmaxs[1])-np.nanmean(df['param']), endpoint=True)
-ax.set_xlim(np.nanmin(minmaxs[0])-(0.1*(np.nanmax(minmaxs[1])-np.nanmin(minmaxs[0]))),
-            np.nanmax(minmaxs[1])+(0.1*(np.nanmax(minmaxs[1])-np.nanmin(minmaxs[0]))))
-
-y_predLIN = (modLIN['Estimate'][0] + modLIN['Estimate'][1] * x_pred + np.nanmean(df[variable])) #* Config.forceplate_config['fore_hind_post_cm']/2
+# print(np.nanmean(df[variable]))
+y_predLIN = (modLIN['Estimate'][0] + modLIN['Estimate'][1] * x_pred + np.nanmean(df[variable])) * Config.forceplate_config['fore_hind_post_cm']/2
 x_pred += np.nanmean(df['param'])
-ax.plot(x_pred, y_predLIN, linewidth=2, color=FigConfig.colour_config[clr]) 
-p_text = title + ' ' + ('*' * (modLIN['Pr(>|t|)'][1] < FigConfig.p_thresholds).sum())
+axes.plot(x_pred, 
+        y_predLIN, 
+        linewidth=1.5, 
+        color=FigConfig.colour_config[clr][2]) 
+p_text = 'slope: '+ ('*' * (modLIN['Pr(>|t|)'][1] < FigConfig.p_thresholds).sum())
 if (modLIN['Pr(>|t|)'][1] < FigConfig.p_thresholds).sum() == 0:
     p_text += "n.s."
-ax.text(155,0.9, p_text, ha = 'center', color = FigConfig.colour_config[clr])
+axes.text(155,0.9, p_text, ha = 'center', color = FigConfig.colour_config[clr][2], fontsize = 5)
 
-ax.set_ylabel("Centre of support (extremes)")
-ax.set_xlabel('Snout-hump angle (deg)†')
+axes.set_xlabel('Snout-hump angle\n(deg)')
+axes.set_xticks([135,145,155,165,175][::2])
+axes.set_xlim(135,175)
+axes.set_yticks([-1.0,-0.5,0,0.5,1.0])
+axes.set_ylim(-1.3,1.0)
+axes.set_title(tlt)
 
-ax.set_xticks([135,145,155,165,175])
-ax.set_xlim(135,175)
-ax.set_yticks([-1.0,-0.5,0,0.5,1.0])
-ax.set_ylim(-1.25,1)
-ax.set_title("Head height trials")
+axes.set_ylabel("Anteroposterior\nCoS (cm)")
+plt.tight_layout()
+    
+fig.savefig(os.path.join(FigConfig.paths['savefig_folder'], f'forceplate_CoMy_vs_sBA.svg'),
+            transparent = True,
+            dpi =300)
 
-plt.tight_layout(w_pad = 0, pad = 0, h_pad = 0)
 
-fig.savefig(os.path.join(FigConfig.paths['savefig_folder'], f'MS2_{yyyymmdd}_CoMy_{param}.svg'), dpi = 300, transparent = True)

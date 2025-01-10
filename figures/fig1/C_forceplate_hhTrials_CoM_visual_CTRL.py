@@ -25,11 +25,11 @@ new_line = '\n'
 plt.rcParams['axes.titlepad'] = 10
 mice = np.unique(df.columns.get_level_values(1))
 conditions = np.unique(df.columns.get_level_values(0))[[0,-1]]
-cond_titles = [f"{h}{new_line}{c[:5]},{c.split(',')[-1][:5]}]" for h,c in zip(['head low', 'head high'],conditions)]
+cond_titles = ['head low', 'head high']
 
 # MEANS WITH SHADED 95% CI
 fig, ax = plt.subplots(1, conditions.shape[0], 
-                       figsize=(conditions.shape[0]*1.45, 1.3), #1.5
+                       figsize=(conditions.shape[0]*1, 0.8), #1.5
                        sharey=True)
 
 for icon, (cond, cond_t) in enumerate(zip(conditions, cond_titles)):  # loop over levels/intervals
@@ -72,16 +72,15 @@ ax[0].set_ylim(-1, 1)
 ax[0].set_yticks([])
 ax[0].set_ylabel('Anteroposterior\ncentre of support')
 ax[0].yaxis.labelpad = 15
-fig.text(0,0.85,"Weight-\nadjusted\nhead\nheight", ha = 'center')
 
 grey_selection = [FigConfig.colour_config["greys7"][i] for i in [1,3,5]]
 lgd = fig.legend([(grey_selection,"solid"), 
                 ([FigConfig.colour_config["main"]],"solid")], 
-                ["trials\nby\nmouse", "per-\nmouse\naverage"], handler_map={tuple: AnyObjectHandler()}, 
-                loc = 'upper center', bbox_to_anchor=(0.95,0.3,0.23,0.5),#(0.1,-0.35,0.8,0.2),
-                mode="expand", borderaxespad=0, ncol = 1)
+                ["trials by mouse", "per-mouse average"], handler_map={tuple: AnyObjectHandler()}, 
+                loc = 'upper center', bbox_to_anchor=(-0.05,-0.75,1,0.5),#(0.1,-0.35,0.8,0.2),
+                mode="expand", borderaxespad=0, ncol = 2)
 
-fig.savefig(os.path.join(FigConfig.paths['savefig_folder'], f'MS2_{yyyymmdd}_CoMxy_over_time_{param}_allMice.svg'), 
+fig.savefig(os.path.join(FigConfig.paths['savefig_folder'], f'forceplate_CoMxy_over_time_headHW.svg'), 
             bbox_extra_artists = (lgd, ), 
             bbox_inches = 'tight',
             transparent = True)
