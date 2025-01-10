@@ -25,12 +25,7 @@ limb_clr = 'homologous'
 limb_str = 'fore_weight_frac'
 tlt = 'Head height trials'
 variable_str = 'foreWfrac'
-# for i, (limb_clr, limb_str, tlt, variable_str) in enumerate(zip(
-#         ['homologous', 'homolateral'],
-#         ['fore_weight_frac', 'hind_weight_frac'],
-#         ['Forelimbs', 'Hindlimbs'],
-#         ['foreWfrac', 'hindWfrac'],
-#         )):
+perc_changes = []
 for im, m in enumerate(mice):
     df_sub = df[df['mouse'] == m]
     headHWs = np.unique(df_sub['param'])
@@ -41,6 +36,7 @@ for im, m in enumerate(mice):
              color=FigConfig.colour_config[limb_clr][2],  
              alpha=0.4, 
              linewidth = 0.7)
+    perc_changes.append((yvals[-1]-yvals[0])*100/yvals[0])
              
 # # fore-hind and comxy plot means
 
@@ -55,64 +51,39 @@ def linear_fit(x,A,B):
 
 x_pred = np.linspace(np.nanmin(df['param'].values), np.nanmax(df['param'].values), endpoint=True)
 
-if "hind" not in limb_str:
-    popt,pcov = curve_fit(exp_decay, df['param'].values, df[limb_str].values, p0=(0.25,0.75,2))
-    # popt,pcov = curve_fit(exp_decay, df['param'].values, df[limb_str].values, p0=(np.nanmax(df[limb_str].values),
-    #                                                                               np.nanmax(df[limb_str].values)-np.nanmin(df[limb_str].values),
-    #                                                                               1/np.nanmean(df['param'].values)))
-    A_fit, B_fit, k_fit = popt
-    print(f"Exp decay fitted params: A = {A_fit:.3f}, B = {B_fit:.3f}, k = {k_fit:.3f}")
-    axes.plot(x_pred, 
-                  exp_decay(x_pred, *popt), 
-                  linewidth=1.5, 
-                  color=FigConfig.colour_config[limb_clr][2])
-    # print(f"LAST VALUE: {exp_decay(x_pred, *popt)[-1]}")
-    std_err = np.sqrt(np.diag(pcov)) # standard errors
-    t_values = popt/std_err
-    dof = max(0, len(df[limb_str].values)-len(popt))   
-    p_values = [2 * (1 - t.cdf(np.abs(t_val), dof)) for t_val in t_values]
-    print(f"p-values: A_p = {p_values[0]:.3e}, B_p = {p_values[1]:.3e}, k_p = {p_values[2]:.3e}")
-    for i_p, (p, exp_d_param) in enumerate(zip(
-            p_values[1:], 
-            ["scale factor", "rate constant"],
-            )):
-        p_text = ('*' * (p < FigConfig.p_thresholds).sum())
-        if (p < FigConfig.p_thresholds).sum() == 0:
-            p_text += "n.s."
-        axes.text(0.63,
-                     1.46-(i_p*0.2), 
-                     f"{exp_d_param}: {p_text}", 
-                     ha = 'center', 
-                     color = FigConfig.colour_config[limb_clr][2],
-                     fontsize = 5)
-    
-else:
-    popt,pcov = curve_fit(linear_fit, df['param'].values, df[limb_str].values, p0=(0.5,0))
-    A_fit, B_fit = popt
-    print(f"Linear fitted params: A = {A_fit:.3f}, B = {B_fit:.3f}")
-    axes.plot(x_pred, 
-                  linear_fit(x_pred, *popt), 
-                  linewidth=1.5, 
-                  color=FigConfig.colour_config[limb_clr][2])
-    std_err = np.sqrt(np.diag(pcov)) # standard errors
-    t_values = popt/std_err
-    dof = max(0, len(df[limb_str].values)-len(popt))   
-    p_values = [2 * (1 - t.cdf(np.abs(t_val), dof)) for t_val in t_values]
-    print(f"p-values: A_p = {p_values[0]:.3e}, B_p = {p_values[1]:.3e}")
-    for i_p, (p, exp_d_param) in enumerate(zip(
-            p_values[1:], 
-            ["slope"],
-            )):
-        p_text = ('*' * (p < FigConfig.p_thresholds).sum())
-        if (p < FigConfig.p_thresholds).sum() == 0:
-            p_text += "n.s."
-        axes.text(0.6,
-                     1.46-(i_p*0.1), 
-                     f"{exp_d_param}: {p_text}", 
-                     ha = 'center', 
-                     color = FigConfig.colour_config[limb_clr][2],
-                     fontsize = 5)
 
+popt,pcov = curve_fit(exp_decay, df['param'].values, df[limb_str].values, p0=(0.25,0.75,2))
+# popt,pcov = curve_fit(exp_decay, df['param'].values, df[limb_str].values, p0=(np.nanmax(df[limb_str].values),
+#                                                                               np.nanmax(df[limb_str].values)-np.nanmin(df[limb_str].values),
+#                                                                               1/np.nanmean(df['param'].values)))
+A_fit, B_fit, k_fit = popt
+print(f"Exp decay fitted params: A = {A_fit:.3f}, B = {B_fit:.3f}, k = {k_fit:.3f}")
+y_pred = exp_decay(x_pred, *popt)
+axes.plot(x_pred, 
+              y_pred, 
+              linewidth=1.5, 
+              color=FigConfig.colour_config[limb_clr][2])
+# print(f"LAST VALUE: {exp_decay(x_pred, *popt)[-1]}")
+std_err = np.sqrt(np.diag(pcov)) # standard errors
+t_values = popt/std_err
+dof = max(0, len(df[limb_str].values)-len(popt))   
+p_values = [2 * (1 - t.cdf(np.abs(t_val), dof)) for t_val in t_values]
+print(f"p-values: A_p = {p_values[0]:.3e}, B_p = {p_values[1]:.3e}, k_p = {p_values[2]:.3e}")
+for i_p, (p, exp_d_param) in enumerate(zip(
+        p_values[1:], 
+        ["scale factor", "rate constant"],
+        )):
+    p_text = ('*' * (p < FigConfig.p_thresholds).sum())
+    if (p < FigConfig.p_thresholds).sum() == 0:
+        p_text += "n.s."
+    axes.text(0.63,
+                 1.46-(i_p*0.2), 
+                 f"{exp_d_param}: {p_text}", 
+                 ha = 'center', 
+                 color = FigConfig.colour_config[limb_clr][2],
+                 fontsize = 5)
+
+print(f"Forelimb load changed by {np.mean(perc_changes)} ± {np.std(perc_changes)/np.sqrt(len(perc_changes))}%")
 # if A is significant, it means that the data asymptotes at a non-zero value
 # if B is significant, it means that there is a (monotonic?) change in y as the x changes
 # if k is significant, it means that y approaches the asymptote in an exponential manner

@@ -45,9 +45,9 @@ for im, m in enumerate(mice):
              alpha=0.4, 
              linewidth = 0.7)
 print(f"Average standard deviation: {np.mean(np.nanmean(stds, axis=1))}")
-print(f"Mean change over 80 degrees: {np.mean(diffs):.3f} ± {scipy.stats.sem(diffs):.3f}")
+print(f"Mean change over the examined x range: {np.mean(diffs):.3f} ± {scipy.stats.sem(diffs):.3f}")
 
-modQDR = pd.read_csv(Path(Config.paths["forceplate_output_folder"]) / f"{yyyymmdd}_mixedEffectsModel_quadratic_{variable_str}_{param}.csv")
+modQDR = pd.read_csv(Path(Config.paths["forceplate_output_folder"]) / f"{yyyymmdd}_mixedEffectsModel_linear_{variable_str}_{param}.csv", index_col=0)
 
 x_centered = df['param'] - np.nanmean(df['param'])
 x_pred = np.linspace(np.nanmin(x_centered), np.nanmax(x_centered), endpoint=True)
@@ -68,24 +68,22 @@ axes.plot(x_pred,
               linear_fit(x_pred, *popt), 
               linewidth=1.5, 
               color=FigConfig.colour_config[clr][1])
-std_err = np.sqrt(np.diag(pcov)) # standard errors
-t_values = popt/std_err
-dof = max(0, len(df[variable].values)-len(popt))   
-p_values = [2 * (1 - t.cdf(np.abs(t_val), dof)) for t_val in t_values]
-print(f"p-values: A_p = {p_values[0]:.3e}, B_p = {p_values[1]:.3e}")
-for i_p, (p, exp_d_param) in enumerate(zip(
-        p_values[1:], 
-        ["slope"],
-        )):
-    p_text = ('*' * (p < FigConfig.p_thresholds).sum())
-    if (p < FigConfig.p_thresholds).sum() == 0:
-        p_text += "n.s."
-    axes.text(0.6,
-                 0.9-(i_p*0.1), 
-                 f"{exp_d_param}: {p_text}", 
-                 ha = 'center', 
-                 color = FigConfig.colour_config[clr][2],
-                 fontsize = 5)
+# std_err = np.sqrt(np.diag(pcov)) # standard errors
+# t_values = popt/std_err
+# dof = max(0, len(df[variable].values)-len(popt))   
+# p_values = [2 * (1 - t.cdf(np.abs(t_val), dof)) for t_val in t_values]
+p_value = modQDR.loc['param_centred', 'Pr(>|t|)']
+print(f"p-value: {p_value}")
+
+p_text = ('*' * (p_value < FigConfig.p_thresholds).sum())
+if (p_value < FigConfig.p_thresholds).sum() == 0:
+    p_text += "n.s."
+axes.text(0.6,
+             0.9, 
+             f"slope: {p_text}", 
+             ha = 'center', 
+             color = FigConfig.colour_config[clr][2],
+             fontsize = 5)
 
 axes.set_xlabel('Weight-adjusted\nhead height')
 axes.set_xticks([0,0.6,1.2])
