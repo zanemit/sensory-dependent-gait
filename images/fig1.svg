@@ -7319,8 +7319,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.7038732"
-     inkscape:cx="404.51511"
-     inkscape:cy="290.36517"
+     inkscape:cx="490.34708"
+     inkscape:cy="235.43522"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      inkscape:document-rotation="0"
@@ -7353,13 +7353,15 @@
      inkscape:groupmode="layer"
      id="layer1">
     <rect
-       style="fill:#f9f9f9;stroke-width:0.272387;stroke-linejoin:round;stroke-dasharray:1.00782, 0.43581700000000001;stop-color:#000000"
+       style="fill:#ffffff;stroke-width:0.272387;stroke-linejoin:round;stroke-dasharray:1.00782, 0.43581700000000001;stop-color:#000000"
        id="rect833"
        width="172"
        height="84.962654"
        x="14.363094"
        y="30.238094"
-       rx="0.79485548" />
+       rx="0.79485548"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300" />
     <g
        id="axes_1"
        transform="matrix(0.35277777,0,0,0.35277777,154.5249,79.826243)">

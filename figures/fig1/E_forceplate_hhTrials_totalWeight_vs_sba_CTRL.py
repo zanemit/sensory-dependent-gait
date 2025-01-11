@@ -11,6 +11,11 @@ from processing import data_loader
 from processing.data_config import Config
 from figures.fig_config import Config as FigConfig
 
+from scipy.optimize import curve_fit
+from scipy.stats import t
+def linear_fit(x,A,B):
+    return A + B * x
+
 yyyymmdd = '2021-10-26'
 param = 'snoutBodyAngle'
 df, _ = data_loader.load_processed_data(outputDir = Config.paths["forceplate_output_folder"], 
@@ -29,7 +34,7 @@ limb_str = 'headplate_weight_frac'
 df[limb_str] = -(df[limb_str]-1)*100
 
 group_num =5
-
+slopes = []
 for im, m in enumerate(mice):
     df_sub = df[df['mouse'] == m]
     df_sub['param_bins'] = pd.qcut(df_sub['param'], q=group_num, labels=False)
@@ -43,14 +48,11 @@ for im, m in enumerate(mice):
              color=FigConfig.colour_config[limb_clr][1],  
              alpha=0.4, 
              linewidth = 0.7)
-
+    popt_m,pcov_m = curve_fit(linear_fit, sbas, yvals, p0=(0.5,0))
+    slopes.append(popt_m[1])
+print(f"Average slope across mice: {np.mean(slopes)} ± {np.std(slopes)/np.sqrt(len(slopes))}")
 
 # APPROXIMATE WITH A FUNCTION
-from scipy.optimize import curve_fit
-from scipy.stats import t
-def linear_fit(x,A,B):
-    return A + B * x
-
 x_pred = np.linspace(np.nanmin(df['param'].values), np.nanmax(df['param'].values), endpoint=True)
 popt,pcov = curve_fit(linear_fit, df['param'].values, df[limb_str].values, p0=(0.5,0))
 A_fit, B_fit = popt
@@ -79,7 +81,8 @@ for i_p, (p, exp_d_param) in enumerate(zip(
                  color = FigConfig.colour_config[limb_clr][1],
                  fontsize = 5)
 
-
+# mixed-effects stats
+# stats_path = r"C:\Users\MurrayLab\Documents\Forceplate\2023-11-06_mixedEffectsModel_linear_headWfrac_snoutBodyAngle.csv"
 # if A is significant, it means that the data asymptotes at a non-zero value
 # if B is significant, it means that there is a (monotonic?) change in y as the x changes
 # if k is significant, it means that y approaches the asymptote in an exponential manner
