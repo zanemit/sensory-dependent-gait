@@ -706,9 +706,7 @@
      inkscape:groupmode="layer"
      id="layer1">
     <g
-       id="g92654"
-       inkscape:export-xdpi="300"
-       inkscape:export-ydpi="300">
+       id="g94238">
       <rect
          style="fill:#ffffff;stroke:none;stroke-width:0.0764527;stroke-linejoin:round;stop-color:#000000"
          id="rect85693"
@@ -2082,7 +2080,7 @@
       </g>
       <g
          id="axes_1-9"
-         transform="matrix(0.3527778,0,0,0.3527778,62.672421,27.951765)">
+         transform="matrix(0.3527778,0,0,0.3527778,108.49608,27.951765)">
         <g
            id="patch_2-8">
           <path
@@ -3427,7 +3425,7 @@
       </g>
       <g
          id="axes_1-7"
-         transform="matrix(0.3527778,0,0,0.3527778,107.13042,27.951765)">
+         transform="matrix(0.3527778,0,0,0.3527778,63.541061,27.951765)">
         <g
            id="patch_2-9">
           <path
@@ -4928,7 +4926,7 @@
          xml:space="preserve"
          id="text30585-6-4-2"
          style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:2.82222px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif Bold';white-space:pre;shape-inside:url(#rect30587-7-5-7);fill:#000000;fill-opacity:1;stroke:none;stroke-linecap:butt;stroke-linejoin:round;"
-         transform="translate(40.943605,54.318407)"
+         transform="translate(41.805366,54.318407)"
          inkscape:export-xdpi="300"
          inkscape:export-ydpi="300"><tspan
            x="23.728516"
