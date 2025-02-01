@@ -9,7 +9,7 @@ import os
 import seaborn as sns
 from scipy import stats
 
-sys.path.append(r"C:\Users\MurrayLab\thesis")
+sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
 # PER-MOUSE, BUT A RESULT OF THE RANDOM SLOPE MODEL, NOT BETA12
 
@@ -75,63 +75,13 @@ resultant_lengths = pd.DataFrame(np.vstack((mouseIDlist, setuplist, limblist, mr
 resultant_lengths['condition'] = resultant_lengths['limb']+ '_' + resultant_lengths['setup']
 resultant_lengths['MRL']=resultant_lengths['MRL'].astype(float)
 
-# condition_order = ['hindlimbs_passiveOpto', 'hindlimbs_mtTreadmill', 'hindlimbs_escape','',
-#                    'homolateral_passiveOpto', 'homolateral_mtTreadmill', 'homolateral_escape','',
-#                    'forelimbs_passiveOpto', 'forelimbs_mtTreadmill', 'forelimbs_escape']
-
-# clr_dict = {'hindlimbs': 'homologous', 'homolateral': 'homolateral', 'forelimbs': 'diagonal'}
-# fig, ax = plt.subplots(1,1,figsize = (1.8,1.4))
-# scatter_shift=0.3
-
-# for i, cond in enumerate(condition_order):
-#     if len(cond)<1:
-#         continue
-#     mrls = resultant_lengths[resultant_lengths.condition==cond]['MRL']
-#     clr = FigConfig.colour_config[clr_dict[cond.split("_")[0]]][2]
-#     ax.boxplot(mrls, positions = [i], 
-#                medianprops = dict(color = clr, linewidth = 1, alpha = 0.6),
-#                boxprops = dict(color = clr, linewidth = 1, alpha = 0.6), 
-#                capprops = dict(color = clr, linewidth = 1, alpha = 0.6),
-#                whiskerprops = dict(color = clr, linewidth = 1, alpha = 0.6), 
-#                flierprops = dict(mec = clr, linewidth = 1, alpha = 0.6, ms=2))
-#     ax.scatter(np.repeat(i+scatter_shift, 
-#                len(mrls)), 
-#                mrls, 
-#                color =  clr, alpha = 0.8, s = 5, zorder = 3)
-    
-#     if i%2==1:
-#         prev_cond = condition_order[i-1]
-#         _, pval = stats.ttest_ind(mrls, 
-#                                   resultant_lengths[resultant_lengths.condition==prev_cond]['MRL'])
-        
-#         p_text = ('*' * (pval < (np.asarray(FigConfig.p_thresholds))).sum())
-#         if (pval < (np.asarray(FigConfig.p_thresholds)).sum()) == 0 and not np.isnan(pval):
-#             p_text = "n.s."
-            
-#         ax.hlines(0.98, i-1+scatter_shift/2, i+scatter_shift/2, color='grey')
-#         ax.text(i-0.5+scatter_shift/2, 0.98, p_text, ha='center', color='grey')
-#         print(f"{cond} x {prev_cond}: {pval}")
-        
-#         tlt = cond.split("_")[0].split("l")[0] if i!=3 else cond.split("_")[0].split("omo")[-1]
-#         ax.text(i-0.5+scatter_shift/2, 1.08, 
-#                 tlt.upper(), 
-#                 ha='center', color=clr,
-#                 fontsize=5)
-        
-# xticks = [i for i in range(len(condition_order)) if len(condition_order[i])>0]
-# ax.set_xticks(xticks,
-#                    labels=['P', 'M', 'E', 'P', 'M', 'E', 'P', 'M', 'E'])
-# ax.set_ylim(-0.05,1)
-# ax.set_yticks([0,0.2,0.4,0.6,0.8,1])
-# ax.set_ylabel("Mean resultant length")
-# plt.tight_layout()
 
 condition_order = ['mtTreadmill', 'passiveOpto', 'escape']
 limb_clr_dict = {'hindlimbs': 'homologous', 'homolateral': 'homolateral', 'forelimbs': 'diagonal'}
 cond_clr_dict = {'mtTreadmill': 'grey', 'escape': 'black'}
 
 for limb in limb_clr_dict.keys():
-    fig, ax = plt.subplots(1,1,figsize = (1.4,1.3))
+    fig, ax = plt.subplots(1,1,figsize = (1.35,1.3))
     scatter_shift=0.15
     boxplot_shift=-0.15
     

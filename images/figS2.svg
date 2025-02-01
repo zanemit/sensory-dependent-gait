@@ -5864,9 +5864,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.4663293"
-     inkscape:cx="252.89583"
-     inkscape:cy="276.07867"
+     inkscape:zoom="1.0900634"
+     inkscape:cx="621.34819"
+     inkscape:cy="210.33342"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      inkscape:document-rotation="0"
@@ -14481,11 +14481,11 @@
           <text
              xml:space="preserve"
              id="text62907-0"
-             style="font-style:normal;font-weight:normal;font-size:1.76389px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect62909-1);fill:#c19ba2;fill-opacity:1;stroke:none;stroke-linecap:butt;stroke-linejoin:round;"
+             style="font-style:normal;font-weight:normal;font-size:1.76389px;line-height:1.25;font-family:sans-serif;white-space:pre;fill:#c19ba2;fill-opacity:1;stroke:none;stroke-linecap:butt;stroke-linejoin:round;shape-inside:url(#rect62909-1);"
              transform="rotate(0.06544248,407.54398,7249.1991)"><tspan
                x="91.992188"
                y="25.406125"><tspan
-                 style="font-size:1.76389px;fill:#c19ba2;fill-opacity:1;stroke-linecap:butt;stroke-linejoin:round">0.875</tspan></tspan></text>
+                 style="font-size:1.76389px;fill:#c19ba2;fill-opacity:1;stroke-linecap:butt;stroke-linejoin:round">1.75π</tspan></tspan></text>
         </g>
         <g
            id="g62905"
@@ -14561,10 +14561,10 @@
              xml:space="preserve"
              id="text62907-0-9"
              style="font-style:normal;font-weight:normal;font-size:1.76389px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect62909-1-3);fill:#c19ba2;fill-opacity:1;stroke:none;stroke-linecap:butt;stroke-linejoin:round;"
-             transform="rotate(0.06544248,8507.4099,6566.1505)"><tspan
+             transform="rotate(0.06544248,8507.4099,6566.1541)"><tspan
                x="91.992188"
                y="25.406125"><tspan
-                 style="font-size:1.76389px;fill:#c19ba2;fill-opacity:1;stroke-linecap:butt;stroke-linejoin:round">0.125</tspan></tspan></text>
+                 style="font-size:1.76389px;fill:#c19ba2;fill-opacity:1;stroke-linecap:butt;stroke-linejoin:round">0.25π</tspan></tspan></text>
         </g>
         <g
            id="g71546"
@@ -14576,11 +14576,11 @@
           <text
              xml:space="preserve"
              id="text62907-0-0"
-             style="font-style:normal;font-weight:normal;font-size:1.76389px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect62909-1-7);fill:#c19ba2;fill-opacity:1;stroke:none;stroke-linecap:butt;stroke-linejoin:round;"
-             transform="rotate(0.06544248,8438.7313,-5595.269)"><tspan
+             style="font-style:normal;font-weight:normal;font-size:1.76389px;line-height:1.25;font-family:sans-serif;white-space:pre;fill:#c19ba2;fill-opacity:1;stroke:none;stroke-linecap:butt;stroke-linejoin:round;shape-inside:url(#rect62909-1-7);"
+             transform="rotate(0.06544248,8438.7313,-5595.2672)"><tspan
                x="91.992188"
                y="25.406125"><tspan
-                 style="font-size:1.76389px;fill:#c19ba2;fill-opacity:1;stroke-linecap:butt;stroke-linejoin:round">0.375</tspan></tspan></text>
+                 style="font-size:1.76389px;fill:#c19ba2;fill-opacity:1;stroke-linecap:butt;stroke-linejoin:round">0.75π</tspan></tspan></text>
         </g>
         <g
            id="g71552"
@@ -14592,11 +14592,11 @@
           <text
              xml:space="preserve"
              id="text62907-0-3"
-             style="font-style:normal;font-weight:normal;font-size:1.76389px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect62909-1-9);fill:#c19ba2;fill-opacity:1;stroke:none;stroke-linecap:butt;stroke-linejoin:round;"
+             style="font-style:normal;font-weight:normal;font-size:1.76389px;line-height:1.25;font-family:sans-serif;white-space:pre;fill:#c19ba2;fill-opacity:1;stroke:none;stroke-linecap:butt;stroke-linejoin:round;shape-inside:url(#rect62909-1-9);"
              transform="rotate(0.06544248,-203.4687,-4787.8408)"><tspan
                x="91.992188"
                y="25.406125"><tspan
-                 style="font-size:1.76389px;fill:#c19ba2;fill-opacity:1;stroke-linecap:butt;stroke-linejoin:round">0.625</tspan></tspan></text>
+                 style="font-size:1.76389px;fill:#c19ba2;fill-opacity:1;stroke-linecap:butt;stroke-linejoin:round">1.25π</tspan></tspan></text>
         </g>
       </g>
       <text
