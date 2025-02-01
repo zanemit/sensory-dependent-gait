@@ -6,7 +6,7 @@ import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
 
-sys.path.append(r"C:\Users\MurrayLab\thesis")
+sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
 from processing import data_loader
 from processing.data_config import Config
@@ -15,7 +15,7 @@ from figures.fig_config import Config as FigConfig
 
 group_num = 5
 dep_var = 'rH1x'
-fig, ax = plt.subplots(1, 1, figsize=(1.5, 1.5), sharex = True)
+fig, ax = plt.subplots(1, 1, figsize=(1.4, 1.4), sharex = True)
 bin_edges = np.linspace(-40.0001,40, group_num+1, endpoint=True)
 
 x_data_comb = np.empty(0)
@@ -100,7 +100,7 @@ for i, (yyyymmdd, otp_dir, appdx, indep_var, appdx2, clr, lnst, lbl, cfg) in enu
     ax.set_ylim(-2,2)
     
     ## plot horizontal line as a legend
-    ax.hlines(1.9, 5 - (i*44), 31 - (i*40), color = clr, ls = lnst, lw = 1)
+    ax.hlines(1.9, 6 - (i*50), 37 - (i*46), color = clr, ls = lnst, lw = 0.7)
     
     # COMBINE DATA
     x_data_comb = np.concatenate((x_data_comb, df[indep_var].values[mask]))
@@ -132,7 +132,7 @@ dof = len(popt)
 p_value = chi2.sf(lr_stat,dof)
 print(f"Comparison p-value: {p_value}")
 
-ax.text(-42,2, "treadmill ", ha = 'left', 
+ax.text(-45,2, "treadmill ", ha = 'left', 
         color = FigConfig.colour_config['homolateral'][2], 
         fontsize = 5)
 p_text = "vs sensors: " + ('*' * (p_value < FigConfig.p_thresholds).sum())
@@ -145,6 +145,7 @@ ax.text(-6,2, p_text, ha = 'left',
 
 ax.text(-50.5,2.3,'anterior', ha = 'right', fontsize = 5)
 ax.text(-50.5,-2.5,'posterior', ha = 'right', fontsize = 5)
+ax.set_title("Surface slope trials")
 
 ax.set_xlabel('Surface slope (deg)')
 ax.set_ylabel('Horizontal position of\nRH foot (cm)')
