@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 import scipy.stats
 import os
 
-sys.path.append(r"C:\Users\MurrayLab\sensory-dependent")
+sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
 # PER-MOUSE, BUT A RESULT OF THE RANDOM SLOPE MODEL, NOT BETA12
 
