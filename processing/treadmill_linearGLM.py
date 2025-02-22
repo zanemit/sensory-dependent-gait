@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
+from pathlib import Path
 import scipy.stats
 
 sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
