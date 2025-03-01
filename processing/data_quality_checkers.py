@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import copy
 import os
-import cv2
+# import cv2
 
 def get_trigger_times(trigger_array, threshold = 3.3):
     """
