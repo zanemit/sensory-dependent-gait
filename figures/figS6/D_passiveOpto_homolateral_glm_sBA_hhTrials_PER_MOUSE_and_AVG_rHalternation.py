@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 import scipy.stats
 import os
 
-sys.path.append(r"C:\Users\MurrayLab\thesis")
+sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
 # PER-MOUSE, BUT A RESULT OF THE RANDOM SLOPE MODEL, NOT BETA12
 
@@ -28,7 +28,7 @@ predictor = 'snoutBodyAngle'
 predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
 appdx = ''
 samplenum = 2659
-tlt = 'Head height trials'
+tlt ='Passive treadmill'#'\n(left-right alternation)'# 'Head height trials'
 yyyymmdd = '2022-08-18'
 slopes = ['pred2']
 limb = 'lF0'
@@ -50,7 +50,7 @@ yticklabels = ["0.5π", "π", "1.5π"]
 xlim, xticks, xlabel = treadmill_circGLM.get_predictor_range(predictor)
 
 #---------------PER MOUSE--------------------
-fig, ax = plt.subplots(1,1,figsize = (1.4,1.4)) #1.6,1.4 for 4figs S2 bottom row
+fig, ax = plt.subplots(1,1,figsize = (1.35,1.4)) #1.6,1.4 for 4figs S2 bottom row
 for i in range(1, len(mouselist)+1):
     x_range, phase_preds = treadmill_circGLM.get_circGLM_slopes_per_mouse(
             predictors = predictorlist,
@@ -138,6 +138,7 @@ ax.set_title(tlt)
 # axes 
 ax.set_xlim(xlim[0], xlim[1])
 ax.set_xticks(xticks[::2])
+xlabel = 'Snout-hump angle\n(deg)'
 ax.set_xlabel(f"{xlabel}†")
 
 ax.set_ylim(ylim[0], ylim[1])
