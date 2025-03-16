@@ -13,7 +13,7 @@ from figures.fig_config import Config as FigConfig
 
 param = 'headHW'
 
-fig, ax = plt.subplots(1, 1, figsize=(1.33, 1.47))
+fig, ax = plt.subplots(1, 1, figsize=(1.33, 1.4))
 ax.hlines(100,xmin=0,xmax=1.2, ls = 'dashed', color = 'grey')
 
 yyyymmdds = ['2023-11-06', '2021-10-26']
@@ -113,7 +113,7 @@ ax.set_xlabel('Weight-adjusted\nhead height')
 
 ax.set_xticks([0,0.6,1.2])
 ax.set_xlim(-0.1,1.2)
-ax.set_yticks([40,70,100,130,160,190])
+ax.set_yticks([55,100,145,190])
 ax.set_ylim(30,190)
 
 ax.set_ylabel("Total leg load (%)")
