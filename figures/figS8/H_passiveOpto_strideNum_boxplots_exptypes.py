@@ -58,7 +58,7 @@ exp_df = pd.DataFrame([(key,value) for key,values in exp_dict.items() for value 
                       columns=['Exp', 'Distance'])
 
 # PLOT BOXPLOTS
-fig, ax = plt.subplots(1,1,figsize = (0.9,1.2)) 
+fig, ax = plt.subplots(1,1,figsize = (0.95,1.2)) 
 boxplot_shift=-0.15
 scatter_shift=0.15
 for i, (vals, clr) in enumerate(zip(exp_dict.values(), custom_clrs)):
