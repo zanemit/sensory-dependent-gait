@@ -8,7 +8,7 @@ import scipy.stats
 from scipy.stats import spearmanr
 import os
 
-sys.path.append(r"C:\Users\MurrayLab\thesis")
+sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
 # PER-MOUSE, BUT A RESULT OF THE RANDOM SLOPE MODEL, NOT BETA12
 

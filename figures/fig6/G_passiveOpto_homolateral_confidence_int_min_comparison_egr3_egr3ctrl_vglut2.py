@@ -154,9 +154,9 @@ for i, (yyyymmdd, yyyymmdd_fp, appdx, sample_num, data_frac, mouselist, rfl_str)
                 
     average_confints[appdx] = CoMy_target_range[np.nanargmin(confints_across_mice, axis=0)]
     print(f"{np.nanmean(average_confints[appdx]):.2f} +-{(np.nanstd(average_confints[appdx])/np.sqrt(len(average_confints[appdx]))):.2f}")           
-
+#%%
 #-----------------------PLOT------------------------------
-fig, ax = plt.subplots(1,1, figsize = (1.05,1.2))
+fig, ax = plt.subplots(1,1, figsize = (1.17,1.3))
 ax.hlines(-0.1,0.5,3.5,ls='dashed', lw=0.5, color='black')
 for i, (clr, key) in enumerate(zip(
         [FigConfig.colour_config['homolateral'][2], FigConfig.colour_config['greys'][1], FigConfig.colour_config['greys'][1]],
