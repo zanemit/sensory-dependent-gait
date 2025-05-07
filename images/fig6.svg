@@ -3889,7 +3889,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -3970,7 +3970,7 @@
          d="" />
     </g>
     <g
-       id="g94566"
+       id="g8869"
        inkscape:export-xdpi="300"
        inkscape:export-ydpi="300">
       <rect
@@ -3983,7 +3983,7 @@
          rx="1.0706017" />
       <g
          id="g58959"
-         transform="translate(-4.2333335,1.8997816)">
+         transform="translate(-45.915705,1.8997816)">
         <g
            id="g58371"
            transform="translate(0,-0.29877506)">
@@ -5512,7 +5512,7 @@
       </g>
       <g
          id="g58670"
-         transform="translate(-2.2566312,1.8997815)">
+         transform="translate(39.42574,1.8997815)">
         <g
            id="patch_2-0"
            transform="matrix(0.3527778,0,0,0.3527778,27.329887,28.261591)">

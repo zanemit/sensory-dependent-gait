@@ -6,7 +6,7 @@ import numpy as np
 import scipy.stats
 from matplotlib import pyplot as plt
 
-sys.path.append(r"C:\Users\MurrayLab\thesis")
+sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
 from processing import data_loader, forceplate_data_manager
 from processing.data_config import Config
