@@ -19,6 +19,7 @@ from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, roc_curve
 from sklearn.utils import resample
 from sklearn.model_selection import cross_val_score, KFold
+from sklearn.utils import shuffle
 
 """
 INJECTION SIDE CLASSIFICATION BASED ON LIMB PHASE DATA
@@ -72,24 +73,38 @@ def classify_injection_side(df, dataToClassify, target_col = 'injection', crossv
         classifier = SVC(probability=True, random_state=42)
         print(f"Classifying injection side based on {dataToClassify}...")
         print(f"Number of datapoints: {df_balanced.shape[0]}")
-        
-        cv_scores=[]
-        if crossvalidation:
-            kf = KFold(n_splits=5, shuffle=True, random_state=42)
-            cv_scores = cross_val_score(classifier, X, y, cv=kf, scoring='accuracy')
-            print(f"cv score: {np.mean(cv_scores):.3f}±{np.std(cv_scores):.3f}")
-                   
+                           
         classifier.fit(X_train, y_train)        # takes about 10 minutes to run
     
         # predict
         y_pred = classifier.predict(X_test)
         accuracy = accuracy_score(y_test, y_pred)
         print(f"Accuracy: {accuracy}")
-            
+        
         # predict for ROC-AUC
         y_probs = classifier.predict_proba(X_test)[:,1]
         fpr, tpr, threshold = roc_curve(y_test, y_probs)
+        
+        cv_scores=[]
+        if crossvalidation:
+            kf = KFold(n_splits=5, shuffle=True, random_state=42)
+            cv_scores = cross_val_score(classifier, X, y, cv=kf, scoring='accuracy')
+            print(f"cv score: {np.mean(cv_scores):.3f}±{np.std(cv_scores):.3f}")
             
+            N_permutations = 100
+            permuted_scores = []
+            for i in range(N_permutations):
+                if i%10==0:
+                    print(f"Permutation {i}...")
+                y_train_permuted = np.random.permutation(y_train)
+                classifier.fit(X_train, y_train_permuted)
+                y_pred_permuted = classifier.predict(X_test)
+                permuted_scores.append(accuracy_score(y_test, y_pred_permuted))
+            permuted_scores = np.array(permuted_scores)
+            p_val = np.mean(permuted_scores >= accuracy)
+            print(f"Permutation p-value: {p_val:.4f}")
+            
+                  
         return fpr, tpr, cv_scores
     
 def prepare_data(df, target_col, dataToClassify, mice, mouse_col = 'mouseID', 
