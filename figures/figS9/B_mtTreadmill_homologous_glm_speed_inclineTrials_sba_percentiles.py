@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 import scipy.stats
 import os
 
-sys.path.append(r"C:\Users\MurrayLab\thesis")
+sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
 # PER-MOUSE, BUT A RESULT OF THE RANDOM SLOPE MODEL, NOT BETA12
 
@@ -48,9 +48,9 @@ datafull = data_loader.load_processed_data(dataToLoad = 'strideParams',
 
 datafull['incline'] = [int(d[3:])*-1 for d in datafull['trialType']]
 
-sbas = [-40,0,40]
+sbas = [140,153,166]
 prcnts = []
-no_outliers_speed = utils_processing.remove_outliers(datafull['incline'])
+no_outliers_speed = utils_processing.remove_outliers(datafull['snoutBodyAngle'])
 for sp in sbas:
     prcnts.append(scipy.stats.percentileofscore(no_outliers_speed, sp))
 
@@ -62,7 +62,7 @@ xlim, xticks, xlabel = treadmill_circGLM.get_predictor_range(predictor)
 xlim = [0,100]
 xticks = [0,50,100]
 
-fig, ax = plt.subplots(1,1,figsize = (1.4,1.4)) #1.6,1.4 for 4figs S2 bottom row
+fig, ax = plt.subplots(1,1,figsize = (1.45,1.35)) #1.6,1.4 for 4figs S2 bottom row
 
 last_vals = [] # for stats
 
@@ -72,7 +72,7 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
                                                   sbas,
                                                   ['dotted', 'solid', 'dashed'])):
 
-    c = FigConfig.colour_config['homologous'][iprcnt+(1*iprcnt//2)]
+    c = FigConfig.colour_config['homologous'][iprcnt]#+(2*iprcnt)]
     
     # get data for different speed percentiles
     x_range, phase_preds = treadmill_circGLM.get_circGLM_slopes(
@@ -89,7 +89,7 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
             outputDir = Config.paths['mtTreadmill_output_folder'],
             iterations = iters,
             mice = mouselist,
-            special_other_predictors = {'incline': prcnt},
+            special_other_predictors = {'snoutBodyAngle': prcnt},
             sBA_split_str = sba_str
                     ) 
    
@@ -101,7 +101,7 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
             pp[pp<0] = pp[pp<0]+2*np.pi
         if k == 2:
             pp[pp<np.pi] = pp[pp<np.pi]+2*np.pi
-            ax.hlines(ylim[1]-0.3, 15+25*iprcnt, 28+25*iprcnt, color = c, ls = lnst, lw = 1)
+            ax.hlines(ylim[1]-0.3, 16+25*iprcnt, 30+25*iprcnt, color = c, ls = lnst, lw = 1)
             ax.text(xlim[0] + (0.15 * (xlim[1]-xlim[0])) + 25*iprcnt,
                     ylim[1] - (0.13* (ylim[1]-ylim[0])),
                     speed,
@@ -159,9 +159,8 @@ stat_dict = treadmill_circGLM.get_circGLM_stats(
 
 ax.text(xlim[0] + (0.15 * (xlim[1]-xlim[0])),
         ylim[1] - (0.03* (ylim[1]-ylim[0])),
-        f"{predictorlist_str[0]} x slope: {stat_dict['pred1:pred3']}",
+        f"{predictorlist_str[0]} x angle†: {stat_dict['pred1:pred2']}",
         fontsize=5)
-
 
 ax.text(xlim[0] + (0.83 * (xlim[1]-xlim[0])),
         ylim[1] - (0.13* (ylim[1]-ylim[0])),
@@ -182,7 +181,7 @@ ax.set_xlabel(f"{xlabel}")
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_yticks(yticks)
 ax.set_yticklabels(yticklabels)
-ax.set_ylabel('Relative RH phase (rad)')
+ax.set_ylabel('Relative RH phase\n(rad)')
 
 # -------------------------------LEGEND----------------------------------- 
 # fig.legend(loc = 'center right', bbox_to_anchor=(1,0.65), fontsize=5)
