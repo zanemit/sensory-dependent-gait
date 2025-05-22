@@ -294,18 +294,18 @@ def get_linear_slopes(
                 
                 for im, m in enumerate(mice):
                     # add random intercepts
-                    output += randCoefficients.loc[m, "(Intercept)"]
+                    output_m = output + randCoefficients.loc[m, "(Intercept)"]
                     
                     # find out which parameter to add the slope t
                     # is it the predictor?
                     if pred in slopes:
-                        output += randCoefficients.loc[m, pred] * pred_range                        
+                        output_m += randCoefficients.loc[m, pred] * pred_range                        
                         
                     nonpred_slopes = np.intersect1d(slopes, list(nonpred_dict.keys()))
                     if len(nonpred_slopes)>0:
                         for s in nonpred_slopes:
-                            output += randCoefficients.loc[m, s] * nonpred_dict[s]  
-                    support_preds_across_mice[:, b, im+1, i] = (output * np.nanstd(datafull[outcome_variable])) + np.nanmean(datafull[outcome_variable])
+                            output_m += randCoefficients.loc[m, s] * nonpred_dict[s]  
+                    support_preds_across_mice[:, b, im+1, i] = (output_m * np.nanstd(datafull[outcome_variable])) + np.nanmean(datafull[outcome_variable])
                     
             else:
                 support_prediction = (output * np.nanstd(datafull[outcome_variable])) + np.nanmean(datafull[outcome_variable])

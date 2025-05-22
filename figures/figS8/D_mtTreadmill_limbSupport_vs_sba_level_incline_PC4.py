@@ -17,12 +17,12 @@ from figures.fig_config import AnyObjectHandler
 
 #-----------testing if there is a difference between per-mouse v slope model----
 #-----------or if the discrepancy is due to the use of lH1 or COMB as reflimbs--
-outcome_variable = 'limbSupportPC3' # should change
+outcome_variable = 'limbSupportPC4' # should change
 ref = 'lH1'
 catvar = 'trialType'
 
 yyyymmdd = '2022-05-06'
-mouselist = set(Config.mtTreadmill_config['mice_level'] + Config.mtTreadmill_config['mice_incline'])
+mouselist = Config.mtTreadmill_config['mice_incline']
 # ph_str = "shift"
 appdx = "_COMBINEDtrialType"
 
@@ -33,8 +33,8 @@ elif "PC4" in outcome_variable:
 else:
     ytlt = "DEFINE LABEL!!!"
 
-set_sba_ant = 135
-set_sba_post = 180
+set_sba_ant = -40
+set_sba_post = 40
 set_sba_range_index = np.linspace(set_sba_ant,
                           set_sba_post,
                           num = abs(int((set_sba_post-set_sba_ant)+1)), 
@@ -45,8 +45,8 @@ slice_dict = {}
 
 predictorlist = ['speed', 'snoutBodyAngle', 'incline']
 slopes = ['pred2', 'pred3']
-predictor = 'snoutBodyAngle'
-predictor_str = 'snout-hump angle'
+predictor = 'incline'
+predictor_str = 'slope'
 interaction = 'TRUEthreeway'
 
  
@@ -63,27 +63,34 @@ datafull = data_loader.load_processed_data(outputDir = Config.paths['mtTreadmill
 predictor_trdm = predictor
 predictor_id = np.where(np.array(predictorlist)==predictor)[0][0]
 
-#-------------PLOT!!-------------------  
+if 'incline' in predictorlist:
+    datafull['incline'] = [-int(x[3:]) for x in datafull['headLVL']]
 
+other_predictor = 'snoutBodyAngle'
+sbas = [145,155,165]
+prcnts = []
+no_outliers_speed = utils_processing.remove_outliers(datafull['snoutBodyAngle'])
+for sp in sbas:
+    prcnts.append(scipy.stats.percentileofscore(no_outliers_speed, sp))
+
+# -----------PLOT!!!
 if '3' in outcome_variable:
-    yticks = np.linspace(0.2,1,5)
-    ylims=(0.2, 1)
-    fwidth = 1.5
+    yticks = np.linspace(0,1,6)
+    ylims=(0, 1)
+    fwidth = 1.45
 elif '4' in outcome_variable:
-    yticks = [-0.1, -0.05, 0, 0.05, 0.1] 
-    ylims=(-0.1, 0.1)
-    fwidth = 1.6
+    yticks = [ -0.05,  0, 0.05,0.10, 0.15] 
+    ylims=(-0.05, 0.15)
+    fwidth = 1.55
 else:
     raise ValueError("ylim not specified!")
-                              
-fig, ax = plt.subplots(1,1, figsize = (fwidth,1.35)) 
-
     
-for reflimb_id, (clr, lnst, lbl) in enumerate(zip(
-        [FigConfig.colour_config['homolateral'][2], FigConfig.colour_config['greys'][1]],
-        ['solid', 'dashed'],
-        ['level', 'slope']
-        )):
+fig, ax = plt.subplots(1,1, figsize = (fwidth,1.35)) 
+for ip, (prcnt, lnst, clr_id) in enumerate(zip(
+                            prcnts, 
+                            ['dotted', 'solid', 'dashed'],
+                            [0,2,3]
+                            )):
     # iterate over mice
     for im, m in enumerate(mouselist):
         # subset dataframe
@@ -118,12 +125,20 @@ for reflimb_id, (clr, lnst, lbl) in enumerate(zip(
                 outputDir = Config.paths['mtTreadmill_output_folder'],
                 mice = mouselist,
                 merged=True,
+                special_other_predictors = {other_predictor: prcnt},
                 x_pred_range = {predictor_trdm: x_target_range}# - np.nanmean(datafull_sub[predictor_trdm])}
                         ) 
         
-        support_preds_across_mice.loc[x_target_range, im] = support_preds[:, predictor_id, im+1, reflimb_id]
+        support_preds_sub = support_preds[:, predictor_id, im+1, 0]
         
+        support_preds_across_mice.loc[x_target_range, im] = support_preds[:, predictor_id, im+1, 0]
+        
+    
+    #-------------PLOT!!-------------------                                    
+    
     comy_pvals = []
+    
+    clr = FigConfig.colour_config['homolateral'][clr_id]
     
        
     #-------------COMPUTE SHIFTS---------------------------
@@ -131,6 +146,7 @@ for reflimb_id, (clr, lnst, lbl) in enumerate(zip(
     mask = support_preds_across_mice.isna().sum(axis=1)<(support_preds_across_mice.shape[1]/2)
     med = np.mean(support_preds_across_mice.loc[mask,:], axis=1)
     std = np.std(support_preds_across_mice.loc[mask,:], axis=1)
+    
     
     ax.fill_between(set_sba_range_index[mask],
                     med+std,#-med_first_nonan, 
@@ -141,27 +157,32 @@ for reflimb_id, (clr, lnst, lbl) in enumerate(zip(
             med,#-med_first_nonan, 
             color = clr,
             ls = lnst,
-            lw = 1.5)
+            lw = 1)
     
-    # add texts
-    ax.text(set_sba_ant+2+(20*reflimb_id), 
-            ylims[1]-((ylims[1]-ylims[0])*0.15),
-            lbl,
-            fontsize=5,
-            color=clr)
-    ax.hlines(ylims[1]-((ylims[1]-ylims[0])*0.155),
-              set_sba_ant+2+(20*reflimb_id),
-              set_sba_ant+12+(20*reflimb_id),
-            ls=lnst,
-            lw=0.7,
-            color=clr)
+    # add pcrnt
+    ax.text(set_sba_ant+((set_sba_post-set_sba_ant)*0.2)+(20*ip), 
+            ylims[1]-((ylims[1]-ylims[0])*0.2),
+            sbas[ip],
+            color=clr,
+            fontsize=5
+            )
+    ax.hlines(ylims[1]-((ylims[1]-ylims[0])*0.22),
+            set_sba_ant+((set_sba_post-set_sba_ant)*0.2)+(20*ip),
+            set_sba_ant+((set_sba_post-set_sba_ant)*0.35)+(20*ip),
+            ls = lnst,
+            color=clr,
+            lw=0.7
+            )
 
 #-----------STATS: IS PC3-vs-COS SLOPE DIFFERENT FROM ZERO?-------
-ax.text(set_sba_ant+15, 
-        ylims[1]-((ylims[1]-ylims[0])*0.15),
-        "vs           trials:",
-        fontsize=5,
-        color='black')
+ax.text(set_sba_post-10, 
+        ylims[1]-((ylims[1]-ylims[0])*0.2),
+        "deg",
+        color='black',
+        fontsize=5
+        )
+
+#-------------ADD STATS-------------------   
 
 mod_predictors = "_".join(predictorlist)
 slopes_str = "".join(slopes)
@@ -171,44 +192,38 @@ mod_path = os.path.join(Config.paths['mtTreadmill_output_folder'],
 if os.path.exists(mod_path):
     stats = pd.read_csv(mod_path, index_col=0)
     p = stats.loc[f"pred{predictor_id+1}_centred", "Pr(>|t|)"]
-    ptext = ""
-    if (p < np.asarray(FigConfig.p_thresholds)).sum() == 0:
-        ptext += "n.s."   
-    else:
-        ptext += '*' * (p < np.asarray(FigConfig.p_thresholds)).sum()
-    
-    ax.text(set_sba_ant + (0.1*(set_sba_post-set_sba_ant)),
-            ylims[1] - (0.05* (ylims[1]-ylims[0])),
+    ptext = '*' * (p < np.asarray(FigConfig.p_thresholds)).sum() if (p < np.asarray(FigConfig.p_thresholds)).sum()>0 else "n.s."    
+    ax.text(set_sba_ant + (0.5*(set_sba_post-set_sba_ant)),
+            ylims[1],# - (0.05* (ylims[1]-ylims[0])),
             f"{predictor_str}: {ptext}",
-            fontsize=5)
+            fontsize=5, ha='center')  
+    
+    # find id of other_predictor
+    other_predictor_id = np.where(np.array(predictorlist)==other_predictor)[0][0]
+    predictor_str_interaction = f"pred{predictor_id+1}_centred:pred{other_predictor_id+1}_centred" if other_predictor_id>predictor_id else f"pred{other_predictor_id+1}_centred:pred{predictor_id+1}_centred"
+    
+    # determin if other predictor id is < or > than predictor_id
+    p_interaction = stats.loc[predictor_str_interaction, "Pr(>|t|)"]
+    ptext_interaction = '*' * (p_interaction < np.asarray(FigConfig.p_thresholds)).sum() if (p_interaction < np.asarray(FigConfig.p_thresholds)).sum()>0 else "n.s."    
+    ax.text(set_sba_ant + (0.5*(set_sba_post-set_sba_ant)),
+            ylims[1] - (0.1* (ylims[1]-ylims[0])),
+            f"slope x angle: {ptext_interaction}",
+            fontsize=5, ha='center')                      
 
-# load fourway interaction data to get trial type - sba slope comparisons
-# this analysis excluded some of the other interaction terms due to rank deficiency
-interaction = 'TRUEfourway'
-mod_path = os.path.join(Config.paths['mtTreadmill_output_folder'], 
-   f"{yyyymmdd}_contCoefficients_mixedEffectsModel_linear_{outcome_variable}_vs_{mod_predictors}_trialType_randSlopes{slopes_str}_interaction{interaction}.csv")
-if os.path.exists(mod_path):
-    stats = pd.read_csv(mod_path, index_col=0)
-    p_catvar = stats.loc[f"pred{predictor_id+1}_centred:{catvar}slope", "Pr(>|t|)"]
-    ptext_catvar = '*' * (p_catvar < np.asarray(FigConfig.p_thresholds)).sum() if (p_catvar < np.asarray(FigConfig.p_thresholds)).sum()>0 else 'n.s.'
-    ax.text(set_sba_ant + 45,
-            ylims[1] - ((ylims[1]-ylims[0])*0.15),
-            ptext_catvar,
-            fontsize=5)
     
 #-------------SAVE DICTS OR ADD STATS-------------------  
 
 ax.set_xlim(set_sba_ant, set_sba_post) 
-ax.set_xticks([140,160,180]) 
+ax.set_xticks([-40,0,40]) 
     
 ax.set_ylim(ylims[0], ylims[1])
 ax.set_yticks(yticks)
 ax.set_ylabel(ytlt)   
-ax.set_xlabel("Snout-hump angle\n(deg)†")   
+ax.set_xlabel("Surface slope\n(deg)")   
  
 plt.tight_layout()
     
-figtitle = f"mtTreadmill_limbSupportPC{outcome_variable[-1]}_vs_CoS_incline_headheight.svg"
+figtitle = f"mtTreadmill_limbSupportPC{outcome_variable[-1]}_vs_sba_incline_headheight.svg"
 plt.savefig(os.path.join(FigConfig.paths['savefig_folder'], figtitle), 
             dpi = 300, 
             bbox_inches = 'tight',

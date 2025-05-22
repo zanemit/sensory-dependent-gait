@@ -6,7 +6,7 @@ import os
 from matplotlib import pyplot as plt
 import scipy.stats
 
-sys.path.append(r"C:\Users\MurrayLab\thesis")
+sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
 import scipy.stats
 from processing import data_loader, utils_math, utils_processing, treadmill_linearGLM
@@ -68,15 +68,15 @@ predictor_id = np.where(np.array(predictorlist)==predictor)[0][0]
 if '3' in outcome_variable:
     yticks = np.linspace(0.2,1,5)
     ylims=(0.2, 1)
-    fwidth = 1.4
+    fwidth = 1.5
 elif '4' in outcome_variable:
     yticks = [-0.1, -0.05, 0, 0.05, 0.1] 
     ylims=(-0.1, 0.1)
-    fwidth = 1.5
+    fwidth = 1.6
 else:
     raise ValueError("ylim not specified!")
                               
-fig, ax = plt.subplots(1,1, figsize = (fwidth,1.4)) 
+fig, ax = plt.subplots(1,1, figsize = (fwidth,1.35)) 
 
     
 for reflimb_id, (clr, lnst, lbl) in enumerate(zip(

@@ -6,7 +6,7 @@ import os
 from matplotlib import pyplot as plt
 import scipy.stats
 
-sys.path.append(r"C:\Users\MurrayLab\thesis")
+sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
 import scipy.stats
 from processing import data_loader, utils_math, utils_processing, treadmill_linearGLM
@@ -17,7 +17,7 @@ from figures.fig_config import AnyObjectHandler
 
 #-----------testing if there is a difference between per-mouse v slope model----
 #-----------or if the discrepancy is due to the use of lH1 or COMB as reflimbs--
-outcome_variable = 'limbSupportPC4' # should change
+outcome_variable = 'limbSupportPC3' # should change
 ref = 'lH1'
 catvar = 'trialType'
 
@@ -27,9 +27,9 @@ mouselist = Config.mtTreadmill_config['mice_incline']
 appdx = "_COMBINEDtrialType"
 
 if 'PC3' in outcome_variable:
-    ytlt = "Diagonal support (PC3)"
+    ytlt = "Diagonal support\n(PC3)"
 elif "PC4" in outcome_variable:
-    ytlt = "Single-leg support (PC4)"
+    ytlt = "Single-leg support\n(PC4)"
 else:
     ytlt = "DEFINE LABEL!!!"
 
@@ -77,15 +77,15 @@ for sp in sbas:
 if '3' in outcome_variable:
     yticks = np.linspace(0,1,6)
     ylims=(0, 1)
-    fwidth = 1.4
+    fwidth = 1.45
 elif '4' in outcome_variable:
     yticks = [ -0.05,  0, 0.05,0.10, 0.15] 
     ylims=(-0.05, 0.15)
-    fwidth = 1.5
+    fwidth = 1.55
 else:
     raise ValueError("ylim not specified!")
     
-fig, ax = plt.subplots(1,1, figsize = (fwidth,1.4)) 
+fig, ax = plt.subplots(1,1, figsize = (fwidth,1.35)) 
 for ip, (prcnt, lnst, clr_id) in enumerate(zip(
                             prcnts, 
                             ['dotted', 'solid', 'dashed'],
@@ -219,7 +219,7 @@ ax.set_xticks([-40,0,40])
 ax.set_ylim(ylims[0], ylims[1])
 ax.set_yticks(yticks)
 ax.set_ylabel(ytlt)   
-ax.set_xlabel("Surface slope (deg)")   
+ax.set_xlabel("Surface slope\n(deg)")   
  
 plt.tight_layout()
     
