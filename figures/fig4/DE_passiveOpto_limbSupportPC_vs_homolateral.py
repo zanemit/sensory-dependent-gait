@@ -26,7 +26,7 @@ datafull = data_loader.load_processed_data(dataToLoad = 'strideParamsMerged',
                                                 limb = ref, 
                                                 appdx = appdx)[0]
     
-dependent_col = 'limbSupportPC3'
+dependent_col = 'limbSupportPC4'
 limb = 'lF0'
 
 if 'PC3' in dependent_col:

@@ -17,7 +17,7 @@ from figures.fig_config import AnyObjectHandler
 
 #-----------testing if there is a difference between per-mouse v slope model----
 #-----------or if the discrepancy is due to the use of lH1 or COMB as reflimbs--
-outcome_variable = 'limbSupportPC3' # should change
+outcome_variable = 'limbSupportPC4' # should change
 ref = 'lH1'
 catvar = None
 
@@ -28,6 +28,8 @@ appdx = "_incline_COMBINEDtrialType"
 
 if 'PC3' in outcome_variable:
     ytlt = "diagonal\nsupport (PC3)"
+elif "PC2" in outcome_variable:
+    ytlt = "L-R sync or single-leg\nsupport (PC2)"
 elif "PC4" in outcome_variable:
     ytlt = "single-leg\nsupport (PC4)"
 else:
@@ -49,7 +51,7 @@ for i, (yyyymmdd_fp, predictorlist, slopes, predictor, interaction, dict_lbl) in
            [['pred2', 'pred3'], ['pred2', 'pred3'], ['pred2']],
            ['snoutBodyAngle', 'levels', 'snoutBodyAngle'],
            ['TRUEthreeway', 'TRUEthreeway', 'TRUE'],
-           ['incline_sBA', 'incline_incline', 'hh_sBA'],
+           ['incline_sBA', 'incline_incline', 'hh_sBA']
         )):  
     
     support_preds_across_mice = pd.DataFrame(np.empty((set_CoMy_range_index.shape[0], 
@@ -77,7 +79,7 @@ for i, (yyyymmdd_fp, predictorlist, slopes, predictor, interaction, dict_lbl) in
     # CoMy vs snout-hump angle
     if yyyymmdd_fp=='2022-04-04':
         CoMy_pred_path = os.path.join(
-            Config.paths["forceplate_output_folder"],"old_incline",f"{yyyymmdd_fp}_mixedEffectsModel_linear_COMy_{predictor}.csv"
+            Config.paths["forceplate_output_folder"],f"{yyyymmdd_fp}_mixedEffectsModel_linear_COMy_{predictor}.csv"
             )
     else:
         CoMy_pred_path = os.path.join(
@@ -122,7 +124,7 @@ for i, (yyyymmdd_fp, predictorlist, slopes, predictor, interaction, dict_lbl) in
             set_pred_range[slice_dict[im][1]],
             abs(slice_dict[im][1]-slice_dict[im][0])+1,
             endpoint = True)
-        
+
         x_preds, support_preds = treadmill_linearGLM.get_linear_slopes(
                 predictors = predictorlist,
                 outcome_variable = outcome_variable,
@@ -153,6 +155,7 @@ support_preds_across_mice_dict['incline_sum'] = support_preds_across_mice_dict['
                                     support_preds_across_mice_dict['incline_incline']  
 
 
+
 #-------------PLOT!!-------------------                                
 fig, ax = plt.subplots(1,1, figsize = (1.45,1.35)) 
 xlims = (-0.1,-0.35)
@@ -160,9 +163,12 @@ xlims = (-0.1,-0.35)
 if '3' in outcome_variable:
     yticks = [-0.1, 0, 0.1] 
     ylims=(-0.1, 0.1)
+elif '2' in outcome_variable:
+    yticks = [-0.1, 0, 0.1] 
+    ylims=(-0.1, 0.1)
 elif '4' in outcome_variable:
-    yticks = [-0.05, 0, 0.05, 0.10, 0.15] 
-    ylims=(-0.05, 0.15)
+    yticks = [-0.05, 0, 0.05, 0.10, 0.1] 
+    ylims=(-0.05, 0.1)
 else:
     raise ValueError("ylim not specified!")
 
@@ -213,12 +219,12 @@ for i, (clr,lbl, lnst,dim) in enumerate(zip(
             lw = 1.5,
             label = lbl)
     
-    #-----------STATS: IS PC3-vs-COS SLOPE DIFFERENT FROM ZERO?-------
-    from scipy.stats import linregress
-    comy_stats = pd.DataFrame(zip(set_CoMy_range_index, med)).dropna()
-    _, _, _, p_value, _ = linregress(comy_stats.iloc[:,0], comy_stats.iloc[:,1])
-    comy_pvals.append(p_value)
-    print(f"Is slope significantly different from zero? {p_value}")
+    # #-----------STATS: IS PC3-vs-COS SLOPE DIFFERENT FROM ZERO?-------
+    # from scipy.stats import linregress
+    # comy_stats = pd.DataFrame(zip(set_CoMy_range_index, med)).dropna()
+    # _, _, _, p_value, _ = linregress(comy_stats.iloc[:,0], comy_stats.iloc[:,1])
+    # comy_pvals.append(p_value)
+    # print(f"Is slope significantly different from zero? {p_value}")
 
 #-------------SAVE DICTS OR ADD STATS-------------------   
 # appdx = "_hh_v_inc_"
@@ -233,29 +239,25 @@ mod_path = os.path.join(Config.paths['passiveOpto_output_folder'],
 #                         f"{yyyymmdd}_passiveOpto_phase{ph_str}_v_CoMy_stacked{appdx}ref_{ref}.csv")
 if os.path.exists(mod_path):
     stats = pd.read_csv(mod_path, index_col = 0)
-    p = stats.loc["trialTypeslope", "Pr(>|t|)"]
-    ptext = ""
-    if (p < np.asarray(FigConfig.p_thresholds)).sum() == 0:
-        ptext += "n.s."   
-    else:
-        ptext += '*' * (p < np.asarray(FigConfig.p_thresholds)).sum()
+    p1 = np.min((stats.loc['pred2_centred', "Pr(>|t|)"], stats.loc['pred3_centred', "Pr(>|t|)"]))
+    p2 = stats.loc["trialTypeslope", "Pr(>|t|)"]
+    for i, p in enumerate([p1, p2]):
+        ptext = ""
+        if (p < np.asarray(FigConfig.p_thresholds)).sum() == 0:
+            ptext += "n.s."   
+        else:
+            ptext += '*' * (p < np.asarray(FigConfig.p_thresholds)).sum()
     
-#     p_x = np.where(~np.isnan(med))[0][-1]+3
-#     p_y = med[~np.isnan(med)][-1]
-
-    
-    ax.text(xlims[0] + (0.42 * (xlims[1]-xlims[0])),
-            ylims[1] - (0.26* (ylims[1]-ylims[0])),
-            f"vs          trials:\n{ptext}",
-            fontsize=5)
-    
-    comy_ptext = '*' * (np.mean(comy_pvals)<np.asarray(FigConfig.p_thresholds)).sum()
-    if (np.mean(comy_pvals)<np.asarray(FigConfig.p_thresholds)).sum() == 0:
-        comy_ptext = 'n.s.'
-    ax.text(xlims[0] + (0.06 * (xlims[1]-xlims[0])),
-            ylims[1] - (0.05* (ylims[1]-ylims[0])),
-            f"centre of support: {comy_ptext}",
-            fontsize=5)
+        if i==1:
+            ax.text(xlims[0] + (0.42 * (xlims[1]-xlims[0])),
+                    ylims[1] - (0.26* (ylims[1]-ylims[0])),
+                    f"vs          trials:\n{ptext}",
+                    fontsize=5)
+        else:
+            ax.text(xlims[0] + (0.06 * (xlims[1]-xlims[0])),
+                    ylims[1] - (0.05* (ylims[1]-ylims[0])),
+                    f"centre of support: {ptext}",
+                    fontsize=5)
     
 #-------------SAVE DICTS OR ADD STATS-------------------  
 

@@ -28,6 +28,8 @@ appdx = "_COMBINEDtrialType"
 
 if 'PC3' in outcome_variable:
     ytlt = "Diagonal support\n(PC3)"
+elif "PC2" in outcome_variable:
+    ytlt = "L-R sync or single-leg\nsupport (PC2)"
 elif "PC4" in outcome_variable:
     ytlt = "Single-leg support\n(PC4)"
 else:
@@ -67,6 +69,10 @@ predictor_id = np.where(np.array(predictorlist)==predictor)[0][0]
 
 if '3' in outcome_variable:
     yticks = np.linspace(0.2,1,5)
+    ylims=(0.2, 1)
+    fwidth = 1.5
+elif '2' in outcome_variable:
+    yticks = [-0.1, 0, 0.1] 
     ylims=(0.2, 1)
     fwidth = 1.5
 elif '4' in outcome_variable:
