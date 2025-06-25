@@ -17,7 +17,7 @@ from figures.fig_config import AnyObjectHandler
 
 #-----------testing if there is a difference between per-mouse v slope model----
 #-----------or if the discrepancy is due to the use of lH1 or COMB as reflimbs--
-outcome_variable = 'limbSupportPC3' # should change
+outcome_variable = 'limbSupportPC4' # should change
 ref = 'lH1'
 catvar = 'trialType'
 
@@ -170,7 +170,7 @@ mod_path = os.path.join(Config.paths['passiveOpto_output_folder'],
 
 if os.path.exists(mod_path):
     stats = pd.read_csv(mod_path, index_col = 0)
-    p1 = np.min((stats.loc['pred2_centred', "Pr(>|t|)"], stats.loc['pred3_centred', "Pr(>|t|)"]))
+    p1 = stats.loc[f'pred{np.argwhere(np.asarray(predictorlist)==predictor)[0][0]+1}_centred', "Pr(>|t|)"]
     p2 = stats.loc["trialTypeslope", "Pr(>|t|)"]
     for i, p in enumerate([p1, p2]):
         ptext = ""
@@ -187,23 +187,23 @@ if os.path.exists(mod_path):
         else:
             ax.text(set_sba_ant + (0.1*(set_sba_post-set_sba_ant)),
                     ylims[1] - (0.05* (ylims[1]-ylims[0])),
-                    f"centre of support: {ptext}",
+                    f"snout-hump angle: {ptext}",
                     fontsize=5)
 
 
-# load fourway interaction data to get trial type - sba slope comparisons
-# this analysis excluded some of the other interaction terms due to rank deficiency
-interaction = 'TRUEfourway'
-mod_path = os.path.join(Config.paths['passiveOpto_output_folder'], 
-   f"{yyyymmdd}_contCoefficients_mixedEffectsModel_linear_{outcome_variable}_vs_{mod_predictors}_trialType_randSlopes{slopes_str}_interaction{interaction}.csv")
-if os.path.exists(mod_path):
-    stats = pd.read_csv(mod_path, index_col=0)
-    p_catvar = stats.loc[f"pred{predictor_id+1}_centred:{catvar}slope", "Pr(>|t|)"]
-    ptext_catvar = '*' * (p_catvar < np.asarray(FigConfig.p_thresholds)).sum() if (p_catvar < np.asarray(FigConfig.p_thresholds)).sum()>0 else 'n.s.'
-    ax.text(set_sba_ant + 45,
-            ylims[1] - ((ylims[1]-ylims[0])*0.15),
-            ptext_catvar,
-            fontsize=5)
+# # load fourway interaction data to get trial type - sba slope comparisons
+# # this analysis excluded some of the other interaction terms due to rank deficiency
+# interaction = 'TRUEfourway'
+# mod_path = os.path.join(Config.paths['passiveOpto_output_folder'], 
+#    f"{yyyymmdd}_contCoefficients_mixedEffectsModel_linear_{outcome_variable}_vs_{mod_predictors}_trialType_randSlopes{slopes_str}_interaction{interaction}.csv")
+# if os.path.exists(mod_path):
+#     stats = pd.read_csv(mod_path, index_col=0)
+#     p_catvar = stats.loc[f"pred{predictor_id+1}_centred:{catvar}slope", "Pr(>|t|)"]
+#     ptext_catvar = '*' * (p_catvar < np.asarray(FigConfig.p_thresholds)).sum() if (p_catvar < np.asarray(FigConfig.p_thresholds)).sum()>0 else 'n.s.'
+#     ax.text(set_sba_ant + 45,
+#             ylims[1] - ((ylims[1]-ylims[0])*0.15),
+#             ptext_catvar,
+#             fontsize=5)
     
 #-------------SAVE DICTS OR ADD STATS-------------------  
 
