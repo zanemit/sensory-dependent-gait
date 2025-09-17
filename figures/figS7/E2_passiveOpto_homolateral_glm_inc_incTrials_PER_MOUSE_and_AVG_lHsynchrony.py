@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Sep 16 06:00:02 2025
+
+@author: MurrayLab
+"""
+
 import sys
 from pathlib import Path
 import pandas as pd
@@ -10,6 +17,7 @@ import os
 sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
 # PER-MOUSE, BUT A RESULT OF THE RANDOM SLOPE MODEL, NOT BETA12
+# SLOPE: SYNCHRONY
 
 import scipy.stats
 from processing import data_loader, utils_math, utils_processing, treadmill_circGLM
@@ -22,19 +30,19 @@ palette = get_palette_from_html(main_clr,
                                 lightness_values=[0.6,0.65,0.7,0.75,0.8])
 
 #---------------HEAD HEIGHT TRIALS--------------------
-predictorlist = ['speed', 'snoutBodyAngle']
-predictorlist_str = ['speed', 'snout-hump angle']
-predictor = 'snoutBodyAngle'
+predictorlist = ['speed', 'snoutBodyAngle', 'incline']
+predictorlist_str = ['speed', 'snout-hump angle', 'slope']
+predictor = 'incline'
 predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
-appdx = ''
-samplenum = 3093 #2659
-tlt ='Passive treadmill\n(left-right alternation)'# 'Head height trials'
+appdx = '_incline'
+samplenum = 5234 #2659
+tlt ='Slope trials\n(left-right synchrony)'# 'Head height trials'
 yyyymmdd = '2022-08-18'
-slopes = ['pred2']
+slopes = ['pred2', 'pred3']
 limb = 'lF0'
 datafrac = 1
-ref = 'lH1alt' #'lH1'
-interaction = 'TRUE'
+ref = 'lH1sync' #'lH1'
+interaction = 'TRUEthreeway'
 mouselist = Config.passiveOpto_config['mice']
 rfl_str = False
 
@@ -138,7 +146,7 @@ ax.set_title(tlt)
 # axes 
 ax.set_xlim(xlim[0], xlim[1])
 ax.set_xticks(xticks[::2])
-xlabel = 'Snout-hump angle\n(deg)'
+xlabel = 'Surface slope\n(deg)'
 ax.set_xlabel(f"{xlabel}")
 
 ax.set_ylim(ylim[0], ylim[1])

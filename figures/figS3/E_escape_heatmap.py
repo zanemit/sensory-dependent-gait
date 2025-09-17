@@ -15,27 +15,31 @@ from figures.fig_config import Config as FigConfig
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 # phase_bounds = [-0.125, 0.125, 0.375, 0.625, 0.875]
-phase_bounds = [-0.1, 0.1, 0.4, 0.6, 0.9]
+phase_bounds = np.array([-0.1, 0.1, 0.4, 0.6, 0.9])*2*np.pi
 
-pt_path = r"C:\Users\MurrayLab\Documents\PassiveOptoTreadmill\2022-08-18_strideParams_lH1.csv"
-df = pd.read_csv(pt_path)
+df = pd.read_csv(r"G:\strideParams_escape.csv")
 
-mice = Config.passiveOpto_config['mice']
+# fix numbering after dropping nan rows
+df_clean = df.dropna(subset=['rH0']).copy()
+df_clean['stride_num'] = df_clean.groupby(['mouseID','escape_num']).cumcount()
+df = df_clean.copy()
+
+mice = Config.passiveOpto_config['escape_mice']
 
 # speed_bounds = [0,25,50,75,100,125,150]
-speed_bounds = utils_processing.split_by_percentile(df['speed'], 5)
+num_strides = 6
 
-hmlg_fracs = np.empty((len(phase_bounds)-1,len(speed_bounds)-1, len(mice)))*np.nan
+hmlg_fracs = np.empty((len(phase_bounds)-1,num_strides, len(mice)))*np.nan
 hmlg_counts = hmlg_fracs.copy()
 
 for im, m in enumerate(mice):
     df_m = df[df['mouseID'] == m]
-    for sp in range(len(speed_bounds)-1):
-        df_sub = df_m[(df_m['speed']>speed_bounds[sp]) & (df_m['speed']<speed_bounds[sp+1])]
-        hmlg_phases = df_sub['rH1']
+    for sp in range(num_strides):
+        df_sub = df_m[df_m['stride_num']==sp]
+        hmlg_phases = df_sub['rH0']
         hmlg_phases = hmlg_phases.copy()
-        hmlg_phases.loc[hmlg_phases<0] +=1
-        hmlg_phases.loc[hmlg_phases>0.875] -=1
+        # hmlg_phases.loc[hmlg_phases<0] +=1
+        # hmlg_phases.loc[hmlg_phases>0.875] -=1
         hmlg_sums = np.empty(len(phase_bounds)-1)
         
         for i in range(len(phase_bounds)-1):
@@ -94,7 +98,7 @@ for i, (mean, se) in enumerate(zip(speed_freqs_mean, speed_freqs_err)):
             fontsize=fontsize-1,
             color='grey'
             )
-ax.text(data_to_plot.shape[1]+0.1, -1, 'stride\ncounts', 
+ax.text(data_to_plot.shape[1]+0.1, -1, 'escape\ncounts', 
         ha='center', va='center',fontsize=fontsize-1,
         color='grey')            
 
@@ -109,21 +113,21 @@ for i in range(data_to_plot.shape[0]):
 # ticks and tick labels
 ax.set_yticks(np.arange(len(phase_bounds)-1))
 ax.set_yticklabels(labels = ["synchrony","R-leading","alternation","L-leading"], size =fontsize)
-ax.set_xticks(np.arange(-0.5,len(speed_bounds)-1,1))
-ax.set_xticklabels([f"{i:.0f}" for i in speed_bounds], size =fontsize)
+ax.set_xticks(np.arange(0,num_strides,1))
+ax.set_xticklabels(np.arange(num_strides)+1, size =fontsize)
 
 # axis labels
 ax.set_ylabel("Hindlimb phase", size = fontsize)
-ax.set_xlabel("Speed quintiles (cm/s)", size = fontsize)
+ax.set_xlabel("Stride number", size = fontsize)
 
 # colourbar
 cbar = fig.colorbar(im, cax=cax, orientation = 'horizontal')
 cbar.ax.tick_params(length=2, width=0.5, direction='out')
 cbar.ax.set_xticks([0,0.2,0.4,0.6, 0.8, 1])
 cbar.ax.set_xticklabels(labels = [0,0.2,0.4,0.6, 0.8, 1], size = fontsize)
-cbar.ax.set_xlabel("Fraction of strides\nwithin a speed quintile", size = fontsize)
+cbar.ax.set_xlabel("Fraction of strides\nwithin a stride number", size = fontsize)
 # plt.tight_layout()
 
-fig.savefig(Path(FigConfig.paths['savefig_folder']) / f"passiveOptoTreadmill_hindlimbPhase_heatmap.svg",
+fig.savefig(Path(FigConfig.paths['savefig_folder']) / f"eescape_hindlimbPhase_heatmap.svg",
             transparent = True,
             dpi =300)

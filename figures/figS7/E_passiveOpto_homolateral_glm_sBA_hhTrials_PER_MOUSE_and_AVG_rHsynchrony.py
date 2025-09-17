@@ -27,13 +27,13 @@ predictorlist_str = ['speed', 'snout-hump angle']
 predictor = 'snoutBodyAngle'
 predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
 appdx = ''
-samplenum = 3093 #2659
-tlt ='Passive treadmill\n(left-right alternation)'# 'Head height trials'
+samplenum = 6302 #2659
+tlt ='Passive treadmill\n(left-right synchrony)'# 'Head height trials'
 yyyymmdd = '2022-08-18'
 slopes = ['pred2']
 limb = 'lF0'
 datafrac = 1
-ref = 'lH1alt' #'lH1'
+ref = 'lH1sync' #'lH1'
 interaction = 'TRUE'
 mouselist = Config.passiveOpto_config['mice']
 rfl_str = False
@@ -174,7 +174,7 @@ ax.text(xlim[0] + (0.1 * (xlim[1]-xlim[0])),
     
 plt.tight_layout()
 
-figtitle = f"passiveOpto_RHalternation_{yyyymmdd}_{appdx}_{limb}_ref{ref}_{'_'.join(predictorlist)}_SLOPE{''.join(slopes)}_{interaction}_{appdx}_PER_MOUSE.svg"
+figtitle = f"passiveOpto_RHsynchrony_{yyyymmdd}_{appdx}_{limb}_ref{ref}_{'_'.join(predictorlist)}_SLOPE{''.join(slopes)}_{interaction}_{appdx}_PER_MOUSE.svg"
 plt.savefig(os.path.join(FigConfig.paths['savefig_folder'], figtitle), 
             dpi = 300,  
             bbox_inches = 'tight',

@@ -10,6 +10,57 @@ sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 from processing import data_loader, utils_processing, utils_math
 from processing.data_config import Config
 
+def compute_phase_lead_categorical(arr, phase_col):
+    """
+    This assumes that phase_col is always right leg (hind or fore),
+    i.e. left leg is the reference;
+    and assigns Llead or Rlead accordingly
+    """
+    # get mice based on their injection side
+    mice_Linj = Config.injection_config['left_inj_imp']
+    mice_both = Config.injection_config['both_inj_left_imp']
+    
+    def get_category(val):
+        if np.isnan(val):
+            return np.nan
+        if ((val>=-0.5)&(val<=-0.4))|((val>=0.4)&(val<=0.5)):
+            return 'alt'
+        elif (val>=-0.1)&(val<=0.1):
+            return 'sync'
+        elif (val>0.1)&(val<0.4): # rH0 stance onset after lH0
+            return 'Rlead'
+        elif (val>-0.4)&(val<-0.1): # rH0 stance onset before lH0
+            return 'Llead'
+        else:
+            raise ValueError('Missed phases!')
+            
+    def flip_classification(label):
+        if label=='Llead':
+            return 'Rlead'
+        elif label=='Rlead':
+            return 'Llead'
+        else:
+            return label
+    
+    arr[f'{phase_col}_categorical'] = arr[phase_col].apply(get_category)
+    
+    # remove bilaterally injected mice from this analysis
+    arr.loc[
+        (arr['mouseID'].isin(mice_both))&(arr[f'{phase_col}_categorical'].isin(['Rlead', 'Llead'])),
+        f'{phase_col}_categorical'
+        ] = np.nan
+    
+    # flip phase of left-injected mice (assume injection on right side)
+    arr.loc[
+        arr['mouseID'].isin(mice_Linj),
+        f'{phase_col}_categorical'
+        ] = arr.loc[
+            arr['mouseID'].isin(mice_Linj),
+            f'{phase_col}_categorical'
+            ].apply(flip_classification)
+    
+    return arr
+    
 def compute_supports(arr):
     """
     computes fractions of 0,1,2,3,4-limb support per stride

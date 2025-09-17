@@ -27,13 +27,13 @@ predictorlist_str = ['speed', 'snout-hump angle']
 predictor = 'snoutBodyAngle'
 predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
 appdx = ''
-samplenum = 3093 #2659
-tlt ='Passive treadmill\n(left-right alternation)'# 'Head height trials'
+samplenum = 6379 #2659
+tlt ='Passive treadmill\n(left-right synchrony)'# 'Head height trials'
 yyyymmdd = '2022-08-18'
 slopes = ['pred2']
-limb = 'lF0'
+limb = 'rF0'
 datafrac = 1
-ref = 'lH1alt' #'lH1'
+ref = 'rH1sync' #'lH1'
 interaction = 'TRUE'
 mouselist = Config.passiveOpto_config['mice']
 rfl_str = False
@@ -44,7 +44,7 @@ rfl_str = False
 unique_traces = np.empty((0))
 
 ### PLOTTING
-ylim = (0.3*np.pi,1.5*np.pi)
+ylim = (0.1*np.pi,1.5*np.pi)
 yticks = [0.5*np.pi,np.pi,1.5*np.pi]
 yticklabels = ["0.5π", "π", "1.5π"]  
 xlim, xticks, xlabel = treadmill_circGLM.get_predictor_range(predictor)
@@ -144,7 +144,7 @@ ax.set_xlabel(f"{xlabel}")
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_yticks(yticks)
 ax.set_yticklabels(yticklabels)
-ax.set_ylabel('Left homolateral phase\n(rad)')
+ax.set_ylabel('Right homolateral phase\n(rad)')
 
 # -------------------------------STATS-----------------------------------
 stat_dict = treadmill_circGLM.get_circGLM_stats(
@@ -174,7 +174,7 @@ ax.text(xlim[0] + (0.1 * (xlim[1]-xlim[0])),
     
 plt.tight_layout()
 
-figtitle = f"passiveOpto_RHalternation_{yyyymmdd}_{appdx}_{limb}_ref{ref}_{'_'.join(predictorlist)}_SLOPE{''.join(slopes)}_{interaction}_{appdx}_PER_MOUSE.svg"
+figtitle = f"passiveOpto_RHsynchrony_{yyyymmdd}_{appdx}_{limb}_ref{ref}_{'_'.join(predictorlist)}_SLOPE{''.join(slopes)}_{interaction}_{appdx}_PER_MOUSE.svg"
 plt.savefig(os.path.join(FigConfig.paths['savefig_folder'], figtitle), 
             dpi = 300,  
             bbox_inches = 'tight',

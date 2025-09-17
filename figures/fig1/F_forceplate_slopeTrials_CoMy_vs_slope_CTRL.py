@@ -69,7 +69,7 @@ print(f"Intercept: {((modLIN['Estimate'][0] + np.nanmean(df[variable]))* Config.
 print(f"Slope: {(modLIN['Estimate'][1]* Config.forceplate_config['fore_hind_post_cm']/2):.3f}") 
 
 print(f"Mean change over 80 degrees: {np.mean(diffs):.3f} ± {scipy.stats.sem(diffs):.3f}")
-print(f"{variable} is modulated by {(modLIN['Estimate'][1]*Config.forceplate_config['fore_hind_post_cm']*10/2):.1f} ± {(modLIN['Std. Error'][1]*Config.forceplate_config['fore_hind_post_cm']*100/2):.1f} mm/deg")
+print(f"{variable} is modulated by {(10*modLIN['Estimate'][1]*Config.forceplate_config['fore_hind_post_cm']*10/2):.1f} ± {(10*modLIN['Std. Error'][1]*Config.forceplate_config['fore_hind_post_cm']*100/2):.1f} mm per 10 deg")
 
 # p values
 print(f"p-value: {modLIN['Pr(>|t|)'][1]}")

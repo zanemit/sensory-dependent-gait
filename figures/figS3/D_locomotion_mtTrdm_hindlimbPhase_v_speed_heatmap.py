@@ -12,19 +12,15 @@ from processing import data_loader, utils_processing, utils_math
 from processing.data_config import Config
 from figures.fig_config import Config as FigConfig
 
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-
-# phase_bounds = [-0.125, 0.125, 0.375, 0.625, 0.875]
 phase_bounds = [-0.1, 0.1, 0.4, 0.6, 0.9]
 
-pt_path = r"C:\Users\MurrayLab\Documents\PassiveOptoTreadmill\2022-08-18_strideParams_lH1.csv"
-df = pd.read_csv(pt_path)
+mt_path = r"C:\Users\MurrayLab\Documents\MotorisedTreadmill\2021-10-23_strideParams_lH1.csv"
+df = pd.read_csv(mt_path)
 
-mice = Config.passiveOpto_config['mice']
+mice = Config.mtTreadmill_config["mice_level"]
 
 # speed_bounds = [0,25,50,75,100,125,150]
 speed_bounds = utils_processing.split_by_percentile(df['speed'], 5)
-
 hmlg_fracs = np.empty((len(phase_bounds)-1,len(speed_bounds)-1, len(mice)))*np.nan
 hmlg_counts = hmlg_fracs.copy()
 
@@ -44,7 +40,7 @@ for im, m in enumerate(mice):
         hmlg_counts[:, sp, im] = hmlg_sums
         hmlg_fracs[:, sp, im] = hmlg_sums/hmlg_sums.sum()
     overall_prevalences = hmlg_counts.mean(axis=2)/hmlg_counts.mean(axis=2).sum()
-    
+
 # DEFINE A COLOUR MAP
 from matplotlib.colors import LinearSegmentedColormap
 c1 = '#142c2c'#'#492020'
@@ -55,16 +51,16 @@ n_bins = 100
 cmap_name = 'teal_cmap'
 cm = LinearSegmentedColormap.from_list(cmap_name, [c1,c2,c3,c4], N=n_bins)
 
-# PLOT HEATMAP
+# PLOT
 fontsize = 6
 fig, ax = plt.subplots(figsize = (2.8,1.6))
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 divider = make_axes_locatable(ax)
-# cax = divider.append_axes('right', size = '5%', pad = 0.05)
 cax = divider.append_axes('bottom', size = '5%', pad = 0.12)
 data_to_plot = np.nanmean(hmlg_fracs,axis=2)
 im = ax.imshow(data_to_plot, 
                cmap = cm, 
-                vmin = 0, vmax = 1, 
+               vmin = 0, vmax = 1, 
                aspect = 0.6)
 
 # marginal frequencies of limb phase bounds
@@ -106,6 +102,8 @@ for i in range(data_to_plot.shape[0]):
                 va='center', ha='center', color=clr,
                 fontsize=fontsize-1.5)
 
+
+
 # ticks and tick labels
 ax.set_yticks(np.arange(len(phase_bounds)-1))
 ax.set_yticklabels(labels = ["synchrony","R-leading","alternation","L-leading"], size =fontsize)
@@ -119,11 +117,11 @@ ax.set_xlabel("Speed quintiles (cm/s)", size = fontsize)
 # colourbar
 cbar = fig.colorbar(im, cax=cax, orientation = 'horizontal')
 cbar.ax.tick_params(length=2, width=0.5, direction='out')
-cbar.ax.set_xticks([0,0.2,0.4,0.6, 0.8, 1])
-cbar.ax.set_xticklabels(labels = [0,0.2,0.4,0.6, 0.8, 1], size = fontsize)
-cbar.ax.set_xlabel("Fraction of strides\nwithin a speed quintile", size = fontsize)
-# plt.tight_layout()
+cbar.ax.set_xticks([0,0.2,0.4,0.6,0.8,1])
+cbar.ax.set_xticklabels(labels = [0,0.2,0.4,0.6,0.8,1], size = fontsize)
+cbar.ax.set_xlabel("Fraction of strides", size = fontsize)
+plt.tight_layout()
 
-fig.savefig(Path(FigConfig.paths['savefig_folder']) / f"passiveOptoTreadmill_hindlimbPhase_heatmap.svg",
+fig.savefig(Path(FigConfig.paths['savefig_folder']) / f"mtTreadmill_hindlimbPhase_heatmap.svg",
             transparent = True,
             dpi =300)
