@@ -53,7 +53,7 @@ cm = LinearSegmentedColormap.from_list(cmap_name, [c1,c2,c3,c4], N=n_bins)
 
 # PLOT
 fontsize = 6
-fig, ax = plt.subplots(figsize = (2.8,1.6))
+fig, ax = plt.subplots(figsize = (2.8,1.7))
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 divider = make_axes_locatable(ax)
 cax = divider.append_axes('bottom', size = '5%', pad = 0.12)
@@ -119,7 +119,7 @@ cbar = fig.colorbar(im, cax=cax, orientation = 'horizontal')
 cbar.ax.tick_params(length=2, width=0.5, direction='out')
 cbar.ax.set_xticks([0,0.2,0.4,0.6,0.8,1])
 cbar.ax.set_xticklabels(labels = [0,0.2,0.4,0.6,0.8,1], size = fontsize)
-cbar.ax.set_xlabel("Fraction of strides", size = fontsize)
+cbar.ax.set_xlabel("Fraction of strides\nwithin a speed quintile", size = fontsize)
 plt.tight_layout()
 
 fig.savefig(Path(FigConfig.paths['savefig_folder']) / f"mtTreadmill_hindlimbPhase_heatmap.svg",

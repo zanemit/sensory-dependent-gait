@@ -61,7 +61,7 @@ cm = LinearSegmentedColormap.from_list(cmap_name, [c1,c2,c3,c4], N=n_bins)
 
 # PLOT HEATMAP
 fontsize = 6
-fig, ax = plt.subplots(figsize = (2.8,1.6))
+fig, ax = plt.subplots(figsize = (1.8,1.6))
 divider = make_axes_locatable(ax)
 # cax = divider.append_axes('right', size = '5%', pad = 0.05)
 cax = divider.append_axes('bottom', size = '5%', pad = 0.12)
@@ -69,7 +69,7 @@ data_to_plot = np.nanmean(hmlg_fracs,axis=2)
 im = ax.imshow(data_to_plot, 
                cmap = cm, 
                 vmin = 0, vmax = 1, 
-               aspect = 0.6)
+               aspect = 0.7)
 
 # marginal frequencies of limb phase bounds
 counts_per_phase_bound = hmlg_counts.sum(axis=1)  # (phase bounds, mice)
