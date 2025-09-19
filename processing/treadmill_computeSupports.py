@@ -10,7 +10,7 @@ sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 from processing import data_loader, utils_processing, utils_math
 from processing.data_config import Config
 
-def compute_phase_lead_categorical(arr, phase_col):
+def compute_phase_lead_categorical(arr, phase_col, reflimb_col=None):
     """
     This assumes that phase_col is always right leg (hind or fore),
     i.e. left leg is the reference;
@@ -20,7 +20,7 @@ def compute_phase_lead_categorical(arr, phase_col):
     mice_Linj = Config.injection_config['left_inj_imp']
     mice_both = Config.injection_config['both_inj_left_imp']
     
-    def get_category(val):
+    def get_category(val, reflimb=None):
         if np.isnan(val):
             return np.nan
         if ((val>=-0.5)&(val<=-0.4))|((val>=0.4)&(val<=0.5)):
@@ -28,9 +28,17 @@ def compute_phase_lead_categorical(arr, phase_col):
         elif (val>=-0.1)&(val<=0.1):
             return 'sync'
         elif (val>0.1)&(val<0.4): # rH0 stance onset after lH0
-            return 'Rlead'
+            if reflimb==None:
+                return 'Rlead'
+            else:
+                categ = 'Rlead' if 'lH' in reflimb else 'Llead'
+                return categ
         elif (val>-0.4)&(val<-0.1): # rH0 stance onset before lH0
-            return 'Llead'
+            if reflimb==None:
+                return 'Llead'
+            else:
+                categ = 'Llead' if 'lH' in reflimb else 'Rlead'
+                return categ
         else:
             raise ValueError('Missed phases!')
             
@@ -42,7 +50,12 @@ def compute_phase_lead_categorical(arr, phase_col):
         else:
             return label
     
-    arr[f'{phase_col}_categorical'] = arr[phase_col].apply(get_category)
+    if reflimb_col==None:
+        arr[f'{phase_col}_categorical'] = arr[phase_col].apply(get_category)
+    else:
+        arr[f'{phase_col}_categorical'] = arr.apply(
+            lambda row: get_category(row[phase_col], row[reflimb_col]), axis=1
+            )
     
     # remove bilaterally injected mice from this analysis
     arr.loc[
