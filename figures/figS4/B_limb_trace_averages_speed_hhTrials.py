@@ -14,36 +14,33 @@ from processing import data_loader, utils_processing, treadmill_data_manager
 from processing.data_config import Config
 from figures.fig_config import Config as FigConfig
 
-df = pd.read_csv(r"C:\Users\MurrayLab\Documents\PassiveOptoTreadmill\2022-08-18_strideParamsMerged_incline_lH1.csv")
+df = pd.read_csv(r"C:\Users\MurrayLab\Documents\PassiveOptoTreadmill\2022-08-18_strideParamsMerged_lH1.csv")
 
 outputDir = Config.paths['passiveOpto_output_folder']
 yyyymmdd = '2022-08-18'
-appdx = '_incline'
+appdx = ''
 passiveOptoData, _ = data_loader.load_processed_data(outputDir, dataToLoad = 'passiveOptoData', yyyymmdd = yyyymmdd, appdx = appdx)
 speedData, _ = data_loader.load_processed_data(outputDir, dataToLoad = 'beltSpeedData', yyyymmdd = yyyymmdd, appdx = appdx)
 bodyAngleData, _ = data_loader.load_processed_data(outputDir, dataToLoad = 'bodyAngles', yyyymmdd = yyyymmdd, appdx = appdx)
 #%%
-# incline_range = [-40,-30]
-incline_range = [30,40]
-mouse=Config.passiveOpto_config['mice'][3]
+speed_range = [20,40]
+# speed_range = [80,100]
+mice=np.intersect1d(Config.passiveOpto_config['mice'],Config.injection_config['left_inj_imp'])
 
-if mouse in Config.injection_config['both_inj_left_imp']:
-    raise ValueError('Choose another mouse')
-
-df['incline'] = [-int(x[3:]) for x in df['headLVL']]
+mouse = Config.passiveOpto_config['mice'][8] #8 (7,10,11,9)
 
 stimfreq_dict = {
     '10Hz': '40ms', '20Hz': '20ms', '30Hz': '13.2ms', '40Hz': '9.999999ms', '50Hz': '8ms'
     }
 # limb_str = 'lH1'
-limb_dict = {'rF1': 'diagonal', 'lF1': 'homolateral', 'rH1': 'homologous',
-             'lH1': 'reference'}
+limb_dict = {'rF1': 'diagonal', 'lF1': 'homolateral', 'rH1': 'homologous', 'lH1': 'reference'}
 ref_str = 'lH1'
 nonref_strs = ['rH1', 'lF1', 'rF1']
 
 df_sub = df.loc[
+    # (df['mouseID'].isin(mice))&
     (df['mouseID']==mouse)&
-    (df['incline']>=incline_range[0])&(df['incline']<=incline_range[1]),
+    (df['speed']>speed_range[0])&(df['speed']<=speed_range[1]),
     : ]
 
 unique_exps = df_sub[['expDate', 'mouseID', 'stimFreq', 'headLVL']].drop_duplicates()
@@ -109,14 +106,14 @@ for i_exp, exp_row in unique_exps.iterrows():
                     speedData.loc[troughs_in_view[i_trough]:troughs_in_view[i_trough+1],
                                   (exp_row['mouseID'], str(exp_row['expDate']), exp_row['stimFreq'], exp_row['headLVL'])]
                     )
-        incline = np.nanmean(
+        sba = np.nanmean(
                     bodyAngleData.loc[troughs_in_view[i_trough]:troughs_in_view[i_trough+1],
                                   (exp_row['mouseID'], str(exp_row['expDate']), exp_row['stimFreq'], exp_row['headLVL'], 'snoutBody')]
                     )
         
         # print(speed)
         # if not ((speed>speed_range[0])and(speed<=speed_range[1])) or not ((sba>sba_range[0])and(sba<=sba_range[1])):
-        if not ((incline>incline_range[0])and(incline<=incline_range[1])) and not (speed>5):
+        if not ((speed>speed_range[0])and(speed<=speed_range[1])):
             continue
         
         da_new = xr.DataArray(
@@ -154,17 +151,17 @@ for i, (limb_str, clr, added) in enumerate(zip(
     clr_id = 1 if clr=='greys' else 2
     sample_size = sample_tresh if da_3d.coords['exp'].shape[0]>sample_tresh else da_3d.coords['exp'].shape[0]
     for trace in np.random.choice(da_3d.coords['exp'].values, sample_size, replace=False):
-        ax.plot(da_3d.loc[:, trace, limb_str]+added, color=FigConfig.colour_config[clr][clr_id], alpha=0.08)
+        ax.plot(da_3d.loc[:, trace, limb_str]+added, color=FigConfig.colour_config[clr][clr_id], alpha=0.2)
     ax.plot(np.nanmean(da_3d.loc[:, :, limb_str], axis=1)+added, color=FigConfig.colour_config[clr][clr_id], lw=2)
     ax.text(time_steps*0.95,added,limb_str.upper()[:-1], fontsize=6)
 ax.set_xticks(np.linspace(0, time_steps, 5),labels=np.linspace(0,100,5).astype(int))
 ax.set_xlabel('% through stride')
-ax.set_title(f"[{incline_range[0]}, {incline_range[1]}] cm/s")
+ax.set_title(f"({speed_range[0]}, {speed_range[1]}] cm/s")
 plt.tight_layout()
 
 # y-axis plots distance in centimetres!!
 
-figtitle = f"limb_traces_{mouse}_{incline_range[0]}_{incline_range[1]}_cms.svg"
+figtitle = f"limb_traces_{mouse}_{speed_range[0]}_{speed_range[1]}_cms.svg"
 plt.savefig(os.path.join(FigConfig.paths['savefig_folder'], figtitle), 
             dpi = 300, 
             bbox_inches = 'tight',

@@ -27,13 +27,13 @@ predictorlist_str = ['speed', 'snout-hump angle']
 predictor = 'snoutBodyAngle'
 predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
 appdx = ''
-samplenum = 13110
+samplenum = 9279
 tlt = 'Head height trials'
 yyyymmdd = '2022-08-18'
 slopes = ['pred2']
 limb = 'lF0'
-datafrac = 0.6
-ref = 'lH1'
+datafrac = 1
+ref = 'lH1combblncd'
 interaction = 'TRUE'
 mouselist = Config.passiveOpto_config['mice']
 rfl_str = False
@@ -144,7 +144,7 @@ ax.set_xlabel(f"{xlabel}")
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_yticks(yticks)
 ax.set_yticklabels(yticklabels)
-ax.set_ylabel('Relative LF phase\n(rad)')
+ax.set_ylabel('Left homolateral phase\n(rad)')
 
 # -------------------------------STATS-----------------------------------
 stat_dict = treadmill_circGLM.get_circGLM_stats(
