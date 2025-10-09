@@ -76,6 +76,8 @@ def get_circGLM_slopes(
         datafull = pd.read_csv(Path(outputDir)/ f"{yyyymmdd}_{filenames[yyyymmdd][merged]}.csv")
     else:
         ref_dataset = ref if ref=='COMBINED' or ref[-1] in ['0','1','2'] else ref[:3]
+        if ref in ['COMBINEDcombblncd', 'COMBINEDcb']:
+            ref_dataset = 'COMBINED'
         datafull = data_loader.load_processed_data(dataToLoad = dstr,
                                                    outputDir = outputDir,
                                                    yyyymmdd = yyyymmdd,
@@ -169,7 +171,7 @@ def get_circGLM_slopes(
     else:
         pred_x_num = np.max([len(x) for x in x_pred_range.values()])
     
-    if ref == 'COMBINED' and categ_var=='refLimb':
+    if 'COMBINED' in ref and categ_var=='refLimb':
         ref_iterables = ['', 'rH1']
     elif categ_var=='trialType':
         ref_iterables = ['', 'slope']

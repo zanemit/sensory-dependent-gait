@@ -15,6 +15,9 @@ def compute_phase_lead_categorical(arr, phase_col, reflimb_col=None):
     This assumes that phase_col is always right leg (hind or fore),
     i.e. left leg is the reference;
     and assigns Llead or Rlead accordingly
+    
+    reflimb_col should only be assigned when ref-lH1 and ref-rH (or equivalent)
+    are combined and there is a separate col specifying the reflimb for each row
     """
     # get mice based on their injection side
     mice_Linj = Config.injection_config['left_inj_imp']

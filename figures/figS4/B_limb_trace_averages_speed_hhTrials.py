@@ -27,7 +27,7 @@ speed_range = [20,40]
 # speed_range = [80,100]
 mice=np.intersect1d(Config.passiveOpto_config['mice'],Config.injection_config['left_inj_imp'])
 
-mouse = Config.passiveOpto_config['mice'][8] #8 (7,10,11,9)
+mouse = Config.passiveOpto_config['mice'][10] #8 (7,10,11,9)
 
 stimfreq_dict = {
     '10Hz': '40ms', '20Hz': '20ms', '30Hz': '13.2ms', '40Hz': '9.999999ms', '50Hz': '8ms'
@@ -151,7 +151,7 @@ for i, (limb_str, clr, added) in enumerate(zip(
     clr_id = 1 if clr=='greys' else 2
     sample_size = sample_tresh if da_3d.coords['exp'].shape[0]>sample_tresh else da_3d.coords['exp'].shape[0]
     for trace in np.random.choice(da_3d.coords['exp'].values, sample_size, replace=False):
-        ax.plot(da_3d.loc[:, trace, limb_str]+added, color=FigConfig.colour_config[clr][clr_id], alpha=0.2)
+        ax.plot(da_3d.loc[:, trace, limb_str]+added, color=FigConfig.colour_config[clr][clr_id], alpha=0.1)
     ax.plot(np.nanmean(da_3d.loc[:, :, limb_str], axis=1)+added, color=FigConfig.colour_config[clr][clr_id], lw=2)
     ax.text(time_steps*0.95,added,limb_str.upper()[:-1], fontsize=6)
 ax.set_xticks(np.linspace(0, time_steps, 5),labels=np.linspace(0,100,5).astype(int))
