@@ -218,22 +218,11 @@ summary_df = get_trial_summaries(df)
 low_hh = ['rl17', 'rl12']
 low_rows = summary_df[summary_df['headLVL'].isin(low_hh)].index
 get_xcoord_data(summary_df, df, row_of_interest=low_rows[0], xlims=(65,475), limb_dict={'lF1': 'LEFT FORE', 'lH1': 'LEFT HIND', 'rH1': 'RIGHT HIND', 'rF1': 'RIGHT FORE'})
-#535,945
-# thesis: row_of_interest=80, xlims=(137,547)
-# row_of_interest = 82, xlims=(535,945) - this is good, except it is not 149 deg
 
 
 high_hh = ['rl-8', 'rl-3']
 high_rows = summary_df[summary_df['headLVL'].isin(high_hh)].index
 get_xcoord_data(summary_df, df, row_of_interest=high_rows[77], xlims=(530,940), limb_dict={'lF1': 'LEFT FORE', 'lH1': 'LEFT HIND', 'rH1': 'RIGHT HIND', 'rF1': 'RIGHT FORE'})
-# thesis: row of interest 707,xlims=(828,1238) #66
-
-# DOWNWARD (151 deg), 56 cm/s, 30Hz, row_of_interest=82, xlims=(535,945) - homolateral around pi
-# DOWNWARD (151 deg), 73 cm/s, 30Hz, row_of_interest=706, xlims=(500,910) - homolateral around 1.5pi
-# DOWNWARD (160 deg), 91 cm/s, 30Hz, row_of_interest=705, xlims=(250,660) - homolateral around 1.5pi
-# DOWNWARD (165 deg), 86 cm/s, 50Hz, row_of_interest=high_rows[67], xlims=(75,485)
-# row_of_interest=high_rows[76] -- pi but UPWARD (168 deg)
-# UPWARD (167 deg), 72 cm/s, 20Hz, row_of_interest=high_rows[77], xlims=(530,940)
 
 
 #%%
@@ -245,6 +234,10 @@ df, _, _ = data_loader.load_processed_data(outputDir = Config.paths[f"{list(conf
                                             limb = "lH1")
 summary_df = get_trial_summaries(df)
 
-get_xcoord_data(summary_df, limb_dict={'lF1': 'LEFT FORE', 'lH1': 'LEFT HIND'}, row_of_interest=64, xlims=(87,497), incline=True)
+low_inc = ['deg40', 'deg35', 'deg30']
+low_rows = summary_df[summary_df['headLVL'].isin(low_inc)].index
+get_xcoord_data(summary_df, df, row_of_interest=low_rows[59], xlims=(80,490), limb_dict={'lF1': 'LEFT FORE', 'lH1': 'LEFT HIND', 'rH1': 'RIGHT HIND', 'rF1': 'RIGHT FORE'}, incline=True)
 
-get_xcoord_data(summary_df, limb_dict={'lF1': 'LEFT FORE', 'lH1': 'LEFT HIND'}, row_of_interest=1255, xlims=(137,547), incline=True)
+high_inc = ['deg-40', 'deg-35', 'deg-30']
+high_rows = summary_df[summary_df['headLVL'].isin(high_inc)].index 
+get_xcoord_data(summary_df, df, row_of_interest=high_rows[40], xlims=(425,835), limb_dict={'lF1': 'LEFT FORE', 'lH1': 'LEFT HIND', 'rH1': 'RIGHT HIND', 'rF1': 'RIGHT FORE'}, incline=True)
