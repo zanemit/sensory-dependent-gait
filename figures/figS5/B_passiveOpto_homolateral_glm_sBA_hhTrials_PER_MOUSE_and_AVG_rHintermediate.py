@@ -146,7 +146,7 @@ cont_coef_str = f"pred{predictor_id+1}"
 
 ax.text(xlim[0] + (0.35 * (xlim[1]-xlim[0])),
         ylim[1] - (0.05* (ylim[1]-ylim[0])),
-        f"vs            ref: {stat_dict[cat_coef_str]}",
+        f"vs            : {stat_dict[cat_coef_str]}",
         fontsize=5)
 
 # -------------------------------STATS-----------------------------------

@@ -295,7 +295,7 @@ ax.set_xticks([-0.1,-0.2,-0.3, -0.4])
 ax.set_ylim(yticks[0]-(0.1*np.pi), yticks[-1])
 ax.set_yticks(yticks)
 ax.set_yticklabels([f"{num:.1f}π" if num not in [0,1] else "π" if num == 1 else "0" for num in np.asarray(yticks)/np.pi])
-ax.set_ylabel(f"Homolateral phase\n{ph_str} (rad)")   
+ax.set_ylabel("Shift in homolateral\nphase (rad)")   
 
 ax.set_xlabel("AP centre of support\n(cm)")   
  
