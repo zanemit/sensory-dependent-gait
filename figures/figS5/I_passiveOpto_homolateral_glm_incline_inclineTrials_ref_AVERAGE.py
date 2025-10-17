@@ -27,8 +27,9 @@ yyyymmdd = '2022-08-18'
 slopes = ['pred2', 'pred3']
 limb = 'homolateral0'
 ref = 'COMBINEDcb'
+ref_plain = 'COMBINED'
 interaction = 'TRUEthreeway'
-samples =  13454
+samples = 13454#15618
 datafrac = 0.9
 iters = 1000
 
@@ -109,22 +110,31 @@ for ref_id, (lnst, clr, lbl) in enumerate(zip(['solid', 'dashed'],
             last_vals.append(trace[-1])
 
 # -------------------------------STATS-----------------------------------
+samplenum = 12049
+limb = 'homolateral0'
+datafrac = 0.4
+ref = 'COMBINEDcomb'
+categ_var='hmlg_categ_refLimb'
+interaction = 'TRUEthreeway'
+sba_split_str = 's'
 stat_dict = treadmill_circGLM.get_circGLM_stats(
         predictors = predictorlist,
         yyyymmdd = yyyymmdd,
         limb = limb,
         ref = ref,
-        samples = samples,
+        categ_var=categ_var,
+        samples = samplenum,
         interaction = interaction,
         appdx = appdx,
         datafrac = datafrac,
         slopes = slopes,
         outputDir = Config.paths['passiveOpto_output_folder'],
         iterations = iters,
-        mice = Config.passiveOpto_config['mice']
+        mice = Config.passiveOpto_config['mice'],
+        sBA_split_str=sba_split_str
                 ) 
 
-cat_coef_str = f"pred{len(predictorlist)+1}rH1"
+cat_coef_str = f"pred{len(predictorlist)+2}rH1"
 cont_coef_str = f"pred{predictor_id+1}"
 # ax.text(x_range[-1, 1] + ((xlim[1]-xlim[0])/100),
 #         np.mean(last_vals),

@@ -129,19 +129,28 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
             last_vals.append(trace[-1])
 
 # -------------------------------STATS-----------------------------------
+samplenum = 13766
+limb = 'homolateral0'
+datafrac = 0.4
+ref = 'COMBINEDcomb'
+categ_var='homologous0_categorical'
+interaction = 'TRUE'
+sba_split_str = 's'
 stat_dict = treadmill_circGLM.get_circGLM_stats(
         predictors = predictorlist,
         yyyymmdd = yyyymmdd,
         limb = limb,
         ref = ref,
-        samples = samples,
+        samples = samplenum,
+        categ_var=categ_var,
         interaction = interaction,
         appdx = appdx,
         datafrac = datafrac,
         slopes = slopes,
         outputDir = Config.paths['passiveOpto_output_folder'],
         iterations = iters,
-        mice = Config.passiveOpto_config['mice']
+        mice = Config.passiveOpto_config['mice'],
+        sBA_split_str=sba_split_str
                 ) 
 
 cont_coef_str = f"pred{predictor_id+1}"

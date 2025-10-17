@@ -23,9 +23,10 @@ from figures.fig_config import AnyObjectHandler
 #-----------testing if there is a difference between per-mouse v slope model----
 #-----------or if the discrepancy is due to the use of lH1 or COMB as reflimbs--
 limb = 'lF0' # should change
-ref = 'lH1'
-datafracs = [0.7, 0.7, 0.6]
-sample_nums = [13684, 13684, 13110]
+ref = 'lH1combblncd'
+ref_dataset = 'lH1'
+data_frac = 1
+sample_nums = [7371, 7371, 9279]
 catvar = None
 
 #-----------testing if there is a difference between per-mouse v slope model----
@@ -52,15 +53,14 @@ set_CoMy_range_index_str = set_CoMy_range_index*Config.forceplate_config["fore_h
 
 phase_preds_across_mice_dict = {}
 slice_dict = {}
-for i, (yyyymmdd_fp, appdx, predictorlist, slopes, predictor, interaction, sample_num, data_frac, dict_lbl) in enumerate(zip(
+for i, (yyyymmdd_fp, appdx, predictorlist, slopes, predictor, interaction, sample_num, dict_lbl) in enumerate(zip(
            ['2021-10-26', '2022-04-04', '2021-10-26'],
            ['_incline', '_incline', ''],
            [['speed', 'snoutBodyAngle', 'incline'], ['speed', 'snoutBodyAngle', 'incline'], ['speed', 'snoutBodyAngle']],
            [['pred2', 'pred3'], ['pred2', 'pred3'], ['pred2']],
            ['snoutBodyAngle', 'levels', 'snoutBodyAngle'],
-           ['TRUEsecondary', 'TRUEsecondary', 'TRUE'],
+           ['TRUEthreeway', 'TRUEthreeway', 'TRUE'],
            sample_nums, 
-           datafracs, 
            ['incline_sBA', 'incline_incline', 'hh_sBA'],
         )):  
     
@@ -70,7 +70,7 @@ for i, (yyyymmdd_fp, appdx, predictorlist, slopes, predictor, interaction, sampl
     
     datafull = data_loader.load_processed_data(dataToLoad = 'strideParamsMerged', 
                                                 yyyymmdd = yyyymmdd, 
-                                                limb = ref, 
+                                                limb = ref_dataset, 
                                                 appdx = appdx)[0]
     
     if predictor == 'levels':

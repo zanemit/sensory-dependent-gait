@@ -154,7 +154,7 @@ def get_xcoord_data(summary_df, df, limb_dict, row_of_interest, xlims, incline=F
     
     speeds_list = []; indep_var_list = []
     num_troughs_before_on_frame = (np.asarray(troughs_dict["lH1"])<on_frame).sum()
-    print(troughs_dict["lH1"])
+
     for i, t in enumerate(troughs_dict["lH1"]) :
         # ADD STRIDE LINES TO THE PLOT
         ax.axvline(t-on_frame, ymin = 0, ymax = 1, color = 'black', ls = 'dashed',zorder = -1)
@@ -183,7 +183,8 @@ def get_xcoord_data(summary_df, df, limb_dict, row_of_interest, xlims, incline=F
             if i<len(speeds):
                 speeds_list.append(speeds[i_phase])
                 indep_var_list.append(indep_var[i_phase])
-    
+    print(indep_var_list)
+    print(speeds_list)
     ax.set_ylim(-15,15)
     ax.set_yticks(np.arange(-10,10.5,5))#, labels = ["-3","","","0","","","3"])
     ax.text(xmin-55,14,"anterior", color='black', size=5)
@@ -193,13 +194,14 @@ def get_xcoord_data(summary_df, df, limb_dict, row_of_interest, xlims, incline=F
     if incline:
         ornt = "incline" if "-" in summary_df.loc[:,'headLVL'].iloc[row_of_interest] else "decline"
         slope = f"{-int(summary_df.loc[:,'headLVL'].iloc[row_of_interest][3:])} deg"
-        ax.set_title(f"{ornt} ({slope}), {summary_df.loc[:,'stimFreq'].iloc[row_of_interest]}, {summary_df.loc[:,'speed'].iloc[row_of_interest]:.0f} cm/s")
+        ax.set_title(f"{ornt} ({slope}), {summary_df.loc[:,'stimFreq'].iloc[row_of_interest]}, {np.nanmean(speeds_list):.0f}±{(np.nanstd(speeds_list)/np.sqrt(len(speeds_list))):.0f} cm/s")
     else:
         # ornt = "upward" if summary_df.loc[:,'snoutBodyAngle'].iloc[row_of_interest] > 165 else "downward"
         sba = np.nanmean(indep_var_list)
+        std = np.nanstd(indep_var_list)/np.sqrt(len(indep_var_list))
         ornt = "upward" if sba > 165 else "downward"
         # ax.set_title(f"{ornt} ({summary_df.loc[:,'snoutBodyAngle'].iloc[row_of_interest]:.0f} deg), {summary_df.loc[:,'stimFreq'].iloc[row_of_interest]}, {summary_df.loc[:,'speed'].iloc[row_of_interest]:.0f} cm/s")
-        ax.set_title(f"{ornt} ({sba:.0f} deg), {summary_df.loc[:,'stimFreq'].iloc[row_of_interest]}, {np.nanmean(speeds_list):.0f} cm/s")
+        ax.set_title(f"{ornt} ({sba:.0f}±{std:.0f} deg), {summary_df.loc[:,'stimFreq'].iloc[row_of_interest]}, {np.nanmean(speeds_list):.0f}±{(np.nanstd(speeds_list)/np.sqrt(len(speeds_list))):.0f} cm/s")
     
     figtitle = f"single_trial_phases_row{row_of_interest}_xmin{xmin}_xmax{xmax}_{summary_df.loc[:,'stimFreq'].iloc[row_of_interest]}_{summary_df.loc[:,'headLVL'].iloc[row_of_interest]}.svg"
     plt.tight_layout()
