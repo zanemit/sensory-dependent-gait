@@ -115,23 +115,29 @@ for ref_id, (lnst, clr, lbl, xr) in enumerate(zip(['dashed', 'solid'],
             last_vals.append(trace[-1])
 
 # -------------------------------STATS-----------------------------------
+samplenum =16089
+datafrac = 0.5
+ref = 'lH1comb'
+categ_var='rH0_categorical_trialType'
+sba_str = 's'
 stat_dict = treadmill_circGLM.get_circGLM_stats(
         predictors = predictorlist,
         yyyymmdd = yyyymmdd,
         limb = limb,
         ref = ref,
-        categ_var = 'trialType',
-        samples = samples,
+        categ_var = categ_var,
+        samples = samplenum,
         interaction = interaction,
         appdx = appdx,
         datafrac = datafrac,
         slopes = slopes,
         outputDir = Config.paths['passiveOpto_output_folder'],
         iterations = iters,
-        mice = Config.passiveOpto_config['mice']
+        mice = Config.passiveOpto_config['mice'],
+        sBA_split_str = sba_str
                 ) 
 
-cat_coef_str = f"pred{len(predictorlist)+1}slope"
+cat_coef_str = f"pred{len(predictorlist)+2}slope"
 cont_coef_str = f"pred{predictor_id+1}"
 # ax.text(x_range[-1, 1] + ((xlim[1]-xlim[0])/100),
 #         np.mean(last_vals),

@@ -122,7 +122,7 @@ def get_xcoord_data(summary_df, df, limb_dict, row_of_interest, xlims, incline=F
     clr_dict = {'rF1': 'diagonal', 'rH1': 'homologous', 'lF1': 'homolateral', 'lH1': 'greys'}
     shift_dict = {'lH1': 11.5, 'lF1': -4.5, 'rH1': 4, 'rF1': -11}
     
-    _, troughs_dict, limbXdict, on_frame = get_trial_data(summary_df, limb_dict, row_of_interest, incline=incline)
+    peaks_dict, troughs_dict, limbXdict, on_frame = get_trial_data(summary_df, limb_dict, row_of_interest, incline=incline)
 
     for i, limb_str in enumerate(limb_dict.keys()):
         limb = limbXdict[limb_str][on_frame:on_frame+2000] / Config.passiveOpto_config["px_per_cm"][limb_str]
@@ -154,21 +154,25 @@ def get_xcoord_data(summary_df, df, limb_dict, row_of_interest, xlims, incline=F
     
     speeds_list = []; indep_var_list = []
     num_troughs_before_on_frame = (np.asarray(troughs_dict["lH1"])<on_frame).sum()
+    
+    for otherlimb in limb_dict.keys():
+        for i, t in enumerate(troughs_dict[otherlimb]) :            
+            xval1 = peaks_dict[otherlimb][i-1] if peaks_dict[otherlimb][i-1]<troughs_dict[otherlimb][i] else on_frame
+            ax.fill_between([xval1-on_frame, troughs_dict[otherlimb][i]-on_frame], 
+                            shift_dict[otherlimb]-2.3, shift_dict[otherlimb]+1.7, 
+                            facecolor=FigConfig.colour_config[clr_dict[otherlimb]][2], alpha=0.33)
 
     for i, t in enumerate(troughs_dict["lH1"]) :
         # ADD STRIDE LINES TO THE PLOT
         ax.axvline(t-on_frame, ymin = 0, ymax = 1, color = 'black', ls = 'dashed',zorder = -1)
         
         if (i != len(troughs_dict["lH1"])-1) and ((t-on_frame)<xmax) and ((t-on_frame)>xmin):
+            
             for otherlimb in np.setdiff1d(list(limb_dict.keys()), ['lH1']):
                 i_phase = i - num_troughs_before_on_frame
-                # troughs_dict begins at 0 (t-on_frame makes 0 the on_frame)
-                # df begins at on_frame-200 
                 phases = df[(df["mouseID"]==trial["mouseID"]) & (df["expDate"]==trial["expDate"])&(df["stimFreq"]==trial["stimFreq"])&(df["headLVL"]==trial["headLVL"])][otherlimb]*2*np.pi
                 phases[phases<0] = phases[phases<0]+(2*np.pi)
-                # if i==0:
-                #     print(otherlimb, '\n', phases/np.pi)
-                #     print(t, t-on_frame)
+
                 if i_phase<len(phases):
                     phase_string = f"{phases.iloc[i_phase]/np.pi:.1f}π"
                     phase_string = f"{phases.iloc[i_phase]/np.pi:.0f}π" if ".0" in phase_string else phase_string
