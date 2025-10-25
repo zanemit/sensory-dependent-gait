@@ -33,43 +33,71 @@ for m in mice:
 
 # APPROXIMATE WITH A FUNCTION
 from scipy.optimize import curve_fit
-from scipy.stats import t
+from scipy.stats import wilcoxon
 def exp_decay(x,A,B,k):
     return A - B * np.exp(-k*x)
-def linear_fit(x,A,B):
-    return A + B * x
 
 x_pred = np.linspace(np.nanmin(df['headHW'].values), np.nanmax(df['headHW'].values), endpoint=True)
 
+# TOTAL FOR PLOTTING    
 mask = ~np.isnan(df['snoutBodyAngle'].values)
-popt,pcov = curve_fit(exp_decay, df['headHW'].values[mask], df['snoutBodyAngle'].values[mask], p0=(np.nanmax(df['snoutBodyAngle'].values),
-                                                                              np.nanmax(df['snoutBodyAngle'].values)-np.nanmin(df['snoutBodyAngle'].values),
-                                                                              1/np.nanmean(df['headHW'].values)))
+popt,pcov = curve_fit(exp_decay, 
+                      df['headHW'].values[mask], 
+                      df['snoutBodyAngle'].values[mask], 
+                      p0=(
+                           np.nanmax(df['snoutBodyAngle'].values),
+                        np.nanmax(df['snoutBodyAngle'].values)-np.nanmin(df['snoutBodyAngle'].values),
+                        1/np.nanmean(df['headHW'].values))
+                      )
 A_fit, B_fit, k_fit = popt
-print(f"Exp decay fitted params: A = {A_fit:.3f}, B = {B_fit:.3f}, k = {k_fit:.3f}")
 ax.plot(x_pred, 
               exp_decay(x_pred, *popt), 
               linewidth=1.5, 
               color=FigConfig.colour_config['headbars'])
-# print(f"SHIFT: {exp_decay(x_pred, *popt)[-1]-exp_decay(x_pred, *popt)[0]}")
-std_err = np.sqrt(np.diag(pcov)) # standard deviations in 
-t_values = popt/std_err
-dof = max(0, len(df['snoutBodyAngle'].values)-len(popt))   
-p_values = [2 * (1 - t.cdf(np.abs(t_val), dof)) for t_val in t_values]
-print(f"p-values: A_p = {p_values[0]:.3e}, B_p = {p_values[1]:.3e}, k_p = {p_values[2]:.3e}")
-for i_p, (p, exp_d_param) in enumerate(zip(
-        p_values[1:], 
-        ["scale factor", "rate constant"],
+
+# STATS PER SUBJECT
+p_list = []
+for m in mice:
+    df_sub = df[df['mouseID']==m].copy()
+    mask = ~np.isnan(df_sub['snoutBodyAngle'].values)
+    popt, pcov = curve_fit(exp_decay, df_sub['headHW'].values[mask], 
+                            df_sub['snoutBodyAngle'].values[mask], 
+                    p0=(
+                        A_fit,
+                        B_fit,
+                        k_fit
+                        ), 
+                    maxfev=10000)
+    p_list.append(popt)
+
+    
+params = np.array(p_list) #(n_subjects, n_params)
+param_names = ['A', 'B', 'k']
+params_df = pd.DataFrame(params, columns=param_names, index=df['mouseID'].unique())
+
+# STATS ACROSS SUBJECTS
+summary = []
+for col in param_names:
+    vals = params_df[col].dropna().values
+    median = np.median(vals)
+    w_stat, p = wilcoxon(vals)
+    summary.append((col, median, w_stat, p))
+for col, median,  w_stat, p in summary:
+    print(f"{col}: median={median:.4g}, w({params_df.shape[0]-1})={w_stat:.3f}, p={p:.3g}")
+    
+# PLOT STATS
+for i_p, (p_k, exp_d_param) in enumerate(zip(
+        [summary[1][3], summary[2][3]],
+        ['scale factor', 'rate constant']
         )):
-    p_text = ('*' * (p < FigConfig.p_thresholds).sum())
-    if (p < FigConfig.p_thresholds).sum() == 0:
-        p_text += "n.s."
+    p_text = "n.s." if (p_k < FigConfig.p_thresholds).sum() == 0 else ('*' * (p_k < FigConfig.p_thresholds).sum())
+
     ax.text(0.6,
-                 179-(i_p*4), 
-                 f"{exp_d_param}: {p_text}", 
-                 ha = 'center', 
-                 color = FigConfig.colour_config['headbars'],
-                 fontsize = 5)
+              179-(i_p*3.5), 
+              f"{exp_d_param}: {p_text}", 
+              ha = 'center', 
+              color = FigConfig.colour_config['headbars'],
+              fontsize = 5)
 
 ax.set_xlim(0,1.2)
 ax.set_ylim(140,180)

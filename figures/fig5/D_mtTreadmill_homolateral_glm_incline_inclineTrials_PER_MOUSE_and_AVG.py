@@ -27,15 +27,15 @@ predictorlist_str = ['speed', 'snout-hump angle', 'slope']
 predictor = 'incline'
 predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
 appdx = ''
-samplenum =  13048
+samplenum = 7317
 tlt = 'Slope trials'
 yyyymmdd = '2022-05-06'
 slopes = ['pred2', 'pred3']
 limb = 'lF0'
-ref = 'lH1'
+ref = 'lH1LleadRleadaltblncd'
 interaction = 'TRUEthreeway'
 mouselist = Config.mtTreadmill_config['mice_incline']
-datafrac = 0.6
+datafrac = 1
 iters = 1000
 
 #---------------INCLINE TRIALS--------------------
@@ -142,15 +142,21 @@ ax.set_xlabel("Surface slope\n(deg)")
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_yticks(yticks)
 ax.set_yticklabels(yticklabels)
-ax.set_ylabel('Relative LF phase\n(rad)')
+ax.set_ylabel('Left homolateral phase\n(rad)')
 
 # -------------------------------STATS-----------------------------------
+samplenum = 15002
+limb = 'lF0'
+datafrac = 1
+ref = 'lH1comb'
+categ_var='rH0_categorical'
+interaction = 'TRUEfourway'
 stat_dict = treadmill_circGLM.get_circGLM_stats(
         predictors = predictorlist,
         yyyymmdd = yyyymmdd,
         limb = limb,
         ref = ref,
-        categ_var=None,
+        categ_var=categ_var,
         samples = samplenum,
         interaction = interaction,
         appdx = appdx,

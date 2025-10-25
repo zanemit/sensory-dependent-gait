@@ -39,43 +39,37 @@ for im, m in enumerate(mice):
     perc_changes.append((yvals[-1]-yvals[0])*100/yvals[0])        
 # # fore-hind and comxy plot means
 
+# LOAD MIXED-EFFECTS MODEL
+slope_enforced = 'slopeENFORCED'
+mod = 'Slope1'
+path = f"{Config.paths['forceplate_output_folder']}\\{yyyymmdd}_mixedEffectsModel_linear_{variable_str}_{param}{slope_enforced}_rand{mod}.csv"
+stats_df = pd.read_csv(path, index_col=0)
 
-# APPROXIMATE WITH A FUNCTION
-from scipy.optimize import curve_fit
-from scipy.stats import t
-def linear_fit(x,A,B):
-    return A + B * x
-
+# A + Bx
 x_pred = np.linspace(np.nanmin(df['param'].values), np.nanmax(df['param'].values), endpoint=True)
+x_centred = x_pred - np.nanmean(df['param'].values)
+y_centred = stats_df.loc['(Intercept)', 'Estimate'] + (stats_df.loc['param_centred', 'Estimate'] * x_centred)
+y_pred = y_centred + np.nanmean(df[limb_str].values)
 
-
-    
-popt,pcov = curve_fit(linear_fit, df['param'].values, df[limb_str].values, p0=(0.5,0))
-A_fit, B_fit = popt
-print(f"Linear fitted params: A = {A_fit:.3f}, B = {B_fit:.3f}")
 axes.plot(x_pred, 
-              linear_fit(x_pred, *popt), 
+              y_pred, 
               linewidth=1.5, 
               color=FigConfig.colour_config[limb_clr][2])
-std_err = np.sqrt(np.diag(pcov)) # standard errors
-t_values = popt/std_err
-dof = max(0, len(df[limb_str].values)-len(popt))   
-p_values = [2 * (1 - t.cdf(np.abs(t_val), dof)) for t_val in t_values]
-print(f"p-values: A_p = {p_values[0]:.3e}, B_p = {p_values[1]:.3e}")
-for i_p, (p, exp_d_param) in enumerate(zip(
-        p_values[1:], 
-        ["slope"],
-        )):
-    p_text = ('*' * (p < FigConfig.p_thresholds).sum())
-    if (p < FigConfig.p_thresholds).sum() == 0:
-        p_text += "n.s."
-    axes.text(0.6,
-                 1.46-(i_p*0.1), 
-                 f"{exp_d_param}: {p_text}", 
-                 ha = 'center', 
-                 color = FigConfig.colour_config[limb_clr][2],
-                 fontsize = 5)
-print(f"Hindlimb load changed by {np.mean(perc_changes)} ± {np.std(perc_changes)/np.sqrt(len(perc_changes))}%")
+
+# PLOT STATS
+t = stats_df.loc['param_centred', 't value']
+p = stats_df.loc['param_centred', 'Pr(>|t|)']
+print(f"{limb_str}: mean={stats_df.loc['param_centred', 'Estimate']:.4g}, SEM={stats_df.loc['param_centred', 'Std. Error']:.4g}, t={t:.3f}, p={p:.3g}")
+p_text = "n.s." if (p < FigConfig.p_thresholds).sum() == 0 else ('*' * (p < FigConfig.p_thresholds).sum())
+
+axes.text(0.6,
+              1.46, 
+              f"slope: {p_text}", 
+              ha = 'center', 
+              color = FigConfig.colour_config[limb_clr][2],
+              fontsize = 5)
+
+print(f"Hindlimb load changed by {np.mean(perc_changes):.3g} ± {np.std(perc_changes)/np.sqrt(len(perc_changes)):.3g}%")
 
 # if A is significant, it means that the data asymptotes at a non-zero value
 # if B is significant, it means that there is a (monotonic?) change in y as the x changes

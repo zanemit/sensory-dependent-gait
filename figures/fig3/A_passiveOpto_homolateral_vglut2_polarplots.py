@@ -65,7 +65,10 @@ conditions = np.unique(df[param])
 # data_split = np.asarray([141,152,163,174])
 data_split = np.asarray([141,149,166,174])
 
-histAcrossMice2 = np.empty((np.unique(df['mouseID']).shape[0], Config.passiveOpto_config["kde_bin_num"]+1, group_num))
+kappa = 10
+bin_num = Config.passiveOpto_config["kde_bin_num"]
+
+histAcrossMice2 = np.empty((np.unique(df['mouseID']).shape[0], bin_num+1, group_num))
 histAcrossMice2[:] = np.nan
     
 means = np.empty((len(np.unique(df['mouseID'])),2)) * np.nan
@@ -83,7 +86,7 @@ for im, m in enumerate(mouselist):
             continue
         
         # polar plot
-        kde_bins, kde = utils_math.von_mises_kde_exact(grouped_dict[gkey]*2*np.pi, 10, Config.passiveOpto_config["kde_bin_num"])
+        kde_bins, kde = utils_math.von_mises_kde_exact(grouped_dict[gkey]*2*np.pi, kappa, bin_num)
         kde_bins_points = np.concatenate((kde_bins, [kde_bins[0]]))
         kde_points = np.concatenate((kde, [kde[0]]))
         

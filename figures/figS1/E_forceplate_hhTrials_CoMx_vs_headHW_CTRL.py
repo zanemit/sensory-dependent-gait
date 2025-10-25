@@ -47,42 +47,34 @@ for im, m in enumerate(mice):
 print(f"Average standard deviation: {np.mean(np.nanmean(stds, axis=1))}")
 print(f"Mean change over the examined x range: {np.mean(diffs):.3f} ± {scipy.stats.sem(diffs):.3f}")
 
-modQDR = pd.read_csv(Path(Config.paths["forceplate_output_folder"]) / f"{yyyymmdd}_mixedEffectsModel_linear_{variable_str}_{param}.csv", index_col=0)
+# LOAD MIXED-EFFECTS MODEL
+slope_enforced = 'slopeENFORCED'
+mod = 'Slope1'
+path = f"{Config.paths['forceplate_output_folder']}\\{yyyymmdd}_mixedEffectsModel_linear_{variable_str}_{param}{slope_enforced}_rand{mod}.csv"
+stats_df = pd.read_csv(path, index_col=0)
 
-x_centered = df['param'] - np.nanmean(df['param'])
-x_pred = np.linspace(np.nanmin(x_centered), np.nanmax(x_centered), endpoint=True)
-
-
-# APPROXIMATE WITH A FUNCTION
-from scipy.optimize import curve_fit
-from scipy.stats import t
-def linear_fit(x,A,B):
-    return A + B * x
-
+# A + Bx
 x_pred = np.linspace(np.nanmin(df['param'].values), np.nanmax(df['param'].values), endpoint=True)
+x_centred = x_pred - np.nanmean(df['param'].values)
+y_centred = stats_df.loc['(Intercept)', 'Estimate'] + (stats_df.loc['param_centred', 'Estimate'] * x_centred)
+y_pred = y_centred + np.nanmean(df[variable].values)
 
-popt,pcov = curve_fit(linear_fit, df['param'].values, df[variable].values, p0=(0,0))
-A_fit, B_fit = popt
-print(f"Linear fitted params: A = {A_fit:.3f}, B = {B_fit:.3f}")
 axes.plot(x_pred, 
-              linear_fit(x_pred, *popt), 
+              y_pred, 
               linewidth=1.5, 
               color=FigConfig.colour_config[clr][1])
-# std_err = np.sqrt(np.diag(pcov)) # standard errors
-# t_values = popt/std_err
-# dof = max(0, len(df[variable].values)-len(popt))   
-# p_values = [2 * (1 - t.cdf(np.abs(t_val), dof)) for t_val in t_values]
-p_value = modQDR.loc['param_centred', 'Pr(>|t|)']
-print(f"p-value: {p_value}")
 
-p_text = ('*' * (p_value < FigConfig.p_thresholds).sum())
-if (p_value < FigConfig.p_thresholds).sum() == 0:
-    p_text += "n.s."
+# PLOT STATS
+t = stats_df.loc['param_centred', 't value']
+p = stats_df.loc['param_centred', 'Pr(>|t|)']
+print(f"{variable}: mean={stats_df.loc['param_centred', 'Estimate']:.4g}, SEM={stats_df.loc['param_centred', 'Std. Error']:.4g}, t={t:.3f}, p={p:.3g}")
+p_text = "n.s." if (p < FigConfig.p_thresholds).sum() == 0 else ('*' * (p < FigConfig.p_thresholds).sum())
+
 axes.text(0.6,
              0.9, 
              f"slope: {p_text}", 
              ha = 'center', 
-             color = FigConfig.colour_config[clr][2],
+             color = FigConfig.colour_config[clr][1],
              fontsize = 5)
 
 axes.set_xlabel('Weight-adjusted\nhead height')

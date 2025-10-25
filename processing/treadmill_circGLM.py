@@ -178,8 +178,12 @@ def get_circGLM_slopes(
     elif categ_var in ['rH0_categorical', 'lH0_categorical', 'rF0_categorical', 'lF0_categorical']:
         if 'comb' in ref:
             ref_iterables = ['', 'asym', 'sync']
-        else:
+        elif 'Rlead' in ref and 'Llead' in ref and 'alt' in ref:
+            ref_iterables = ['', 'Llead','Rlead']
+        elif 'Rlead' in ref and 'Llead' in ref:
             ref_iterables = ['', 'Rlead']
+        else:
+            ref_iterables = ['', 'Llead', 'sync', 'Rlead']
     else:
         ref_iterables = ['']
     

@@ -27,16 +27,16 @@ predictorlist_str = ['speed', 'snout-hump angle']
 predictor = 'snoutBodyAngle'
 predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
 appdx = ''
-samplenum = 13558
+samplenum = 6787#15366#13558
 tlt = 'Level trials'
-yyyymmdd = '2021-10-23'
+yyyymmdd = '2023-09-25' #'2021-10-23'
 slopes = ['pred2']
 limb = 'lF0'
-ref = 'lH1'
+ref = 'lH1LleadRleadaltblncd'
 interaction = 'TRUE'
-mouselist = Config.mtTreadmill_config['mice_level']
+mouselist = Config.mtTreadmill_config['egr3_ctrl_mice']
 rfl_str = False
-datafrac = 0.3
+datafrac = 1#0.3
 
 #---------------HEAD HEIGHT TRIALS--------------------
 
@@ -144,7 +144,7 @@ ax.set_xlabel(f"{xlabel}†")
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_yticks(yticks)
 ax.set_yticklabels(yticklabels)
-ax.set_ylabel('Relative LF phase\n(rad)')
+ax.set_ylabel('Left homolateral phase\n(rad)')
 
 # -------------------------------STATS-----------------------------------
 stat_dict = treadmill_circGLM.get_circGLM_stats(

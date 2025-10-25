@@ -31,10 +31,10 @@ tlt = 'Slope trials'
 yyyymmdd = '2022-05-06'
 slopes = ['pred2', 'pred3']
 limb = 'lF0'
-ref = 'lH1'
+ref = 'lH1LleadRleadaltblncd'
 interaction = 'TRUEthreeway'
-samplenum =  13048
-datafrac = 0.6
+samplenum =  7317
+datafrac = 1
 iters = 1000
 mouselist = Config.mtTreadmill_config['mice_incline']
 
@@ -96,10 +96,10 @@ for i in range(1, len(mouselist)+1):
 for ymd, predlist, samples, appendix, intr, dfrac, slp, clr, z, lnst, trialtype, multip in zip(
         ['2021-10-23', yyyymmdd],
         [["speed", "snoutBodyAngle"], predictorlist],
-        [13558, samplenum],
+        [15366, samplenum],
         ["", appdx],
         ["TRUE", interaction],
-        [0.3, datafrac],
+        [1, datafrac],
         [["pred2"], slopes],
         [FigConfig.colour_config["greys"][1], main_clr],
         [0,2],
@@ -165,7 +165,7 @@ ax.set_xlabel("Snout-hump angle\n(deg)†")
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_yticks(yticks)
 ax.set_yticklabels(yticklabels)
-ax.set_ylabel('Relative LF phase\n(rad)')
+ax.set_ylabel('Left homolateral phase\n(rad)')
 
 # -------------------------------STATS-----------------------------------
 stat_dict = treadmill_circGLM.get_circGLM_stats(

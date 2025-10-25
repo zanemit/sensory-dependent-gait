@@ -1370,8 +1370,86 @@ def add_CoMy_to_strideParams(yyyymmdd,
     df["CoMy"] = comys
     df.to_csv(filepath)
 
+def flip_homologous_phase(arr, col):
+    # get mice based on their injection side
+    mice_Linj = Config.injection_config['left_inj_imp']
     
+    # flip phase of left-injected mice (assume injection on right side)
+    arr.loc[
+        arr['mouseID'].isin(mice_Linj),
+        col,
+        ] = arr.loc[
+            arr['mouseID'].isin(mice_Linj),
+            col
+            ].apply(lambda s: -s)
     
+    return arr
     
+def compute_circ_corr(yyyymmdd, col1, col2,
+                      outputDir=Config.paths["passiveOpto_output_folder"],
+                      appdx='',
+                      ref='lH1'):
+    """
+    This function implements Jammalamadaka-Sarma circ-circ correlation coefficient
+        rho=1 : perfect positive circ corr, phases vary in sync
+        rho=0 : no correlation, phases are independent
+        rho=-1 : perfect negative circ corr, phases vary in opposite directions
+
+    """
     
+    import pycircstat as circ
+    
+    df, _, _ = data_loader.load_processed_data(outputDir = outputDir, 
+                                                      yyyymmdd=yyyymmdd,
+                                                      limb=ref,
+                                                            dataToLoad = "strideParams", 
+                                                            appdx = appdx)
+    
+    if 'COMBINED' in ref:
+        raise ValueError('Function not implemented for combined ref limb datasets')
+    
+    df_sub = df[['mouseID',col1,col2]].copy()
+    df_sub.dropna(inplace=True)
+    
+    # deal with unilateral inj
+    if any('rH' in s for s in [col1, col2]) or any('rF' in s for s in [col1, col2]):
+        # remove bilaterally injected mice
+        df_sub = df_sub[~df_sub['mouseID'].isin(Config.injection_config['both_inj_left_imp'])]
+        
+        if 'rH' in col1 or 'rF' in col1:
+            df_sub = flip_homologous_phase(df_sub, col1)
+        if 'rH' in col1 or 'rF' in col2:
+            df_sub = flip_homologous_phase(df_sub, col2)
+    
+    df_sub.drop(columns=['mouseID'], inplace=True)
+    df_sub = df_sub*2*np.pi
+    
+    rho = circ.corrcc(df_sub[col1].to_numpy(), df_sub[col2].to_numpy()) 
+    print(f"Circular correlation coefficient: {rho}")
+    
+    # compute_circ_corr(yyyymmdd='2022-08-18', col1='lF0', col2='rH0',ref='lH1',
+    #                       outputDir=Config.paths["passiveOpto_output_folder"],
+    #                       appdx='')
+    # Circular correlation coefficient: -0.17197571324764552
+    
+    # compute_circ_corr(yyyymmdd='2022-08-18', col1='lF0', col2='rH0',ref='lH1',
+    #                       outputDir=Config.paths["passiveOpto_output_folder"],
+    #                       appdx='_incline')
+    # Circular correlation coefficient: -0.16342120171320532
+    
+    # compute_circ_corr(yyyymmdd='2021-10-23', col1='lF0', col2='rH0',ref='lH1',
+    #                       outputDir=Config.paths["mtTreadmill_output_folder"],
+    #                       appdx='')
+    # Circular correlation coefficient: 0.3873386913200928 
+    
+    # compute_circ_corr(yyyymmdd='2023-09-25', col1='lF0', col2='rH0',ref='lH1',
+    #                       outputDir=Config.paths["mtTreadmill_output_folder"],
+    #                       appdx='')
+    # Circular correlation coefficient: 0.3975096246140336
+    
+    # compute_circ_corr(yyyymmdd='2022-05-06', col1='lF0', col2='rH0',ref='lH1',
+    #                       outputDir=Config.paths["mtTreadmill_output_folder"],
+    #                       appdx='')
+    # Circular correlation coefficient: 0.38177089402548675
+       
     

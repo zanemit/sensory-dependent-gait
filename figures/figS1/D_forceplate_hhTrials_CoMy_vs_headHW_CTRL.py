@@ -55,14 +55,12 @@ x_pred = np.linspace(np.nanmin(x_centered), np.nanmax(x_centered), endpoint=True
 
 # APPROXIMATE WITH A FUNCTION
 from scipy.optimize import curve_fit
-from scipy.stats import t
+from scipy.stats import wilcoxon
 def exp_decay(x,A,B,k):
     return A - B * np.exp(-k*x)
 
 x_pred = np.linspace(np.nanmin(df['param'].values), np.nanmax(df['param'].values), endpoint=True)
-
-
-# popt,pcov = curve_fit(exp_decay, df['param'].values, df[limb_str].values, p0=(0.25,0.75,2))
+#  TOTAL FOR PLOTTING
 popt,pcov = curve_fit(exp_decay, df['param'].values, df[variable].values*Config.forceplate_config['fore_hind_post_cm']/2, p0=(np.nanmax(df[variable].values)*Config.forceplate_config['fore_hind_post_cm']/2,
                                                                               (np.nanmax(df[variable].values)-np.nanmin(df[variable].values))*Config.forceplate_config['fore_hind_post_cm']/2,
                                                                               1/np.nanmean(df['param'].values)))
@@ -72,25 +70,41 @@ axes.plot(x_pred,
               exp_decay(x_pred, *popt), 
               linewidth=1.5, 
               color=FigConfig.colour_config[clr][2])
-# print(f"SHIFT: {exp_decay(x_pred, *popt)[-1]-exp_decay(x_pred, *popt)[0]}")
-std_err = np.sqrt(np.diag(pcov)) # standard deviations in 
-t_values = popt/std_err
-dof = max(0, len(df[variable].values)-len(popt))   
-p_values = [2 * (1 - t.cdf(np.abs(t_val), dof)) for t_val in t_values]
-print(f"p-values: A_p = {p_values[0]:.3e}, B_p = {p_values[1]:.3e}, k_p = {p_values[2]:.3e}")
-for i_p, (p, exp_d_param) in enumerate(zip(
-        p_values[1:], 
-        ["scale factor", "rate constant"],
+
+# STATS PER SUBJECT
+p_list = []
+for m in df['mouse'].unique():
+    df_sub = df[df['mouse']==m].copy()
+    popt, pcov = curve_fit(exp_decay, df_sub['param'].values, df_sub[variable].values, p0=(A_fit, B_fit, k_fit), maxfev=10000)
+    p_list.append(popt)
+    
+params = np.array(p_list) #(n_subjects, n_params)
+param_names = ['A', 'B', 'k']
+params_df = pd.DataFrame(params, columns=param_names, index=df['mouse'].unique())
+
+# STATS ACROSS SUBJECTS
+summary = []
+for col in param_names:
+    vals = params_df[col].dropna().values
+    median = np.median(vals)
+    w_stat, p = wilcoxon(vals)
+    summary.append((col, median, w_stat, p))
+for col, median,  w_stat, p in summary:
+    print(f"{col}: median={median:.4g}, w({params_df.shape[0]-1})={w_stat:.3f}, p={p:.3g}")
+
+# PLOT STATS
+for i_p, (p_k, exp_d_param) in enumerate(zip(
+        [summary[1][3], summary[2][3]],
+        ['scale factor', 'rate constant']
         )):
-    p_text = ('*' * (p < FigConfig.p_thresholds).sum())
-    if (p < FigConfig.p_thresholds).sum() == 0:
-        p_text += "n.s."
+    p_text = "n.s." if (p_k < FigConfig.p_thresholds).sum() == 0 else ('*' * (p_k < FigConfig.p_thresholds).sum())
+
     axes.text(0.63,
-                 0.9-(i_p*0.25), 
-                 f"{exp_d_param}: {p_text}", 
-                 ha = 'center', 
-                 color = FigConfig.colour_config[clr][2],
-                 fontsize = 5)
+              0.9-(i_p*0.2), 
+              f"{exp_d_param}: {p_text}", 
+              ha = 'center', 
+              color = FigConfig.colour_config['homolateral'][2],
+              fontsize = 5)
 
 axes.set_xlabel('Weight-adjusted\nhead height')
 axes.set_xticks([0,0.6,1.2])
