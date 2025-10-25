@@ -62,6 +62,9 @@ generate_mixed_effects_model_forceplate <- function(yyyymmdd,
   predictor_strs = predictor_str_dict[predictors]
   
   for (i in 1:length(predictors)){
+    if (predictors[i]=='headplate_weight_frac'){
+      df4[[predictors[i]]] = -(df4[[predictors[i]]]-1)*100
+    }
     df4$pred_centred = df4[[predictors[i]]] - mean(df4[[predictors[i]]], na.rm=TRUE)
     file_ext = paste(predictor_strs[i], "_", param, sep='')
     if (grepl('COMBINED', filePath)){
@@ -136,10 +139,19 @@ generate_mixed_effects_model_forceplate(yyyymmdd='2021-10-26',
                                         slope=TRUE,
                                         outputDir = "C:\\Users\\MurrayLab\\Documents\\Forceplate\\")
 
-# Figure S1G, S1H
+# Figure S1G, S1H, 1F, 1G
 generate_mixed_effects_model_forceplate(yyyymmdd='2022-04-04', 
                                         param='levels', 
-                                        predictors=c('fore_weight_frac', 'hind_weight_frac'),
+                                        predictors=c('fore_weight_frac', 'hind_weight_frac', 'CoMy_mean', 'headplate_weight_frac'),
+                                        interaction=FALSE, 
+                                        pc_num=FALSE, 
+                                        slope=TRUE,
+                                        outputDir = "C:\\Users\\MurrayLab\\Documents\\Forceplate\\")
+
+# Figure 1D, 1E
+generate_mixed_effects_model_forceplate(yyyymmdd='2021-10-26', 
+                                        param='snoutBodyAngle', 
+                                        predictors=c('CoMy_mean', 'headplate_weight_frac'),
                                         interaction=FALSE, 
                                         pc_num=FALSE, 
                                         slope=TRUE,

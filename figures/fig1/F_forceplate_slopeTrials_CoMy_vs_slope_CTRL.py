@@ -21,7 +21,7 @@ df, _ = data_loader.load_processed_data(outputDir = Config.paths["forceplate_out
 
 mice = np.unique(df['mouse'])
 
-fig, ax = plt.subplots(1,1, figsize=(1.45, 1.39))
+fig, ax = plt.subplots(1,1, figsize=(1.45, 1.47))
 
 variable = 'CoMy_mean'
 clr = 'homolateral'
@@ -49,38 +49,34 @@ for im, m in enumerate(mice):
     
 print(f"Average standard deviation: {np.mean(np.nanmean(stds1, axis=1))}")
 
-modLIN = pd.read_csv(Path(Config.paths["forceplate_output_folder"]) / f"{yyyymmdd}_mixedEffectsModel_linear_BEST_{variable_str}_{param}.csv")
+# LOAD MIXED-EFFECTS MODEL
+slope_enforced = 'slopeENFORCED'
+mod = 'Slope1'
+path = f"{Config.paths['forceplate_output_folder']}\\{yyyymmdd}_mixedEffectsModel_linear_{variable_str}_{param}{slope_enforced}_rand{mod}.csv"
+stats_df = pd.read_csv(path, index_col=0)
 
-x_centred = np.asarray(df['param'])-np.nanmean(df['param'])
-x_pred = np.linspace(x_centred.min(), x_centred.max(), 10, endpoint=True)
-# ax.set_xlim(np.nanmin(minmaxs[0])-(0.1*(np.nanmax(minmaxs[1])-np.nanmin(minmaxs[0]))),
-#             np.nanmax(minmaxs[1])+(0.1*(np.nanmax(minmaxs[1])-np.nanmin(minmaxs[0]))))
+# A + Bx
+x_pred = np.linspace(np.nanmin(df['param'].values), np.nanmax(df['param'].values), endpoint=True)
+x_centred = x_pred - np.nanmean(df['param'].values)
+y_centred = stats_df.loc['(Intercept)', 'Estimate'] + (stats_df.loc['param_centred', 'Estimate'] * x_centred)
+y_pred = (y_centred + np.nanmean(df[variable].values))*Config.forceplate_config['fore_hind_post_cm']/2
 
-y_predLIN = (modLIN['Estimate'][0] +\
-             modLIN['Estimate'][1] * x_pred +\
-            np.nanmean(df[variable])) * Config.forceplate_config['fore_hind_post_cm']/2
-x_pred += np.nanmean(df['param'])
 ax.plot(x_pred, 
-        y_predLIN, 
+        y_pred, 
         linewidth=1.5, 
         color=FigConfig.colour_config[clr][2])
 
-print(f"Intercept: {((modLIN['Estimate'][0] + np.nanmean(df[variable]))* Config.forceplate_config['fore_hind_post_cm']/2):.3f}") 
-print(f"Slope: {(modLIN['Estimate'][1]* Config.forceplate_config['fore_hind_post_cm']/2):.3f}") 
+# PLOT STATS
+t = stats_df.loc['param_centred', 't value']
+p = stats_df.loc['param_centred', 'Pr(>|t|)']
+print(f"{variable}: mean={stats_df.loc['param_centred', 'Estimate']:.4g}, SEM={stats_df.loc['param_centred', 'Std. Error']:.4g}, t={t:.3f}, p={p:.3g}")
+p_text = "n.s." if (p < FigConfig.p_thresholds).sum() == 0 else ('*' * (p < FigConfig.p_thresholds).sum())
 
-print(f"Mean change over 80 degrees: {np.mean(diffs):.3f} ± {scipy.stats.sem(diffs):.3f}")
-print(f"{variable} is modulated by {(10*modLIN['Estimate'][1]*Config.forceplate_config['fore_hind_post_cm']*10/2):.1f} ± {(10*modLIN['Std. Error'][1]*Config.forceplate_config['fore_hind_post_cm']*100/2):.1f} mm per 10 deg")
-
-# p values
-print(f"p-value: {modLIN['Pr(>|t|)'][1]}")
-p_text = "slope: " + ('*' * (modLIN['Pr(>|t|)'][1] < FigConfig.p_thresholds).sum())
-if (modLIN['Pr(>|t|)'][1] < FigConfig.p_thresholds).sum() == 0:
-    p_text += "n.s."
-ax.text(0,1, p_text, ha = 'center', 
+ax.text(0,0.9, f"slope: {p_text}", ha = 'center', 
         color = FigConfig.colour_config[clr][2], 
         fontsize = 5)
 
-ax.set_xlabel('Surface slope (deg)')
+ax.set_xlabel('Surface slope\n(deg)')
 ax.set_xticks([-40,-20,0,20,40][::2])
 ax.set_xlim(-50,50)
 ax.set_yticks([-1.0,-0.5,0,0.5,1])

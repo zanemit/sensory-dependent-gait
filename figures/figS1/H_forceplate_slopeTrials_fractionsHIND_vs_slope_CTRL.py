@@ -39,7 +39,8 @@ for im, m in enumerate(mice):
              color=FigConfig.colour_config[limb_clr][2],  
              alpha=0.4, 
              linewidth = 0.7)
-print(np.nanmean(df[limb_str]))            
+print(np.nanmean(df[limb_str])) 
+           
 # LOAD MIXED-EFFECTS MODEL
 slope_enforced = 'slopeENFORCED'
 mod = 'Slope1'
