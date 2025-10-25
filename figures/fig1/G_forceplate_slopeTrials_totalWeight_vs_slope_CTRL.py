@@ -48,14 +48,14 @@ print(f"Max incline: {np.mean(ends):.3f} ± {scipy.stats.sem(ends):.3f}")
 
 # LOAD MIXED-EFFECTS MODEL
 slope_enforced = 'slopeENFORCED'
-mod = 'Slope1'
-path = f"{Config.paths['forceplate_output_folder']}\\{yyyymmdd}_mixedEffectsModel_linear_{variable}_{param}{slope_enforced}_rand{mod}.csv"
+mod = 'Slope'
+path = f"{Config.paths['forceplate_output_folder']}\\{yyyymmdd}_mixedEffectsModel_linear_{variable}_{param}_{slope_enforced}_rand{mod}.csv"
 stats_df = pd.read_csv(path, index_col=0)
 
 # A + Bx
 x_pred = np.linspace(np.nanmin(df['param'].values), np.nanmax(df['param'].values), endpoint=True)
 x_centred = x_pred - np.nanmean(df['param'].values)
-y_centred = stats_df.loc['(Intercept)', 'Estimate'] + (stats_df.loc['param_centred', 'Estimate'] * x_centred)
+y_centred = stats_df.loc['(Intercept)', 'Estimate'] + (stats_df.loc['indep_var_centred', 'Estimate'] * x_centred)
 y_pred = y_centred + np.nanmean(df[variable_str].values)
 
 ax.plot(x_pred, 
@@ -64,9 +64,9 @@ ax.plot(x_pred,
         color=FigConfig.colour_config[clr][1])
 
 # PLOT STATS
-t = stats_df.loc['param_centred', 't value']
-p = stats_df.loc['param_centred', 'Pr(>|t|)']
-print(f"{variable_str}: mean={stats_df.loc['param_centred', 'Estimate']:.4g}, SEM={stats_df.loc['param_centred', 'Std. Error']:.4g}, t={t:.3f}, p={p:.3g}")
+t = stats_df.loc['indep_var_centred', 't value']
+p = stats_df.loc['indep_var_centred', 'Pr(>|t|)']
+print(f"{variable_str}: mean={stats_df.loc['indep_var_centred', 'Estimate']:.4g}, SEM={stats_df.loc['indep_var_centred', 'Std. Error']:.4g}, t={t:.3f}, p={p:.3g}")
 p_text = "n.s." if (p < FigConfig.p_thresholds).sum() == 0 else ('*' * (p < FigConfig.p_thresholds).sum())
 
 ax.text(0,175, f"slope: {p_text}", ha = 'center', 
