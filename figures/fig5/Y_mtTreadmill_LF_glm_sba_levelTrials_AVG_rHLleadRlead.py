@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 import scipy.stats
 import os
 
+#### MOTORISED: RH ASYMMETRIC --- LEVEL TRIALS
 sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
 # PER-MOUSE, BUT A RESULT OF THE RANDOM SLOPE MODEL, NOT BETA12
@@ -17,71 +18,67 @@ from processing.data_config import Config
 from figures.fig_config import Config as FigConfig
 from figures.fig_config import AnyObjectHandler
 
-predictorlist = ['duty_ratio', 'snoutBodyAngle', 'incline']
-predictorlist_str = ['duty_ratio', 'snout-hump angle', 'slope']
-predictor = 'duty_ratio'
+predictorlist = ['speed', 'snoutBodyAngle']#['speed', 'snoutBodyAngle', 'incline']
+predictorlist_str = ['speed', 'snout-hump angle']
+predictor = 'snoutBodyAngle'#'incline' #'snoutBodyAngle'
 predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
-appdx =  '_incline_COMBINEDtrialType'
-tlt = 'All trials'
-yyyymmdd = '2022-08-18'
-slopes = ['pred2', 'pred3']
+appdx =  '' #'_incline'
+tlt = 'Motorised treadmill\n(left-right asymmetric)'
+yyyymmdd = '2021-10-23'
+slopes = ['pred2']#['pred2', 'pred3']
 limb = 'lF0'
-ref = 'lH1combblncd'
-interaction = 'TRUEthreeway'
-samples =  10495
-datafrac = 0.8
+ref = 'lH1LleadRlead'
+interaction = 'TRUEthreeway'#'TRUEsecondary'
+samples = 11062
+datafrac = 1
 iters = 1000
-sbaSPLITstr = 's'
+categ_var='rH0_categorical'
+
+x_range, phase_preds = treadmill_circGLM.get_circGLM_slopes(
+        predictors = predictorlist,
+        yyyymmdd = yyyymmdd,
+        limb = limb,
+        ref = ref,
+        samples = samples,
+        interaction = interaction,
+        appdx = appdx,
+        datafrac = datafrac,
+        categ_var=categ_var,
+        slopes = slopes,
+        outputDir = Config.paths['mtTreadmill_output_folder'],
+        iterations = iters,
+        mice = Config.mtTreadmill_config['mice_level']
+                ) 
+
+unique_traces = np.empty((0))
 
 ### PLOTTING
 ylim = (0.3*np.pi,1.5*np.pi)
 yticks = [0.5*np.pi,np.pi,1.5*np.pi]
 yticklabels = ["0.5π", "π", "1.5π"]  
 xlim, xticks, xlabel = treadmill_circGLM.get_predictor_range(predictor)
-# xlim = (0.1,1)
-# xticks = (0,0.5,1)
+xlabel='Snout-hump angle\n(deg)'
 
-fig, ax = plt.subplots(1,1,figsize = (1.45,1.35)) #1.6,1.4 for 4figs S2 bottom row
+fig, ax = plt.subplots(1,1,figsize = (1.35,1.4)) #1.6,1.4 for 4figs S2 bottom row
 
 last_vals = [] # for stats
 
-for ref_id, (lnst, clr, lbl, xr) in enumerate(zip(['dashed', 'solid'],
-                                            ['greys', 'homolateral'],
-                                            ['head h.', 'slope'],
-                                            [(143,173), (152,167)])):
-    
-    x_range, phase_preds = treadmill_circGLM.get_circGLM_slopes(
-            predictors = predictorlist,
-            yyyymmdd = yyyymmdd,
-            limb = limb,
-            ref = ref,
-            categ_var = 'trialType',
-            samples = samples,
-            interaction = interaction,
-            appdx = appdx,
-            datafrac = datafrac,
-            slopes = slopes,
-            outputDir = Config.paths['passiveOpto_output_folder'],
-            iterations = iters,
-            x_pred_range = {"snoutBodyAngle": np.linspace(xr[0],xr[1],100)},
-            mice = Config.passiveOpto_config['mice'],
-            sBA_split_str =sbaSPLITstr,
-            merged=True
-                    ) 
-    
-    c = FigConfig.colour_config[clr][1+ref_id]
+# plot each mouse (just default ref limb)
+# for ref_id, (lnst, lbl) in enumerate(zip(['solid', 'dashed'],['L-hind ref', 'R-hind ref'])):
+for ref_id, (lnst, clr, lbl) in enumerate(zip(['solid', 'dashed'],
+                                            ['homolateral', 'greys'],
+                                            ['L-lead', 'R-lead'])):
+    c = FigConfig.colour_config[clr][3-ref_id*3]
     pp = phase_preds[:, :, predictor_id, 0, ref_id]
-    
     # compute and plot mean phases for three circular ranges so that the plots look nice and do not have lines connecting 2pi to 0
-    unique_traces = np.empty((0))
     for k, (lo, hi) in enumerate(zip([-np.pi, 0, np.pi] , [np.pi, 2*np.pi, 3*np.pi])):
         print(f"Working on data range {k}...")
         if k == 1:
             pp[pp<0] = pp[pp<0]+2*np.pi
         if k == 2:
             pp[pp<np.pi] = pp[pp<np.pi]+2*np.pi
-            ax.hlines(ylim[1]-0.3, 0.33+0.84*ref_id, 0.83+0.84*ref_id, color = c, ls = lnst, lw = 1)
-            ax.text(xlim[0] + (0.01 * (xlim[1]-xlim[0])) + 0.84*ref_id,
+            ax.hlines(ylim[1]-0.32, 141+20*ref_id, 152+21*ref_id, color = c, ls = lnst, lw = 1)
+            ax.text(xlim[0] + (0.04 * (xlim[1]-xlim[0])) + 20*ref_id,
                     ylim[1] - (0.05* (ylim[1]-ylim[0])),
                     lbl,
                     color=c,
@@ -98,63 +95,59 @@ for ref_id, (lnst, clr, lbl, xr) in enumerate(zip(['dashed', 'solid'],
         if round(trace[-1],6) not in unique_traces and not np.any(abs(np.diff(trace))>5):
             unique_traces = np.append(unique_traces, round(trace[-1],6))
             print('plotting...')    
-            ax.fill_between(x_range[:,predictor_id], 
+            ax.fill_between(x_range[:, predictor_id], 
                                   lower, 
                                   higher, 
                                   alpha = 0.25, 
                                   facecolor = c
                                   )
-            ax.plot(x_range[:,predictor_id], 
+            ax.plot(x_range[:, predictor_id], 
                     trace, 
                     color = c,
-                    linewidth = 1,
+                    linewidth = 1.5,
                     linestyle = lnst,
                     alpha = 1,
                     # label = lbl
                     )
+            print(f"{trace[0]/np.pi:.2f}±{(higher[0]-lower[0])/(2*np.pi):.2f}π")
+            print(f"{trace[-1]/np.pi:.2f}±{(higher[-1]-lower[-1])/(2*np.pi):.2f}π")
         
         # for stats
         if trace[-1] > ylim[0] and trace[-1] < ylim[1] and trace[-1] not in last_vals:
             last_vals.append(trace[-1])
 
 # -------------------------------STATS-----------------------------------
-samplenum =12871
-datafrac = 0.4
-ref = 'lH1comb'
-categ_var='rH0_categorical_trialType'
-sba_str = 's'
 stat_dict = treadmill_circGLM.get_circGLM_stats(
         predictors = predictorlist,
         yyyymmdd = yyyymmdd,
         limb = limb,
         ref = ref,
-        categ_var = categ_var,
-        samples = samplenum,
+        samples = samples,
         interaction = interaction,
         appdx = appdx,
         datafrac = datafrac,
+        categ_var=categ_var,
         slopes = slopes,
-        outputDir = Config.paths['passiveOpto_output_folder'],
+        outputDir = Config.paths['mtTreadmill_output_folder'],
         iterations = iters,
-        mice = Config.passiveOpto_config['mice'],
-        sBA_split_str =sbaSPLITstr
+        mice = Config.mtTreadmill_config['mice_incline']
                 ) 
 
-cat_coef_str = f"pred{len(predictorlist)+2}slope"
-cont_coef_str = f"pred{predictor_id+2}"
+cat_coef_str = f"pred{len(predictorlist)+1}Rlead"
+cont_coef_str = f"pred{predictor_id+1}"
 # ax.text(x_range[-1, 1] + ((xlim[1]-xlim[0])/100),
 #         np.mean(last_vals),
 #         stat_dict[cat_coef_str])
 
-ax.text(xlim[0] + (0.05 * (xlim[1]-xlim[0])),
-        ylim[1] - (0.20* (ylim[1]-ylim[0])),
-        f"Duty factor ratio: {stat_dict[cont_coef_str]}",
-        # color=c,
-        fontsize=5)
+# ax.text(xlim[0] + (0.15 * (xlim[1]-xlim[0])),
+#         ylim[1] - (0.05* (ylim[1]-ylim[0])),
+#         f"{predictorlist_str[predictor_id]}: {stat_dict[cont_coef_str]}",
+#         # color=c,
+#         fontsize=5)
 
-ax.text(xlim[0] + (0.36 * (xlim[1]-xlim[0])),
+ax.text(xlim[0] + (0.35 * (xlim[1]-xlim[0])),
         ylim[1] - (0.05* (ylim[1]-ylim[0])),
-        f"vs         trials: {stat_dict[cat_coef_str]}",
+        f"vs            : {stat_dict[cat_coef_str]}",
         fontsize=5)
 
 # -------------------------------STATS-----------------------------------
@@ -163,8 +156,8 @@ ax.set_title(tlt)
     
 # axes 
 ax.set_xlim(xlim[0], xlim[1])
-ax.set_xticks(xticks)
-ax.set_xlabel("Hind-fore DF ratio")
+ax.set_xticks(xticks[::2])
+ax.set_xlabel(f"{xlabel}")
 
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_yticks(yticks)
@@ -177,7 +170,7 @@ ax.set_ylabel('Left homolateral phase\n(rad)')
    
 plt.tight_layout()
 
-figtitle = f"passiveOpto_combined_trialType_duty_ratio.svg"
+figtitle = f"mtTreadmill_{limb}_ref{ref}_{'_'.join(predictorlist)}_SLOPE{''.join(slopes)}_{interaction}_{appdx}_AVERAGE.svg"
 plt.savefig(os.path.join(FigConfig.paths['savefig_folder'], figtitle), 
             dpi = 300, 
             bbox_inches = 'tight',

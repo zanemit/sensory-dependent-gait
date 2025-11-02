@@ -21,7 +21,7 @@ convert_deg <- function(x){
 
 # param can be 'levels', 'snoutBodyAngle', 'headHW'
 generate_mixed_effects_model_forceplate <- function(yyyymmdd, 
-                                                    param, 
+                                                    indep_var, 
                                                     predictors,
                                                     interaction = FALSE, # relevant only when there are multiple predictors at once
                                                     pc_num = FALSE, 
@@ -30,23 +30,23 @@ generate_mixed_effects_model_forceplate <- function(yyyymmdd,
 ){
   
   if(grepl('x', yyyymmdd)){
-    filePath = paste(outputDir, yyyymmdd, "_meanParamDF_", param, "_COMBINED.csv", sep="")
+    filePath = paste(outputDir, yyyymmdd, "_meanParamDF_", indep_var, "_COMBINED.csv", sep="")
   } else{
-    filePath = paste(outputDir, yyyymmdd, "_meanParamDF_", param, ".csv", sep="")
+    filePath = paste(outputDir, yyyymmdd, "_meanParamDF_", indep_var, ".csv", sep="")
   }
   df4 <- read.csv(filePath)
   
   # IF PC, ADD THE PC_NUM
-  if (grepl('PC', param)){
-    n = unlist(gregexpr("PC", param))+2
-    param = paste(substr(param,1,n-1), pc_num, substr(param,n,nchar(param)), sep="")
+  if (grepl('PC', indep_var)){
+    n = unlist(gregexpr("PC", indep_var))+2
+    indep_var = paste(substr(indep_var,1,n-1), pc_num, substr(indep_var,n,nchar(indep_var)), sep="")
   }
   
   # CENTRE THE VARIABLES
-  df4$param_centred = df4$param-mean(df4$param, na.rm = TRUE) # headHW, snoutBodyAngle, or levels (rl or deg depending on yyyymmdd)
+  df4$indep_var_centred = df4$indep_var-mean(df4$indep_var, na.rm = TRUE) # headHW, snoutBodyAngle, or levels (rl or deg depending on yyyymmdd)
   
-  if(grepl('posX', param)){
-    df4$param_centred = df4$param_centred/76.2
+  if(grepl('posX', indep_var)){
+    df4$indep_var_centred = df4$indep_var_centred/76.2
   }
   
   predictor_str_dict = list(
@@ -66,7 +66,7 @@ generate_mixed_effects_model_forceplate <- function(yyyymmdd,
       df4[[predictors[i]]] = -(df4[[predictors[i]]]-1)*100
     }
     df4$pred_centred = df4[[predictors[i]]] - mean(df4[[predictors[i]]], na.rm=TRUE)
-    file_ext = paste(predictor_strs[i], "_", param, sep='')
+    file_ext = paste(predictor_strs[i], "_", indep_var, sep='')
     if (grepl('COMBINED', filePath)){
       df4$headHeight = as.factor(df4$headHeight)
       df4$mouseID = df4$mouse
@@ -74,14 +74,14 @@ generate_mixed_effects_model_forceplate <- function(yyyymmdd,
       # INTERACTION TRUE
       if (interaction == TRUE){
         file_ext = paste(predictor_strs[i], "_headHeight_interactionTRUE_", sep='')
-        modelLinearSlope1 = lmer(pred_centred ~ param_centred * headHeight + (headHeight|mouseID), data = df4 )
-        modelLinearSlope12 = lmer(pred_centred ~ param_centred * headHeight + (param_centred+headHeight|mouseID), data = df4 )
-        modelLinearIntercept = lmer(pred_centred ~ param_centred * headHeight + (1|mouseID), data = df4 )
+        modelLinearSlope1 = lmer(pred_centred ~ indep_var_centred * headHeight + (headHeight|mouseID), data = df4 )
+        modelLinearSlope12 = lmer(pred_centred ~ indep_var_centred * headHeight + (indep_var_centred+headHeight|mouseID), data = df4 )
+        modelLinearIntercept = lmer(pred_centred ~ indep_var_centred * headHeight + (1|mouseID), data = df4 )
       } else{
         file_ext = paste(predictor_strs[i], "_headHeight_interactionTRUE_", sep='')
-        modelLinearSlope1 = lmer(pred_centred ~ param_centred + headHeight + (headHeight|mouseID), data = df4 )
-        modelLinearSlope12 = lmer(pred_centred ~ param_centred + headHeight + (param_centred+headHeight|mouseID), data = df4 )
-        modelLinearIntercept = lmer(pred_centred ~ param_centred + headHeight + (1|mouseID), data = df4 )
+        modelLinearSlope1 = lmer(pred_centred ~ indep_var_centred + headHeight + (headHeight|mouseID), data = df4 )
+        modelLinearSlope12 = lmer(pred_centred ~ indep_var_centred + headHeight + (indep_var_centred+headHeight|mouseID), data = df4 )
+        modelLinearIntercept = lmer(pred_centred ~ indep_var_centred + headHeight + (1|mouseID), data = df4 )
       }
       
       # CREATE A LIST OF MODELS
@@ -89,8 +89,8 @@ generate_mixed_effects_model_forceplate <- function(yyyymmdd,
       model_descriptions = list("randInt", "randSlope1", "randSlope12")
       
     } else{
-      modelLinearSlope1 = lmer(pred_centred ~ param_centred + (param_centred|mouse), data = df4 )
-      modelLinearIntercept = lmer(pred_centred ~ param_centred + (1|mouse), data = df4 )
+      modelLinearSlope1 = lmer(pred_centred ~ indep_var_centred + (indep_var_centred|mouse), data = df4 )
+      modelLinearIntercept = lmer(pred_centred ~ indep_var_centred + (1|mouse), data = df4 )
       
       # CREATE A LIST OF MODELS
       models = list(modelLinearIntercept, modelLinearSlope1)
@@ -132,7 +132,7 @@ generate_mixed_effects_model_forceplate <- function(yyyymmdd,
 
 # Figure S1B, S1E
 generate_mixed_effects_model_forceplate(yyyymmdd='2021-10-26', 
-                                        param='headHW', 
+                                        indep_var='headHW', 
                                         predictors=c('hind_weight_frac', 'CoMx_mean'),
                                         interaction=FALSE, 
                                         pc_num=FALSE, 
@@ -141,7 +141,7 @@ generate_mixed_effects_model_forceplate(yyyymmdd='2021-10-26',
 
 # Figure S1G, S1H, 1F, 1G
 generate_mixed_effects_model_forceplate(yyyymmdd='2022-04-04', 
-                                        param='levels', 
+                                        indep_var='levels', 
                                         predictors=c('fore_weight_frac', 'hind_weight_frac', 'CoMy_mean', 'headplate_weight_frac'),
                                         interaction=FALSE, 
                                         pc_num=FALSE, 
@@ -150,10 +150,15 @@ generate_mixed_effects_model_forceplate(yyyymmdd='2022-04-04',
 
 # Figure 1D, 1E
 generate_mixed_effects_model_forceplate(yyyymmdd='2021-10-26', 
-                                        param='snoutBodyAngle', 
+                                        indep_var='snoutBodyAngle', 
                                         predictors=c('CoMy_mean', 'headplate_weight_frac'),
                                         interaction=FALSE, 
                                         pc_num=FALSE, 
                                         slope=TRUE,
                                         outputDir = "C:\\Users\\MurrayLab\\Documents\\Forceplate\\")
 
+generate_simple_LINEAR_mixed_effects_models(yyyymmdd = '2022-08-18', 
+                                            indep_var = 'stimFreq',
+                                            dep_var = 'maxSpeed',
+                                            filename = "locomParamsAcrossMice",
+                                            outputDir = "C:\\Users\\MurrayLab\\Documents\\passiveOptoTreadmill\\")

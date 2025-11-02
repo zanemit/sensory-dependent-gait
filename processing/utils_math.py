@@ -281,6 +281,31 @@ def hpd_circular(trace, mass_frac, low = -np.pi, high = np.pi) :
     # Return interval
     return np.array([lower_hpd_bound, upper_hpd_bound]) + shift
 
+def hpd_circular_simple(samples, mass_frac=0.95, low=-np.pi, high=np.pi):
+    samples = np.asarray(samples)
+    samples = np.mod(samples - low, 2*np.pi) + low  # map to [low, high]
+
+    n = len(samples)
+    n_samples = int(np.floor(mass_frac * n))
+
+    # Sort the samples linearly
+    sorted_samples = np.sort(samples)
+    # For circular wraparound, append first samples shifted by 2pi
+    sorted_aug = np.concatenate([sorted_samples, sorted_samples + 2*np.pi])
+
+    # Sliding window of n_samples
+    intervals = sorted_aug[n_samples:n + n_samples] - sorted_aug[:n]
+    min_idx = np.argmin(intervals)
+
+    lower = sorted_aug[min_idx]
+    upper = sorted_aug[min_idx + n_samples - 1]
+
+    # Wrap back to original interval
+    lower = (lower - low) % (2*np.pi) + low
+    upper = (upper - low) % (2*np.pi) + low
+
+    return np.array([lower, upper])
+
 def mean_resultant_length(phases):
     """
     computes the mean resultant length of 1D phase data

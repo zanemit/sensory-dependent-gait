@@ -17,134 +17,8 @@ from processing.data_config import Config
 from figures.fig_config import Config as FigConfig
 from figures.fig_config import AnyObjectHandler
 
-# # ------------- INCLINE TRIALS: DUTY CYCLE -----------------
-# predictorlist = ['duty_ref', 'snoutBodyAngle', 'incline', 'speed']
-# predictorlist_str = ['dutyLH', 'snout-hump angle', 'slope', 'speed']
-# predictor = 'incline'#'duty_ref' #'snoutBodyAngle'
-# predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
-# appdx =  '_incline'
-# tlt = 'Slope trials'
-# yyyymmdd = '2022-08-18'
-# slopes = ['pred2', 'pred3']
-# limb = 'homolateral0'
-# ref = 'COMBINED'
-# interaction = 'TRUEfourway'
-# samples =  12510
-# datafrac = 0.4
-# iters = 1000
-# sbaSPLITstr = 'sBAsplit'
-# # ------------- INCLINE TRIALS: DUTY CYCLE -----------------
-
-# # ------------- HEAD HEIGHT TRIALS: DUTY CYCLE -----------------
-# predictorlist = ['duty_ref', 'snoutBodyAngle', 'speed']
-# predictorlist_str = ['dutyLH', 'snout-hump angle', 'speed']
-# predictor = 'duty_ref'
-# predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
-# appdx =  ''
-# tlt = 'Head height trials'
-# yyyymmdd = '2022-08-18'
-# slopes = ['pred2']
-# limb = 'homolateral0'
-# ref = 'COMBINED'
-# interaction = 'TRUEthreeway'
-# samples =  10511
-# datafrac = 0.3
-# iters = 1000
-# sbaSPLITstr = 'sBAsplitFALSE'
-# # ------------- HEAD HEIGHT TRIALS: DUTY CYCLE -----------------
-
-# # ------------- SLOPE TRIALS: STRIDE LENGTH -----------------
-# predictorlist = ['strideLength', 'snoutBodyAngle', 'incline', 'speed']
-# predictorlist_str = ['stride length', 'snout-hump angle', 'slope', 'speed']
-# predictor = 'incline'#'strideLength' #'snoutBodyAngle'
-# predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
-# appdx =  '_incline'
-# tlt = 'Head height trials'
-# yyyymmdd = '2022-08-18'
-# slopes = ['pred2', 'pred3']
-# limb = 'homolateral0'
-# ref = 'COMBINED'
-# interaction = 'TRUEfourway'
-# samples =  12510
-# datafrac = 0.4
-# iters = 1000
-# sbaSPLITstr = 'sBA'
-# # ------------- SLOPE TRIALS:  STRIDE LENGTH -----------------
-
-# # ------------- HEAD HEIGHT TRIALS: STRIDE LENGTH -----------------
-# predictorlist = ['strideLength', 'snoutBodyAngle', 'speed']
-# predictorlist_str = ['stride length', 'snout-hump angle', 'speed']
-# predictor = 'snoutBodyAngle'#'strideLength' #'snoutBodyAngle'
-# predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
-# appdx =  ''
-# tlt = 'Head height trials'
-# yyyymmdd = '2022-08-18'
-# slopes = ['pred2']
-# limb = 'homolateral0'
-# ref = 'COMBINED'
-# interaction = 'TRUEthreeway'
-# samples =  10511
-# datafrac = 0.3
-# iters = 1000
-# sbaSPLITstr = 'sBAsplitFALSE'
-# # ------------- HEAD HEIGHT TRIALS:  STRIDE LENGTH -----------------
-
-# # ------------- HEAD HEIGHT TRIALS: NO SPEED, DUTY_REF -----------------
-# predictorlist = ['duty_ref', 'snoutBodyAngle', 'strideLength']
-# predictorlist_str = ['duty_ref', 'snout-hump angle', 'stride length']
-# predictor = 'duty_ref'#'duty_ref'#'strideLength' #'snoutBodyAngle'
-# predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
-# appdx =  ''
-# tlt = 'Head height trials'
-# yyyymmdd = '2022-08-18'
-# slopes = ['pred2']
-# limb = 'homolateral0'
-# ref = 'COMBINED'
-# interaction = 'TRUEthreeway'
-# samples =  10511
-# datafrac = 0.3
-# iters = 1000
-# sbaSPLITstr = 'sBAsplitFALSE'
-# # ------------- HEAD HEIGHT TRIALS:  NO SPEED, DUTY_REF -----------------
-
-# # ------------- INCLINE TRIALS: NO SPEED, DUTY_REF -----------------
-# predictorlist = ['duty_ref', 'snoutBodyAngle', 'incline', 'strideLength']
-# predictorlist_str = ['duty_ref', 'snout-hump angle', 'incline', 'stride length']
-# predictor = 'incline'#'duty_ref'#'strideLength' #'snoutBodyAngle'
-# predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
-# appdx =  '_incline'
-# tlt = 'Slope trials'
-# yyyymmdd = '2022-08-18'
-# slopes = ['pred2','pred3']
-# limb = 'homolateral0'
-# ref = 'COMBINED'
-# interaction = 'TRUEfourway'
-# samples =  12510
-# datafrac = 0.4
-# iters = 1000
-# sbaSPLITstr = 's'
-# # ------------- INCLINE TRIALS: NO SPEED, DUTY_REF -----------------
-
-# # ------------- HEAD HEIGHT TRIALS: NO SPEED, DUTY_RATIO -----------------
-# predictorlist = ['duty_ratio', 'snoutBodyAngle', 'strideLength']
-# predictorlist_str = ['duty_ratio', 'snout-hump angle', 'stride length']
-# predictor = 'snoutBodyAngle'#'duty_ratio'#'duty_ref'#'strideLength' #'snoutBodyAngle'
-# predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
-# appdx =  ''
-# tlt = 'Head height trials'
-# yyyymmdd = '2022-08-18'
-# slopes = ['pred2']
-# limb = 'homolateral0'
-# ref = 'COMBINED'
-# interaction = 'TRUEthreeway'
-# samples =  10492
-# datafrac = 0.3
-# iters = 1000
-# sbaSPLITstr = 'sBAsplit'
-# # ------------- HEAD HEIGHT TRIALS:  NO SPEED, DUTY_RATIO -----------------
-
 # ------------- INCLINE TRIALS: NO SPEED, DUTY_RATIO -----------------
-predictorlist = ['duty_ratio', 'snoutBodyAngle', 'incline', 'strideLength']
+predictorlist = ['dutyratio', 'snoutBodyAngle', 'incline', 'strideLength']
 predictorlist_str = ['duty_ratio', 'snout-hump angle', 'incline', 'stride length']
 predictor = 'incline'#'duty_ref'#'strideLength' #'snoutBodyAngle'
 predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
@@ -153,32 +27,14 @@ tlt = 'Slope trials'
 yyyymmdd = '2022-08-18'
 slopes = ['pred2','pred3']
 limb = 'homolateral0'
-ref = 'COMBINED'
+ref = 'COMBINEDcb'
+ref_simple = 'COMBINED'
 interaction = 'TRUE4way'
-samples =  12498
-datafrac = 0.4
+samples =  9083#12498
+datafrac = 0.8#0.4
 iters = 1000
 sbaSPLITstr = 's'
 # ------------- INCLINE TRIALS: NO SPEED, DUTY_RATIO -----------------
-
-# # ------------- HEAD HEIGHT TRIALS: NO SPEED, DUTY_HOMOLATERAL -----------------
-# predictorlist = ['duty_homolateral', 'snoutBodyAngle', 'strideLength']
-# predictorlist_str = ['duty_homolateral', 'snout-hump angle', 'stride length']
-# predictor = 'duty_homolateral'#'duty_ratio'#'duty_ref'#'strideLength' #'snoutBodyAngle'
-# predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
-# appdx =  ''
-# tlt = 'Head height trials'
-# yyyymmdd = '2022-08-18'
-# slopes = ['pred2']
-# limb = 'homolateral0'
-# ref = 'COMBINED'
-# interaction = 'TRUEthreeway'
-# samples =  10511#1751
-# datafrac = 0.3#0.05
-# iters = 1000
-# sbaSPLITstr = 's'
-# # ------------- HEAD HEIGHT TRIALS:  NO SPEED, DUTY_HOMOLATERAL -----------------
-
 
 
 unique_traces = np.empty((0))
@@ -187,7 +43,7 @@ unique_traces = np.empty((0))
 datafull = data_loader.load_processed_data(dataToLoad = 'strideParamsMerged',
                                            outputDir = Config.paths['passiveOpto_output_folder'],
                                            yyyymmdd = yyyymmdd,
-                                           limb = ref, 
+                                           limb = ref_simple, 
                                            appdx = appdx)[0]
 
 # sba = [145,160,175] #sba
@@ -287,13 +143,19 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
             last_vals.append(trace[-1])
 
 # -------------------------------STATS-----------------------------------
+predictorlist = ['dutyrat', 'snoutBodyAngle', 'incline', 'strideLen']
+samplenum =12030
+datafrac = 0.4
+ref = 'COMBINEDc'
+categ_var='hmlg0_refLimb'
+sba_str = 's'
 stat_dict = treadmill_circGLM.get_circGLM_stats(
         predictors = predictorlist,
         yyyymmdd = yyyymmdd,
         limb = limb,
         ref = ref,
-        samples = samples,
-        # categ_var = 'trialType',
+        samples = samplenum,
+        categ_var = categ_var,
         interaction = interaction,
         appdx = appdx,
         datafrac = datafrac,

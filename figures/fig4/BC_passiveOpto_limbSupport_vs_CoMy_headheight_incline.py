@@ -17,7 +17,7 @@ from figures.fig_config import AnyObjectHandler
 
 #-----------testing if there is a difference between per-mouse v slope model----
 #-----------or if the discrepancy is due to the use of lH1 or COMB as reflimbs--
-outcome_variable = 'limbSupportPC4' # should change
+outcome_variable = 'limbSupportPC3' # should change
 ref = 'lH1'
 catvar = 'trialType'
 
@@ -26,14 +26,6 @@ mouselist = Config.passiveOpto_config['mice']
 # ph_str = "shift"
 appdx = "_incline_COMBINEDtrialType"
 
-if 'PC3' in outcome_variable:
-    ytlt = "Diagonal support\n(PC3)"
-elif "PC2" in outcome_variable:
-    ytlt = "L-R sync or single-leg\nsupport (PC2)"
-elif "PC4" in outcome_variable:
-    ytlt = "Single-leg support\n(PC4)"
-else:
-    ytlt = "DEFINE LABEL!!!"
 
 set_sba_ant = 135
 set_sba_post = 180
@@ -51,7 +43,7 @@ predictor = 'snoutBodyAngle'
 predictor_str = 'snout-hump angle'
 interaction = 'TRUEthreeway'
 
-# I must add trialtype stats: 
+
     
 support_preds_across_mice = pd.DataFrame(np.empty((set_sba_range_index.shape[0], 
                                                  len(mouselist)))*np.nan,
@@ -64,10 +56,10 @@ datafull = data_loader.load_processed_data(outputDir = Config.paths['passiveOpto
                                             appdx = appdx)[0]
 predictor_trdm = predictor
 predictor_id = np.where(np.array(predictorlist)==predictor)[0][0]
-
-#-------------PLOT!!-------------------  
+  
 
 if '3' in outcome_variable:
+    ytexts = ('3-limb,\nhindlimb', 'diagonal')
     yticks = np.linspace(-0.2,0.2,5)
     ylims=(-0.2, 0.2)
     fwidth = 1.5
@@ -81,8 +73,30 @@ elif '4' in outcome_variable:
     fwidth = 1.6
 else:
     raise ValueError("ylim not specified!")
-                              
-fig, ax = plt.subplots(1,1, figsize = (fwidth,1.35)) 
+
+# load regression output
+mod_predictors = "_".join(predictorlist)
+slopes_str = "".join(slopes)
+mod_path = os.path.join(Config.paths['passiveOpto_output_folder'], 
+   f"{yyyymmdd}_contCoefficients_mixedEffectsModel_linear_{outcome_variable}_vs_{mod_predictors}_trialType_randSlopes{slopes_str}_interaction{interaction}.csv")
+
+if not os.path.exists(mod_path):
+    raise ValueError(f"File not found! {mod_path}")
+stats = pd.read_csv(mod_path, index_col = 0)
+
+# fill in addends missing due to model constraints
+addends = utils_processing.get_regression_components(num_continuous_predictors=len(predictorlist), 
+                                                     cat_predictor_names=[f'{catvar}slope'], 
+                                                     interaction=interaction)
+missing_addends = np.setdiff1d(addends, stats.index)
+if len(missing_addends)>0:
+    for row_idx in missing_addends:
+        stats.loc[row_idx, 'Estimate'] = 0
+        stats.loc[row_idx, 'Pr(>|t|)'] = 1
+    stats.to_csv(mod_path, index=True)
+
+#-------------PLOT!!-------------------                            
+fig, ax = plt.subplots(1,1, figsize = (fwidth,1.5)) 
 
     
 for reflimb_id, (clr, lnst, lbl) in enumerate(zip(
@@ -163,13 +177,13 @@ for reflimb_id, (clr, lnst, lbl) in enumerate(zip(
             color=clr)
 
 
-mod_predictors = "_".join(predictorlist)
-slopes_str = "".join(slopes)
-mod_path = os.path.join(Config.paths['passiveOpto_output_folder'], 
-   f"{yyyymmdd}_contCoefficients_mixedEffectsModel_linear_{outcome_variable}_vs_{mod_predictors}_trialType_randSlopes{slopes_str}_interaction{interaction}.csv")
+# mod_predictors = "_".join(predictorlist)
+# slopes_str = "".join(slopes)
+# mod_path = os.path.join(Config.paths['passiveOpto_output_folder'], 
+#    f"{yyyymmdd}_contCoefficients_mixedEffectsModel_linear_{outcome_variable}_vs_{mod_predictors}_trialType_randSlopes{slopes_str}_interaction{interaction}.csv")
 
 if os.path.exists(mod_path):
-    stats = pd.read_csv(mod_path, index_col = 0)
+    # stats = pd.read_csv(mod_path, index_col = 0)
     p1 = stats.loc[f'pred{np.argwhere(np.asarray(predictorlist)==predictor)[0][0]+1}_centred', "Pr(>|t|)"]
     p2 = stats.loc["trialTypeslope", "Pr(>|t|)"]
     for i, p in enumerate([p1, p2]):
@@ -191,19 +205,7 @@ if os.path.exists(mod_path):
                     fontsize=5)
 
 
-# # load fourway interaction data to get trial type - sba slope comparisons
-# # this analysis excluded some of the other interaction terms due to rank deficiency
-# interaction = 'TRUEfourway'
-# mod_path = os.path.join(Config.paths['passiveOpto_output_folder'], 
-#    f"{yyyymmdd}_contCoefficients_mixedEffectsModel_linear_{outcome_variable}_vs_{mod_predictors}_trialType_randSlopes{slopes_str}_interaction{interaction}.csv")
-# if os.path.exists(mod_path):
-#     stats = pd.read_csv(mod_path, index_col=0)
-#     p_catvar = stats.loc[f"pred{predictor_id+1}_centred:{catvar}slope", "Pr(>|t|)"]
-#     ptext_catvar = '*' * (p_catvar < np.asarray(FigConfig.p_thresholds)).sum() if (p_catvar < np.asarray(FigConfig.p_thresholds)).sum()>0 else 'n.s.'
-#     ax.text(set_sba_ant + 45,
-#             ylims[1] - ((ylims[1]-ylims[0])*0.15),
-#             ptext_catvar,
-#             fontsize=5)
+
     
 #-------------SAVE DICTS OR ADD STATS-------------------  
 
@@ -212,8 +214,22 @@ ax.set_xticks([140,160,180])
     
 ax.set_ylim(ylims[0], ylims[1])
 ax.set_yticks(yticks)
-ax.set_ylabel(ytlt)   
-ax.set_xlabel("Snout-hump angle\n(deg)")   
+ax.set_ylabel(outcome_variable[-3:])   
+ax.set_xlabel("Snout-hump angle\n(deg)")  
+
+# add y labels
+ax.text(set_sba_ant-(set_sba_post-set_sba_ant)*0.1,
+        ylims[0]-(ylims[1]-ylims[0])*0.3,
+        ytexts[0],
+        fontsize=5,
+        ha='right', fontweight='bold',
+        color=FigConfig.colour_config['homolateral'][1])
+ax.text(set_sba_ant-(set_sba_post-set_sba_ant)*0.1,
+        ylims[1]+(ylims[1]-ylims[0])*0.1,
+        ytexts[1],
+        fontsize=5,
+        ha='right',fontweight='bold',
+        color=FigConfig.colour_config['homologous'][1])
  
 plt.tight_layout()
     

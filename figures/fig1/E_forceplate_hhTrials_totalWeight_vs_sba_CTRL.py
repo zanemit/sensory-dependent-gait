@@ -73,7 +73,7 @@ ax.plot(x_pred,
 # PLOT STATS
 t = stats_df.loc['indep_var_centred', 't value']
 p = stats_df.loc['indep_var_centred', 'Pr(>|t|)']
-print(f"{variable_str}: mean={stats_df.loc['indep_var_centred', 'Estimate']:.4g}, SEM={stats_df.loc['indep_var_centred', 'Std. Error']:.4g}, t={t:.3f}, p={p:.3g}")
+print(f"{variable_str}: mean={stats_df.loc['indep_var_centred', 'Estimate']:.4g}, SEM={stats_df.loc['indep_var_centred', 'Std. Error']:.4g}, t({stats_df.loc['indep_var_centred', 'df']:.0f})={t:.3f}, p={p:.3g}")
 p_text = "n.s." if (p < FigConfig.p_thresholds).sum() == 0 else ('*' * (p < FigConfig.p_thresholds).sum())
 
 ax.text(160,175, f"slope: {p_text}", ha = 'center', 

@@ -27,7 +27,7 @@ predictorlist_str = ['speed', 'snout-hump angle', 'slope']
 predictor = 'incline'
 predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
 appdx = ''
-samplenum = 7317
+samplenum = 5697
 tlt = 'Slope trials'
 yyyymmdd = '2022-05-06'
 slopes = ['pred2', 'pred3']
@@ -145,10 +145,9 @@ ax.set_yticklabels(yticklabels)
 ax.set_ylabel('Left homolateral phase\n(rad)')
 
 # -------------------------------STATS-----------------------------------
-samplenum = 15002
-limb = 'lF0'
-datafrac = 1
-ref = 'lH1comb'
+samplenum = 12340
+datafrac = 0.6
+ref = 'lH1LleadRleadalt'
 categ_var='rH0_categorical'
 interaction = 'TRUEfourway'
 stat_dict = treadmill_circGLM.get_circGLM_stats(

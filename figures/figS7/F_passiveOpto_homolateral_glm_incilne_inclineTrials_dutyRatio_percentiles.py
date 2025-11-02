@@ -16,7 +16,7 @@ from figures.fig_config import Config as FigConfig
 from figures.fig_config import AnyObjectHandler
 
 # ------------- INCLINE TRIALS: NO SPEED, DUTY_RATIO -----------------
-predictorlist = ['duty_ratio', 'snoutBodyAngle', 'incline', 'strideLength']
+predictorlist = ['dutyratio', 'snoutBodyAngle', 'incline', 'strideLength']
 predictorlist_str = ['duty_ratio', 'snout-hump angle', 'incline', 'stride length']
 predictor = 'incline'#'duty_ref'#'strideLength' #'snoutBodyAngle'
 predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
@@ -25,10 +25,11 @@ tlt = 'Slope trials'
 yyyymmdd = '2022-08-18'
 slopes = ['pred2','pred3']
 limb = 'homolateral0'
-ref = 'COMBINED'
+ref = 'COMBINEDcb'
+ref_simple = 'COMBINED'
 interaction = 'TRUE4way'
-samples =  12498
-datafrac = 0.4
+samples =  9083#12498
+datafrac = 0.8#0.4
 iters = 1000
 sbaSPLITstr = 's'
 sba=[0.5,1.1,1.7] #duty_ratio
@@ -42,7 +43,7 @@ unique_traces = np.empty((0))
 datafull = data_loader.load_processed_data(dataToLoad = 'strideParamsMerged',
                                            outputDir = Config.paths['passiveOpto_output_folder'],
                                            yyyymmdd = yyyymmdd,
-                                           limb = ref, 
+                                           limb = ref_simple, 
                                            appdx = appdx)[0]
 
 prcnts = []
@@ -134,12 +135,19 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
             last_vals.append(trace[-1])
 
 # -------------------------------STATS-----------------------------------
+predictorlist = ['dutyrat', 'snoutBodyAngle', 'incline', 'strideLen']
+samplenum =12030
+datafrac = 0.4
+ref = 'COMBINEDc'
+categ_var='hmlg0_refLimb'
+sba_str = 's'
 stat_dict = treadmill_circGLM.get_circGLM_stats(
         predictors = predictorlist,
         yyyymmdd = yyyymmdd,
         limb = limb,
         ref = ref,
-        samples = samples,
+        samples = samplenum,
+        categ_var = categ_var,
         interaction = interaction,
         appdx = appdx,
         datafrac = datafrac,

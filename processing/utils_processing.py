@@ -526,8 +526,26 @@ def transform_multicolumn_df_for_regression(df, cols_to_keep):
         df_stacked[c] = np.tile(df[c], len(cols_to_stack))
         
     return df_stacked
+
+def get_regression_components(num_continuous_predictors, cat_predictor_names=[], interaction='TRUE'):
+    from itertools import combinations
+
+    all_predictors = [f'pred{n}_centred' for  n in np.arange(num_continuous_predictors)+1] + cat_predictor_names
+    addends = ['(Intercept)'] + all_predictors
+
+    if interaction=='TRUE':
+        addends += [f"{s[0]}:{s[1]}" for s in combinations(all_predictors[:2],2)]
+    elif interaction=='TRUEsecondary':
+        addends += [f"{s[0]}:{s[1]}" for s in combinations(all_predictors[1:3],2)]
+    elif interaction=='TRUEthreeway':
+        addends += [f"{s[0]}:{s[1]}" for s in combinations(all_predictors[:3],2)]
+        addends += [f"{s[0]}:{s[1]}:{s[2]}" for s in combinations(all_predictors[:3],3)]
+    elif interaction=='TRUEfourway':
+        addends += [f"{s[0]}:{s[1]}" for s in combinations(all_predictors[:4],2)]
+        addends += [f"{s[0]}:{s[1]}:{s[2]}" for s in combinations(all_predictors[:4],3)]
+        addends += [f"{s[0]}:{s[1]}:{s[2]}:{s[3]}" for s in combinations(all_predictors[:4],4)]
         
-    
+    return addends 
     
         
     

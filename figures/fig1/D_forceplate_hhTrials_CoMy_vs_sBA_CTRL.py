@@ -33,7 +33,7 @@ tlt = 'Head height trials'
     
 diffs = np.empty(len(mice))
 for im, m in enumerate(mice):
-    df_sub = df[df['mouse'] == m]
+    df_sub = df[df['mouse'] == m].copy()
     param_split = np.linspace(df_sub['param'].min()-0.0001, df_sub['param'].max(), param_num+1)
     xvals = [np.mean((a,b,)) for a,b in zip(param_split[:-1], param_split[1:])]
     df_grouped = df_sub.groupby(pd.cut(df_sub['param'], param_split)) 
@@ -72,7 +72,7 @@ axes.plot(x_pred,
 # PLOT STATS
 t = stats_df.loc['indep_var_centred', 't value']
 p = stats_df.loc['indep_var_centred', 'Pr(>|t|)']
-print(f"{variable}: mean={stats_df.loc['indep_var_centred', 'Estimate']:.4g}, SEM={stats_df.loc['indep_var_centred', 'Std. Error']:.4g}, t={t:.3f}, p={p:.3g}")
+print(f"{variable}: mean={stats_df.loc['indep_var_centred', 'Estimate']:.4g}, SEM={stats_df.loc['indep_var_centred', 'Std. Error']:.4g}, t({stats_df.loc['indep_var_centred', 'df']:.0f})={t:.3f}, p={p:.3g}")
 p_text = "n.s." if (p < FigConfig.p_thresholds).sum() == 0 else ('*' * (p < FigConfig.p_thresholds).sum())
 
 axes.text(155,0.9, f"slope: {p_text}", ha = 'center', 

@@ -25,14 +25,16 @@ tlt = 'Head height trials'
 yyyymmdd = '2022-08-18'
 slopes = ['pred2']
 limb = 'homolateral0'
-ref = 'COMBINED'
+ref = 'COMBINEDcombblncd'
+ref_simple = 'COMBINED'
 interaction = 'TRUEthreeway'
-samples =  10492
-datafrac = 0.3
+samples =  11322#10492
+datafrac = 0.8#0.3
 iters = 1000
-sbaSPLITstr = 'sBAsplit'
+sbaSPLITstr = 's'
 sba=[0.5,1.1,1.7] #duty_ratio
 special_other_var = 'duty_ratio'
+categ_var = 'refLimb'
 # ------------- HEAD HEIGHT TRIALS:  NO SPEED, DUTY_RATIO -----------------
 
 
@@ -42,7 +44,7 @@ unique_traces = np.empty((0))
 datafull = data_loader.load_processed_data(dataToLoad = 'strideParamsMerged',
                                            outputDir = Config.paths['passiveOpto_output_folder'],
                                            yyyymmdd = yyyymmdd,
-                                           limb = ref, 
+                                           limb = ref_simple, 
                                            appdx = appdx)[0]
 
 prcnts = []
@@ -73,6 +75,7 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
             yyyymmdd = yyyymmdd,
             limb = limb,
             ref = ref,
+            categ_var=categ_var,
             samples = samples,
             interaction = interaction,
             appdx = appdx,
@@ -94,9 +97,9 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
             pp[pp<0] = pp[pp<0]+2*np.pi
         if k == 2:
             pp[pp<np.pi] = pp[pp<np.pi]+2*np.pi
-            ax.hlines(ylim[1]-1.05, 151+9*iprcnt, 156+9*iprcnt, color = c, ls = lnst, lw = 1)
+            ax.hlines( ylim[1] - (0.18* (ylim[1]-ylim[0])), 151+9*iprcnt, 156+9*iprcnt, color = c, ls = lnst, lw = 1)
             ax.text(xlim[0] + (0.27 * (xlim[1]-xlim[0])) + 9*iprcnt,
-                    ylim[1] - (0.25* (ylim[1]-ylim[0])),
+                    ylim[1] - (0.15* (ylim[1]-ylim[0])),
                     speed,
                     color=c,
                     fontsize=5)
@@ -134,12 +137,19 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
             last_vals.append(trace[-1])
 
 # -------------------------------STATS-----------------------------------
+predictorlist = ['dutyratio', 'snoutBodyAngle', 'strideLength']
+samplenum =13729
+datafrac = 0.4
+ref = 'COMBINEDcomb'
+categ_var='hmlg0_refLimb'
+sba_str = 's'
 stat_dict = treadmill_circGLM.get_circGLM_stats(
         predictors = predictorlist,
         yyyymmdd = yyyymmdd,
         limb = limb,
         ref = ref,
-        samples = samples,
+        samples = samplenum,
+        categ_var=categ_var,
         interaction = interaction,
         appdx = appdx,
         datafrac = datafrac,
@@ -151,10 +161,10 @@ stat_dict = treadmill_circGLM.get_circGLM_stats(
                 ) 
 
 cont_coef_str = "pred1"
-ax.text(xlim[0] + (0.3 * (xlim[1]-xlim[0])),
-        ylim[1] - (0.15* (ylim[1]-ylim[0])),
-        f"DF ratio: {stat_dict[cont_coef_str]}",
-        fontsize=5)
+# ax.text(xlim[0] + (0.3 * (xlim[1]-xlim[0])),
+#         ylim[1] - (0.15* (ylim[1]-ylim[0])),
+#         f"DF ratio: {stat_dict[cont_coef_str]}",
+#         fontsize=5)
 ax.text(xlim[0] + (0.10 * (xlim[1]-xlim[0])),
         ylim[1] - (0.03* (ylim[1]-ylim[0])),
         f"angle x DF ratio: {stat_dict['pred1:pred2']}",

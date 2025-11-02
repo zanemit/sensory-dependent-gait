@@ -26,12 +26,12 @@ tlt = 'All trials'
 yyyymmdd = '2022-08-18'
 slopes = ['pred2', 'pred3']
 limb = 'lF0'
-ref = 'lH1'
+ref = 'lH1combblncd'
 interaction = 'TRUEthreeway'
-samples =  10407
-datafrac = 0.3
+samples =  10512 #10407
+datafrac = 0.8 #0.3
 iters = 1000
-sbaSPLITstr = 'sBAsplitFALSE'
+sbaSPLITstr = 's' #'sBAsplitFALSE'
 
 ### PLOTTING
 ylim = (0.3*np.pi,1.5*np.pi)
@@ -118,13 +118,18 @@ for ref_id, (lnst, clr, lbl, xr) in enumerate(zip(['dashed', 'solid'],
             last_vals.append(trace[-1])
 
 # -------------------------------STATS-----------------------------------
+samplenum =12871
+datafrac = 0.4
+ref = 'lH1comb'
+categ_var='rH0_categorical_trialType'
+sba_str = 's'
 stat_dict = treadmill_circGLM.get_circGLM_stats(
         predictors = predictorlist,
         yyyymmdd = yyyymmdd,
         limb = limb,
         ref = ref,
-        categ_var = 'trialType',
-        samples = samples,
+        categ_var = categ_var,
+        samples = samplenum,
         interaction = interaction,
         appdx = appdx,
         datafrac = datafrac,
@@ -135,8 +140,8 @@ stat_dict = treadmill_circGLM.get_circGLM_stats(
         sBA_split_str =sbaSPLITstr
                 ) 
 
-cat_coef_str = f"pred{len(predictorlist)+1}slope"
-cont_coef_str = f"pred{predictor_id+1}"
+cat_coef_str = f"pred{len(predictorlist)+2}slope"
+cont_coef_str = f"pred{predictor_id+2}"
 # ax.text(x_range[-1, 1] + ((xlim[1]-xlim[0])/100),
 #         np.mean(last_vals),
 #         stat_dict[cat_coef_str])
@@ -164,7 +169,7 @@ ax.set_xlabel("Stride length (cm)")
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_yticks(yticks)
 ax.set_yticklabels(yticklabels)
-ax.set_ylabel('Relative LF phase\n(rad)')
+ax.set_ylabel('Left homolateral phase\n(rad)')
 
 # -------------------------------LEGEND----------------------------------- 
 # fig.legend(loc = 'center right', bbox_to_anchor=(1,0.65), fontsize=5)

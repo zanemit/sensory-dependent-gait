@@ -21,11 +21,21 @@ fracs_lbls = ['all 4 limbs', 'any 3 limbs', '2 diagonal', '2 homolateral',
 ## LOADING 
 outputDir = Config.paths["passiveOpto_output_folder"]
 expDate = '2022-08-18'
-predictor = 'snoutBodyAngle'
 
 datafull_path = r"C:\Users\MurrayLab\Documents\PassiveOptoTreadmill\2022-08-18_strideParamsMerged_incline_COMBINEDtrialType_lH1.csv"
+# datafull_path = r"C:\Users\MurrayLab\Documents\PassiveOptoTreadmill\2022-08-18_strideParamsMerged_incline_lH1.csv"
 datafull = pd.read_csv(datafull_path)
 datafull = datafull[datafull['mouseID'].isin(Config.passiveOpto_config["mice"])].copy()
+
+# speed_threshold = 70
+# speed_range = 'above'
+# datafull = datafull[datafull['speed']<speed_threshold] if speed_range=='below' else datafull[datafull['speed']>speed_threshold]
+
+# category = ['Llead']#['Rlead', 'Llead']
+# datafull = datafull[(datafull['rH0_categorical'].isin(category))]
+# category = 'asym' if len(category)>1 and 'Llead' in category and 'Rlead' in category else category[0]
+
+
 
 # PCA of LIMB FRACTIONS
 from sklearn.decomposition import PCA
@@ -48,9 +58,12 @@ pca_df = pd.DataFrame(pca_components[:,:pcs_to_plot], index = datafull_fracs.ind
 # plt.tight_layout()
 
 # # insert into OG dataset
+# datafull_path2 = f"C:\\Users\\MurrayLab\Documents\\PassiveOptoTreadmill\\2022-08-18_strideParamsMerged_incline_COMBINEDtrialType_{speed_range}{speed_threshold}_lH1.csv"
+# datafull_path3 = f"C:\\Users\\MurrayLab\Documents\\PassiveOptoTreadmill\\2022-08-18_strideParamsMerged_incline_COMBINEDtrialType_rH{category}_lH1.csv"
+# datafull_path4 = f"C:\\Users\\MurrayLab\Documents\\PassiveOptoTreadmill\\2022-08-18_strideParamsMerged_incline_rH{category}_lH1.csv"
 # datafull = datafull.drop(['limbSupportPC1','limbSupportPC2', 'limbSupportPC3', 'limbSupportPC4'],axis=1)
 # datafull = datafull.join(pca_df, how='left')
-# datafull.to_csv(datafull_path, index=False)
+# datafull.to_csv(datafull_path4, index=False)
 
 loadings = pca.components_.T
 

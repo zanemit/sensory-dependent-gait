@@ -66,7 +66,7 @@ last_vals = [] # for stats
 # for ref_id, (lnst, lbl) in enumerate(zip(['solid', 'dashed'],['L-hind ref', 'R-hind ref'])):
 clr = 'homolateral'
 for ref_id, (lnst, lbl) in enumerate(zip(['solid','dotted', 'dashdot'],
-                                            ['alt','Llead','Rlead'])):
+                                            ['alt','L-lead','R-lead'])):
     # if lbl=='synchrony':
     #     continue
     c = FigConfig.colour_config[clr][ref_id]
@@ -78,8 +78,8 @@ for ref_id, (lnst, lbl) in enumerate(zip(['solid','dotted', 'dashdot'],
             pp[pp<0] = pp[pp<0]+2*np.pi
         if k == 2:
             pp[pp<np.pi] = pp[pp<np.pi]+2*np.pi
-            ax.hlines(ylim[1]-0.82-0.5*ref_id, 10, 30, color = c, ls = lnst, lw = 0.7)
-            ax.text(xlim[0] + (0.6 * (xlim[1]-xlim[0])),
+            ax.hlines(ylim[1]-0.82-0.5*ref_id, 20, 35, color = c, ls = lnst, lw = 0.7)
+            ax.text(xlim[0] + (0.7 * (xlim[1]-xlim[0])),
                     ylim[1] - (0.2* (ylim[1]-ylim[0]))- 0.5*ref_id,
                     lbl,
                     color=c,

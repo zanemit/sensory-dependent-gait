@@ -80,11 +80,14 @@ for i, (colname, label, ylims, tlt) in enumerate(zip(['meanSpeed', 'maxSpeed'],
         pass
     
     # p value
-    mod = pd.read_csv(os.path.join(Config.paths['passiveOpto_output_folder'], f"{yyyymmdd}_mixedEffectsModel_linear_BEST_{colname}_stimFreq.csv"))
+    slope_enforced = 'slopeENFORCED'
+    rand_effect = 'Slope'
+    mod = pd.read_csv(os.path.join(Config.paths['passiveOpto_output_folder'], f"{yyyymmdd}_mixedEffectsModel_linear_{colname}_stimFreq_{slope_enforced}_rand{rand_effect}.csv"), index_col=0)
+    t = mod.loc['indep_var_centred', 't value']
+    p = mod.loc['indep_var_centred', 'Pr(>|t|)']
+    print(f"{colname}: mean={mod.loc['indep_var_centred', 'Estimate']:.4g}, SEM={mod.loc['indep_var_centred', 'Std. Error']:.4g}, t({mod.loc['indep_var_centred', 'df']:.0f})={t:.3f}, p={p:.3g}")
     x =0
-    p_text = 'frequency: ' + ('*' * (mod['Pr(>|t|)'][x+1] < FigConfig.p_thresholds).sum())
-    if (mod['Pr(>|t|)'][x+1] < FigConfig.p_thresholds).sum() == 0:
-        p_text += "n.s."
+    p_text = "n.s." if (p < FigConfig.p_thresholds).sum() == 0 else ('*' * (p < FigConfig.p_thresholds).sum())
     ax[i].text(0.5,
             1, 
             p_text, 
@@ -92,8 +95,7 @@ for i, (colname, label, ylims, tlt) in enumerate(zip(['meanSpeed', 'maxSpeed'],
             color = clr, 
             transform=ax[i].transAxes,
             fontsize = 5)   
-    
-    print(mod)
+
 
 ax[0].set_ylabel("Speed (cm/s)") #label)
             

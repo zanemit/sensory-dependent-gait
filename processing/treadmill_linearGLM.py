@@ -67,6 +67,8 @@ def get_linear_slopes(
     if 'trialType' in datafull.columns:
         if 'deg' in datafull['trialType'].iloc[-1] or 'deg' in datafull['trialType'][0]:
             datafull['incline'] = [-int(x[3:]) for x in datafull['trialType']]
+            
+    rh_str = appdx.split('_')[-1]+'_' if 'rH' in appdx else ''
     
     # subsetting the data into head height or slope trials only
     if 'COMBINEDtrialType' in appdx and categ_var!='trialType':
@@ -77,11 +79,11 @@ def get_linear_slopes(
     
     # load model coef files depending on the number of predictors & presence of slopes       
     if len(predictors)>2:
-        contpath = os.path.join(outputDir, f"{yyyymmdd}_contCoefficients_mixedEffectsModel_linear_{outcome_variable}_vs_{predictors[0]}_{predictors[1]}_{predictors[2]}{rfl_str}_randSlopes{''.join(slopes)}_interaction{interaction}.csv")
-        randpath = os.path.join(outputDir, f"{yyyymmdd}_randCoefficients_mixedEffectsModel_linear_{outcome_variable}_vs_{predictors[0]}_{predictors[1]}_{predictors[2]}{rfl_str}_randSlopes{''.join(slopes)}_interaction{interaction}.csv")
+        contpath = os.path.join(outputDir, f"{yyyymmdd}_contCoefficients_mixedEffectsModel_linear_{rh_str}{outcome_variable}_vs_{predictors[0]}_{predictors[1]}_{predictors[2]}{rfl_str}_randSlopes{''.join(slopes)}_interaction{interaction}.csv")
+        randpath = os.path.join(outputDir, f"{yyyymmdd}_randCoefficients_mixedEffectsModel_linear_{rh_str}{outcome_variable}_vs_{predictors[0]}_{predictors[1]}_{predictors[2]}{rfl_str}_randSlopes{''.join(slopes)}_interaction{interaction}.csv")
     else:
-        contpath = os.path.join(outputDir, f"{yyyymmdd}_contCoefficients_mixedEffectsModel_linear_{outcome_variable}_vs_{predictors[0]}_{predictors[1]}{rfl_str}_randSlopes{''.join(slopes)}_interaction{interaction}.csv")
-        randpath = os.path.join(outputDir, f"{yyyymmdd}_randCoefficients_mixedEffectsModel_linear_{outcome_variable}_vs_{predictors[0]}_{predictors[1]}{rfl_str}_randSlopes{''.join(slopes)}_interaction{interaction}.csv")
+        contpath = os.path.join(outputDir, f"{yyyymmdd}_contCoefficients_mixedEffectsModel_linear_{rh_str}{outcome_variable}_vs_{predictors[0]}_{predictors[1]}{rfl_str}_randSlopes{''.join(slopes)}_interaction{interaction}.csv")
+        randpath = os.path.join(outputDir, f"{yyyymmdd}_randCoefficients_mixedEffectsModel_linear_{rh_str}{outcome_variable}_vs_{predictors[0]}_{predictors[1]}{rfl_str}_randSlopes{''.join(slopes)}_interaction{interaction}.csv")
    
     contCoefficients = pd.read_csv(contpath, index_col=0)
     randCoefficients = pd.read_csv(randpath, index_col=0)
@@ -165,7 +167,7 @@ def get_linear_slopes(
             if len(predictors)>4:
                 raise ValueError("More than 4 predictors have not been implemented!")
        
-            if interaction == 'TRUE' or  interaction == 'TRUEthreeway' or interaction == 'TRUEfourway':
+            if (interaction == 'TRUE' or  interaction == 'TRUEthreeway' or interaction == 'TRUEfourway') and len(predictors)>=2:
                 if pred in ['pred1_centred', 'pred2_centred']:
                     nonpred = np.setdiff1d(['pred1_centred', 'pred2_centred'], pred)[0]
                     output += contCoefficients.loc[f"pred1_centred:pred2_centred", "Estimate"] *\
@@ -176,7 +178,7 @@ def get_linear_slopes(
                               nonpred_dict['pred1_centred'] *\
                               nonpred_dict['pred2_centred']
                 
-            if interaction == 'TRUEsecondary' or interaction == 'TRUEthreeway' or interaction == 'TRUEfourway':
+            if (interaction == 'TRUEsecondary' or interaction == 'TRUEthreeway' or interaction == 'TRUEfourway') and len(predictors)>=3:
                 if pred in ['pred2_centred', 'pred3_centred']:
                     nonpred = np.setdiff1d(['pred2_centred', 'pred3_centred'], pred)[0]
                     output += contCoefficients.loc[f"pred2_centred:pred3_centred", "Estimate"] *\
@@ -187,7 +189,7 @@ def get_linear_slopes(
                               nonpred_dict['pred2_centred'] *\
                               nonpred_dict['pred3_centred']
                 
-            if interaction == 'TRUEthreeway' or interaction == 'TRUEfourway':
+            if (interaction == 'TRUEthreeway' or interaction == 'TRUEfourway') and len(predictors)>=3:
                 if pred in ['pred1_centred', 'pred2_centred', 'pred3_centred']:
                     nonpredlist = np.setdiff1d(['pred1_centred', 'pred2_centred', 'pred3_centred'], pred)
                     if pred in ['pred1_centred', 'pred3_centred']:
@@ -212,7 +214,7 @@ def get_linear_slopes(
                               nonpred_dict['pred3_centred']
                               
                           
-            if interaction == 'TRUEfourway':
+            if interaction == 'TRUEfourway' and len(predictors)>=4:
                 if pred in ['pred1_centred', 'pred2_centred', 'pred4_centred']:
                     nonpredlist = np.setdiff1d(['pred1_centred', 'pred2_centred', 'pred4_centred'], pred)
                     if pred in ['pred1_centred', 'pred4_centred']:
@@ -288,6 +290,49 @@ def get_linear_slopes(
 
             if refLimb == ref_iterables[-1] and len(ref_iterables)>1:
                 output += contCoefficients.loc[f"{refLimb}", "Estimate"]
+                
+                # what if refLimb is part of an interaction?
+                if interaction=='TRUEfourway' and len(predictors)<4:
+                    output += contCoefficients.loc[f"{pred}:{refLimb}", "Estimate"] * pred_range
+                    
+                    nonpredlist = np.setdiff1d(['pred1_centred', 'pred2_centred', 'pred3_centred'], pred)
+                    for nonpred in nonpredlist:
+                        output += contCoefficients.loc[f"{nonpred}:{refLimb}", "Estimate"] * nonpred_dict[nonpred]
+                    if pred in ['pred1_centred', 'pred2_centred']:
+                        nonpred = np.setdiff1d(['pred1_centred', 'pred2_centred'], pred)[0]
+                        output += contCoefficients.loc[f"{pred}:pred3_centred:{refLimb}", "Estimate"]*\
+                                    pred_range *\
+                                    nonpred_dict['pred3_centred']
+                        output += contCoefficients.loc[f"{nonpred}:pred3_centred:{refLimb}", "Estimate"]*\
+                                    nonpred_dict[nonpred]  *\
+                                    nonpred_dict['pred3_centred']
+                        output += contCoefficients.loc[f"pred1_centred:pred2_centred:{refLimb}", "Estimate"]*\
+                                    pred_range *\
+                                    nonpred_dict[nonpred] 
+                    else: # pred=='pred3_centred'
+                        output += contCoefficients.loc[f"pred1_centred:pred3_centred:{refLimb}", "Estimate"]*\
+                                     pred_range *\
+                                     nonpred_dict['pred1_centred']
+                        output += contCoefficients.loc[f"pred2_centred:pred3_centred:{refLimb}", "Estimate"]*\
+                                    pred_range *\
+                                    nonpred_dict['pred2_centred']
+                        output += contCoefficients.loc[f"pred1_centred:pred2_centred:{refLimb}", "Estimate"]*\
+                                    nonpred_dict['pred1_centred'] *\
+                                    nonpred_dict['pred2_centred']
+                                    
+                    output += contCoefficients.loc[f"pred1_centred:pred2_centred:pred3_centred:{refLimb}", "Estimate"] *\
+                                pred_range *\
+                                nonpred_dict[nonpredlist[0]] *\
+                                nonpred_dict[nonpredlist[1]]
+                    
+                if interaction=='TRUEthreeway' and len(predictors)<3: # assume that refLimb is part of the interaction
+                    output += contCoefficients.loc[f"{pred}:{refLimb}", "Estimate"] * pred_range
+                    
+                    nonpred = np.setdiff1d(['pred1_centred', 'pred2_centred'], pred)[0]
+                    output += contCoefficients.loc[f"{nonpred}:{refLimb}", "Estimate"] * nonpred_dict[nonpred]
+                    output += contCoefficients.loc[f"pred1_centred:pred2_centred:{refLimb}", "Estimate"] *\
+                                pred_range *\
+                                nonpred_dict[nonpred]
             
             if len(slopes)>0:
                 support_preds_across_mice[:, b, 0, i] = (output * np.nanstd(datafull[outcome_variable])) + np.nanmean(datafull[outcome_variable])
@@ -328,7 +373,7 @@ def get_predictor_range(predictor):
         xlim = (139,181)
         xticks = [140,150,160,170,180]
         xlabel = 'Snout-hump angle (deg)'
-    elif predictor == 'duty_ratio':
+    elif predictor == 'duty_ratio' or predictor == 'dutyratio':
         xlim = (0.3,2.1)
         xticks = [0.3,0.9,1.5,2.1]
         xlabel = 'Hind-fore duty factor ratio'

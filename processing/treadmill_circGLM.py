@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 import scipy.stats
+import copy
 
 sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
@@ -59,6 +60,7 @@ def get_circGLM_slopes(
     beta = fixed effects predictors
     b_pred = random effect intercept (assumed to always be present)
     """
+    predictors = copy.deepcopy(predictors)
     print(ref, categ_var)
     # assign slope-related appdx for file name
     slope_appdx = f'SLOPE{"".join(slopes)}' if len(slopes)>0 else ''
@@ -165,6 +167,14 @@ def get_circGLM_slopes(
     if len(slopes)>0:
         b1pred = pd.read_csv(b1pred_path, index_col = 0)
         b2pred = pd.read_csv(b2pred_path, index_col = 0)
+        
+    # fix names I have shortened to fit within filename constraints
+    if 'strideLen' in predictors:
+        predictors[predictors.index('strideLen')] = 'strideLength'
+    if 'dutyratio' in predictors:
+        predictors[predictors.index('dutyratio')] = 'duty_ratio'
+    elif 'dutyrat' in predictors:
+        predictors[predictors.index('dutyrat')] = 'duty_ratio'
         
     if np.all(x_pred_range) == None:
         pred_x_num = 100 
@@ -489,6 +499,10 @@ def get_predictor_range(predictor):
         xlim = (17,32)
         xticks = [17,20,23,26,29,32]
         xlabel = 'Weight (g)'
+    elif predictor == 'strideNum':
+        xlim = (0,10)
+        xticks = [0,2,4,6,8,10]
+        xlabel = 'Stride number'
     elif predictor == 'strideLength':
         xlim = (0,6)
         xticks = [0,2,4,6]
@@ -525,7 +539,7 @@ def get_circGLM_stats(
         mice = Config.passiveOpto_config['egr3_mice'],
         sBA_split_str = 'sBAsplitFALSE'
         ):
-    
+  
     if len(slopes)>0:
         slope_appdx = f'SLOPE{"".join(slopes)}'
     else:
@@ -610,6 +624,7 @@ def get_circGLM_slopes_per_mouse(
     beta = fixed effects predictors
     b_pred = random effect intercept (assumed to always be present)
     """
+    predictors = copy.deepcopy(predictors)
     if len(slopes)>0:
         slope_appdx = f'SLOPE{"".join(slopes)}'
     else:
@@ -685,6 +700,14 @@ def get_circGLM_slopes_per_mouse(
     beta2 = pd.read_csv(beta2path, index_col = 0)
     b1pred = pd.read_csv(b1pred_path, index_col = 0)
     b2pred = pd.read_csv(b2pred_path, index_col = 0)
+    
+    # fix names I have shortened to fit within filename constraints
+    if 'strideLen' in predictors:
+        predictors[predictors.index('strideLen')] = 'strideLength'
+    if 'dutyratio' in predictors:
+        predictors[predictors.index('dutyratio')] = 'duty_ratio'
+    elif 'dutyrat' in predictors:
+        predictors[predictors.index('dutyrat')] = 'duty_ratio'
     
     if np.all(x_pred_range) == None:
         pred_x_num = 100 
