@@ -26,15 +26,8 @@ datafull = data_loader.load_processed_data(dataToLoad = 'strideParamsMerged',
                                                 limb = ref, 
                                                 appdx = appdx)[0]
     
-dependent_col = 'limbSupportPC4'
+dependent_col = 'limbSupportPC3'
 limb = 'lF0'
-
-if 'PC3' in dependent_col:
-    ytlt = "Diagonal support\n(PC3)"
-elif "PC4" in dependent_col:
-    ytlt = "Single-leg support\n(PC4)"
-else:
-    ytlt = "DEFINE LABEL!!!"
 
 # convert to radians
 datafull[limb] = datafull[limb]*2*np.pi
@@ -49,6 +42,7 @@ df_sub = df_sub.dropna()
 y = df_sub[dependent_col]
 
 if '3' in dependent_col or '6' in dependent_col:
+    ytexts = ('3-limb,\nhindlimb', 'diagonal')
     yticks = [-0.1, 0, 0.1] 
     ylims=(-0.1, 0.12)
 elif '4' in dependent_col or '1' in dependent_col:
@@ -62,7 +56,7 @@ xlims = (0, 2*np.pi)
     
 # ########################## PLOT ##########################
 num_bins = 15
-fig,ax = plt.subplots(1,1,figsize=(1.45,1.35))
+fig,ax = plt.subplots(1,1,figsize=(1.45,1.4))
 
 for i, (trialtype, lnst, clr, lbl) in enumerate(zip(['slope', 'headHeight'],
                            ['solid', 'dashed'],
@@ -125,12 +119,27 @@ for i, coord in enumerate(['sin', 'cos']):
             f"LF {coord}: {ptext}",
             fontsize=5)
 
-ax.set_ylabel(ytlt)
+ax.set_ylabel(dependent_col[-3:])
 ax.set_ylim(ylims[0], ylims[1])
 ax.set_yticks(yticks)
-ax.set_xlabel("Relative LF phase\n(rad)")
+ax.set_xlabel("Left homolateral\nphase (rad)")
 ax.set_xticks([0,0.5*np.pi, np.pi, 1.5*np.pi, 2*np.pi], 
               labels=['0', '0.5π', 'π', '1.5π', '2π'])
+
+# add y labels
+ax.text(-0.2*np.pi,
+        ylims[0]-(ylims[1]-ylims[0])*0.26,
+        ytexts[0],
+        fontsize=5,
+        ha='right', fontweight='bold',
+        color=FigConfig.colour_config['homolateral'][1])
+ax.text(-0.2*np.pi,
+        ylims[1]+(ylims[1]-ylims[0])*0.005,
+        ytexts[1],
+        fontsize=5,
+        ha='right',fontweight='bold',
+        color=FigConfig.colour_config['homologous'][1])
+
 plt.tight_layout()
     
 figtitle = f"passiveOpto_limbSupportPC{dependent_col[-1]}_vs_homolateral.svg"
