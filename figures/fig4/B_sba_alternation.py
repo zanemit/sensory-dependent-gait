@@ -36,8 +36,6 @@ set_sba_range_index = np.linspace(set_sba_ant,
 predictor = 'snoutBodyAngle'
 predictor_str = 'snout-hump angle'
 
-predictor = 'snoutBodyAngle'
-predictor_str = 'snout-hump angle'
 
 category_dict = {'alt': 'alternation', 'sync': 'synchrony', 'asym': 'asymmetry'}
 
@@ -45,7 +43,7 @@ support_preds_across_mice_dict = {}
 slice_dict = {}
 
 predictorlist = ['speed', 'snoutBodyAngle']
-slopes = ['pred2']
+slopes = ['pred1','pred2']
 interaction = 'TRUE'
 
 datafull = data_loader.load_processed_data(outputDir = Config.paths['passiveOpto_output_folder'],
@@ -150,7 +148,12 @@ if os.path.exists(mod_path):
                 ylims[1] - (0.05* (ylims[1]-ylims[0])),
                 f"{predictor_str.split(' ')[-1]}: {ptext}", ha='center',
                 fontsize=5)
-
+        
+speed_effect = stats.loc[f"pred{np.argwhere(np.asarray(predictorlist)=='speed')[0][0]+1}_centred", "Estimate"]
+pred_effect = stats.loc[f"pred{np.argwhere(np.asarray(predictorlist)==predictor)[0][0]+1}_centred", "Estimate"]
+print(f"Speed effect per deg:\n{speed_effect}")
+print(f"Predictor effect per deg:\n{pred_effect}")
+print(f"Speed effect as % of pred effect: {abs(speed_effect)*100/abs(pred_effect):.1f}%")
 
 # add y labels
 ax.text(set_sba_ant-(set_sba_post-set_sba_ant)*0.1,

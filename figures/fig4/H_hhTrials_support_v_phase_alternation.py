@@ -58,57 +58,51 @@ def linear_model(X, a, b, c):
     x1, x2 = X
     return a + b*x1 + c*x2
 
-num_bins = 8
-mask_threshold = df_sub.shape[0]/(df_sub['mouseID'].unique().shape[0]*num_bins)
-fig,ax = plt.subplots(1,1,figsize=(1.45,1.4))
-clr=FigConfig.colour_config['homolateral'][2]
+mask_threshold = 300
+num_bins = min([int(round(df_sub.shape[0]/mask_threshold, 0)), 20])
 
-# iterate over mice
+bins= np.linspace(0, 2*np.pi, num_bins+1)
+bin_centres = (bins[:-1]+bins[1:])/2
+binned_means = np.zeros((len(df_sub['mouseID'].unique()), num_bins))
+stride_nums = np.zeros(num_bins)
 cos_mice = []; sin_mice = []
-for im, m in enumerate(df_sub['mouseID'].unique()):
+for i, m in enumerate(df_sub['mouseID'].unique()):
     df_m = df_sub[df_sub['mouseID'] == m].copy()
+    indep_var = df_m[f'{limb}'].values
+    dep_var = df_m[dependent_col].values
     
     # quantify variability
-    dep_var = df_m[dependent_col].values
     popt, pcov = curve_fit(linear_model, (df_m[f'{limb}_sin'].values, df_m[f'{limb}_cos'].values), dep_var)
 
     INT_fit, SIN_fit, COS_fit = popt
     cos_mice.append(COS_fit)
     sin_mice.append(SIN_fit)
     
-    indep_var = df_m[f'{limb}'].copy().reset_index(drop=True)
-    bins = np.linspace(min(indep_var), max(indep_var), num_bins+1)
-    bin_centres = (bins[:-1]+ bins[1:])/2
-    binned_ymeans = np.array([dep_var[(indep_var>=bins[i]) & (indep_var<bins[i+1])].mean() for i in range(num_bins)])
-    # print(np.array([len(dep_var[(indep_var>=bins[i]) & (indep_var<bins[i+1])]) for i in range(num_bins)]))
-    
-    # mask bins with few steps
-    step_num = np.array([len(dep_var[(indep_var>=bins[i]) & (indep_var<bins[i+1])]) for i in range(num_bins)])
-    mask = step_num >= mask_threshold
-    ax.plot(bin_centres[mask], binned_ymeans[mask],  lw=0.5, color=clr, alpha=0.2)
+    for j in range(num_bins):
+        mask = (indep_var >= bins[j]) & (indep_var <bins[j+1])
+        binned_means[i,j] = np.nanmean(dep_var[mask])
+        stride_nums[j] += dep_var[mask].shape[0]
+        
+total_mask = stride_nums>=mask_threshold
+mean_vals = np.nanmean(binned_means, axis=0)[total_mask]
+sem_vals = scipy.stats.sem(binned_means, axis=0, nan_policy='omit')[total_mask]
+ci95 = sem_vals*1.96
+
+fig,ax = plt.subplots(1,1,figsize=(1.45,1.4))
+clr=FigConfig.colour_config['homolateral'][2]
+ax.fill_between(bin_centres[total_mask], mean_vals-ci95, mean_vals+ci95, facecolor=clr, alpha=0.2, edgecolor=None)
+ax.plot(bin_centres[total_mask],
+        mean_vals,
+        color=clr,
+        lw=1.5,
+        label='Mean')
+
+ax.set_xlim(bins.min(), bins.max())
+
 
 cos_wilcoxon = wilcoxon(cos_mice)
 sin_wilcoxon = wilcoxon(sin_mice)
 print(f"Wilcoxon COS t={cos_wilcoxon[0]}, p={cos_wilcoxon[1]}, SIN t={cos_wilcoxon[0]}, p={sin_wilcoxon[1]}")
-
-# PLOT AVERAGE
-num_bins = 15
-mask_threshold = df_sub.shape[0]/num_bins
-dep_var = df_sub[dependent_col].values
-indep_var = df_sub[f'{limb}'].copy().reset_index(drop=True)
-bins = np.linspace(min(indep_var), max(indep_var), num_bins+1)#[3:10]; num_bins=6
-bin_centres = (bins[:-1]+ bins[1:])/2
-
-print(np.array([len(dep_var[(indep_var>=bins[i]) & (indep_var<bins[i+1])]) for i in range(num_bins)]))
-binned_ymeans = np.array([dep_var[(indep_var>=bins[i]) & (indep_var<bins[i+1])].mean() for i in range(num_bins)])
-
-# mask bins with few steps
-step_num = np.array([len(dep_var[(indep_var>=bins[i]) & (indep_var<bins[i+1])]) for i in range(num_bins)])
-mask = step_num >= mask_threshold
-ax.plot(bin_centres[mask], binned_ymeans[mask],  lw=1.5, color=clr)
-ax.axvline(bin_centres[np.argmax(binned_ymeans)], color='grey', ls='dashed')
-
-# print(f"Min bin:{bin_centres[np.argmin(binned_ymeans)]/np.pi}")
 
 for i, (coord, coord_str) in enumerate(zip([sin_wilcoxon, cos_wilcoxon], ['sin', 'cos'])):
     ptext = '*' * (coord[1]<np.asarray(FigConfig.p_thresholds)).sum() if (coord[1]<np.asarray(FigConfig.p_thresholds)).sum()!=0 else 'n.s.'
