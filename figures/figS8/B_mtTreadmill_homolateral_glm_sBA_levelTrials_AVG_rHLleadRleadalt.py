@@ -17,19 +17,19 @@ from processing.data_config import Config
 from figures.fig_config import Config as FigConfig
 from figures.fig_config import AnyObjectHandler
 
-predictorlist = ['speed', 'snoutBodyAngle', 'incline']#['speed', 'snoutBodyAngle', 'incline']
-predictorlist_str = ['speed', 'snout-hump angle', 'slope']
-predictor = 'incline'#'incline' #'snoutBodyAngle'
+predictorlist = ['speed', 'snoutBodyAngle']
+predictorlist_str = ['speed', 'snout-hump angle']
+predictor = 'snoutBodyAngle'
 predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
-appdx =  '_incline' #'_incline'
-tlt = 'Slope trials\n(asymmetric)'
-yyyymmdd = '2022-08-18'
-slopes = ['pred2', 'pred3']#['pred2', 'pred3']
+appdx =  '' 
+tlt = 'Level trials'
+yyyymmdd = '2021-10-23'
+slopes = ['pred2']
 limb = 'lF0'
-ref = 'lH1LleadRlead'
-interaction = 'TRUEfourway'#'TRUEsecondary'
-samples = 7311#12373
-datafrac = 1
+ref = 'lH1LleadRleadalt'
+interaction = 'TRUEthreeway' #TRUEthreeway
+samples = 15159
+datafrac = 0.4
 iters = 1000
 categ_var='rH0_categorical'
 
@@ -44,9 +44,9 @@ x_range, phase_preds = treadmill_circGLM.get_circGLM_slopes(
         datafrac = datafrac,
         categ_var=categ_var,
         slopes = slopes,
-        outputDir = Config.paths['passiveOpto_output_folder'],
+        outputDir = Config.paths['mtTreadmill_output_folder'],
         iterations = iters,
-        mice = np.setdiff1d(Config.passiveOpto_config['mice'], Config.injection_config['both_inj_left_imp'])
+        mice = Config.mtTreadmill_config['mice_level']
                 ) 
 
 unique_traces = np.empty((0))
@@ -56,7 +56,7 @@ ylim = (0.3*np.pi,1.5*np.pi)
 yticks = [0.5*np.pi,np.pi,1.5*np.pi]
 yticklabels = ["0.5π", "π", "1.5π"]  
 xlim, xticks, xlabel = treadmill_circGLM.get_predictor_range(predictor)
-xlabel='Surface slope\n(deg)'
+xlabel='Snout-hump angle\n(deg)'
 
 fig, ax = plt.subplots(1,1,figsize = (1.35,1.4)) #1.6,1.4 for 4figs S2 bottom row
 
@@ -64,10 +64,12 @@ last_vals = [] # for stats
 
 # plot each mouse (just default ref limb)
 # for ref_id, (lnst, lbl) in enumerate(zip(['solid', 'dashed'],['L-hind ref', 'R-hind ref'])):
-for ref_id, (lnst, clr, lbl) in enumerate(zip(['solid', 'dashed'],
-                                            ['homolateral', 'greys'],
-                                            ['L-lead', 'R-lead'])):
-    c = FigConfig.colour_config[clr][3-ref_id*3]
+clr = 'homolateral'
+for ref_id, (lnst, lbl) in enumerate(zip(['solid','dotted', 'dashdot'],
+                                            ['alt','L-lead','R-lead'])):
+    # if lbl=='synchrony':
+    #     continue
+    c = FigConfig.colour_config[clr][ref_id]
     pp = phase_preds[:, :, predictor_id, 0, ref_id]
     # compute and plot mean phases for three circular ranges so that the plots look nice and do not have lines connecting 2pi to 0
     for k, (lo, hi) in enumerate(zip([-np.pi, 0, np.pi] , [np.pi, 2*np.pi, 3*np.pi])):
@@ -76,9 +78,9 @@ for ref_id, (lnst, clr, lbl) in enumerate(zip(['solid', 'dashed'],
             pp[pp<0] = pp[pp<0]+2*np.pi
         if k == 2:
             pp[pp<np.pi] = pp[pp<np.pi]+2*np.pi
-            ax.hlines(ylim[1]-0.32, 141+20*ref_id, 152+21*ref_id, color = c, ls = lnst, lw = 1)
-            ax.text(xlim[0] + (0.04 * (xlim[1]-xlim[0])) + 20*ref_id,
-                    ylim[1] - (0.05* (ylim[1]-ylim[0])),
+            ax.hlines(ylim[1]-0.82-0.5*ref_id, 170, 185, color = c, ls = lnst, lw = 0.7)
+            ax.text(xlim[0] + (0.8 * (xlim[1]-xlim[0])),
+                    ylim[1] - (0.2* (ylim[1]-ylim[0]))- 0.5*ref_id,
                     lbl,
                     color=c,
                     fontsize=5)
@@ -103,7 +105,7 @@ for ref_id, (lnst, clr, lbl) in enumerate(zip(['solid', 'dashed'],
             ax.plot(x_range[:, predictor_id], 
                     trace, 
                     color = c,
-                    linewidth = 1.5,
+                    linewidth = 1.3,
                     linestyle = lnst,
                     alpha = 1,
                     # label = lbl
@@ -127,28 +129,29 @@ stat_dict = treadmill_circGLM.get_circGLM_stats(
         datafrac = datafrac,
         categ_var=categ_var,
         slopes = slopes,
-        outputDir = Config.paths['passiveOpto_output_folder'],
+        outputDir = Config.paths['mtTreadmill_output_folder'],
         iterations = iters,
-        mice = Config.passiveOpto_config['mice']
+        mice = Config.mtTreadmill_config['mice_level']
                 ) 
 
-cat_coef_str = f"pred{len(predictorlist)+1}Rlead"
+# cat_coef_str = f"pred{len(predictorlist)+1}Rlead"
 cont_coef_str = f"pred{predictor_id+1}"
 # ax.text(x_range[-1, 1] + ((xlim[1]-xlim[0])/100),
 #         np.mean(last_vals),
 #         stat_dict[cat_coef_str])
 
-# ax.text(xlim[0] + (0.15 * (xlim[1]-xlim[0])),
-#         ylim[1] - (0.05* (ylim[1]-ylim[0])),
-#         f"{predictorlist_str[predictor_id]}: {stat_dict[cont_coef_str]}",
-#         # color=c,
-#         fontsize=5)
-
-ax.text(xlim[0] + (0.35 * (xlim[1]-xlim[0])),
+ax.text(xlim[0] + (0.05 * (xlim[1]-xlim[0])),
         ylim[1] - (0.05* (ylim[1]-ylim[0])),
-        f"vs            ref: {stat_dict[cat_coef_str]}",
+        f"{predictorlist_str[predictor_id]}: {stat_dict[cont_coef_str]}",
+        # color=c,
         fontsize=5)
 
+cat_stat = stat_dict[f'pred{len(predictorlist)+1}Llead']=='*' and stat_dict[f'pred{len(predictorlist)+1}Rlead']=='*'
+cat_stat_str = '*' if cat_stat else 'n.s.'
+ax.text(xlim[0] + (0.05 * (xlim[1]-xlim[0])),
+        ylim[1] - (0.15* (ylim[1]-ylim[0])),
+        f"RH phase: {cat_stat_str}",
+        fontsize=5)
 # -------------------------------STATS-----------------------------------
 
 ax.set_title(tlt)
@@ -156,7 +159,7 @@ ax.set_title(tlt)
 # axes 
 ax.set_xlim(xlim[0], xlim[1])
 ax.set_xticks(xticks[::2])
-ax.set_xlabel(f"{xlabel}")
+ax.set_xlabel(f"{xlabel}†")
 
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_yticks(yticks)
@@ -169,7 +172,7 @@ ax.set_ylabel('Left homolateral phase\n(rad)')
    
 plt.tight_layout()
 
-figtitle = f"passiveOpto_{limb}_ref{ref}_{'_'.join(predictorlist)}_SLOPE{''.join(slopes)}_{interaction}_{appdx}_AVERAGE.svg"
+figtitle = f"mtTreadmill_{limb}_ref{ref}_{'_'.join(predictorlist)}_SLOPE{''.join(slopes)}_{interaction}_{appdx}_AVERAGE.svg"
 plt.savefig(os.path.join(FigConfig.paths['savefig_folder'], figtitle), 
             dpi = 300, 
             bbox_inches = 'tight',

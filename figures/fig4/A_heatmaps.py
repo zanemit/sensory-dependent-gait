@@ -146,6 +146,7 @@ for appdx, trial_type in zip(['', 'incline_'], ['head height', 'surface slope'])
             ['alternation', 'synchrony', 'asymmetry']
             ):
         datafull = datafull_full[(datafull_full['rH0_categorical'].isin(category))].copy()
+        print(f"{category_str}: {datafull.shape[0]} strides")
         category = 'asym' if len(category)>1 and 'Llead' in category and 'Rlead' in category else category[0]
         
         pca = PCA()

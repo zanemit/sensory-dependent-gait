@@ -125,10 +125,12 @@ ax.set_title(f"{category_dict[rH_category]}", fontsize=6)
 mask = support_preds_across_mice.isna().sum(axis=1)<(support_preds_across_mice.shape[1]/2)
 med = np.mean(support_preds_across_mice.loc[mask,:], axis=1)
 std = np.std(support_preds_across_mice.loc[mask,:], axis=1)
+t_val = scipy.stats.t.ppf(0.975, df=support_preds_across_mice.shape[1]-1)
+ci95 = t_val*std / np.sqrt(support_preds_across_mice.shape[1])
 
 ax.fill_between(set_sba_range_index[mask],
-                med+std,#-med_first_nonan, 
-                med-std,#-med_first_nonan,
+                med+ci95,#-med_first_nonan, 
+                med-ci95,#-med_first_nonan,
                 alpha = 0.2, 
                 facecolor = clr)
 ax.plot(set_sba_range_index[mask],

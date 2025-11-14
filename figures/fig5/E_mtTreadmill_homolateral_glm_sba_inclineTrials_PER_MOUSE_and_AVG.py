@@ -96,7 +96,7 @@ for i in range(1, len(mouselist)+1):
 for ymd, predlist, samples, appendix, intr, dfrac, slp, clr, z, lnst, trialtype, multip in zip(
         ['2021-10-23', yyyymmdd],
         [["speed", "snoutBodyAngle"], predictorlist],
-        [15366, samplenum],
+        [9189, samplenum],
         ["", appdx],
         ["TRUE", interaction],
         [1, datafrac],
@@ -168,12 +168,17 @@ ax.set_yticklabels(yticklabels)
 ax.set_ylabel('Left homolateral phase\n(rad)')
 
 # -------------------------------STATS-----------------------------------
+samplenum = 12340
+datafrac = 0.6
+ref = 'lH1LleadRleadalt'
+categ_var='rH0_categorical'
+interaction = 'TRUEfourway'
 stat_dict = treadmill_circGLM.get_circGLM_stats(
         predictors = predictorlist,
         yyyymmdd = yyyymmdd,
         limb = limb,
         ref = ref,
-        categ_var = None,
+        categ_var = categ_var,
         samples = samplenum,
         interaction = interaction,
         appdx = appdx,
