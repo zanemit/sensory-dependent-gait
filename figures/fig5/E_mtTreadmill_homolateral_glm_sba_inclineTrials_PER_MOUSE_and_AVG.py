@@ -172,7 +172,7 @@ samplenum = 12340
 datafrac = 0.6
 ref = 'lH1LleadRleadalt'
 categ_var='rH0_categorical'
-interaction = 'TRUEfourway'
+interaction = 'TRUEthreeway'
 stat_dict = treadmill_circGLM.get_circGLM_stats(
         predictors = predictorlist,
         yyyymmdd = yyyymmdd,
@@ -186,7 +186,8 @@ stat_dict = treadmill_circGLM.get_circGLM_stats(
         slopes = slopes,
         outputDir = Config.paths['mtTreadmill_output_folder'],
         iterations = iters,
-        mice = mouselist
+        mice = mouselist,
+        sBA_split_str='s'
                 ) 
 
 cont_coef_str = f"pred{predictor_id+1}"

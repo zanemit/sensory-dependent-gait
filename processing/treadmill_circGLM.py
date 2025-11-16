@@ -72,13 +72,13 @@ def get_circGLM_slopes(
     
     # load full data    
     if categ_var == 'trialType':
-        filenames = {'2021-10-23': {False: 'strideParams_COMBINEDtrialType'}, 
+        filenames = {'2021-10-23': {False: 'strideParams_COMBINEDtrialType_lH1'}, 
                      '2022-08-18': {True: 'strideParamsMerged_incline_COMBINEDtrialType_lH1', False: 'strideParams_incline_trialType_COMBINED'},
                      '2022-05-06': {True: 'strideParamsMerged_COMBINEDtrialType_lH1'}}
         datafull = pd.read_csv(Path(outputDir)/ f"{yyyymmdd}_{filenames[yyyymmdd][merged]}.csv")
     else:
         ref_dataset = ref if ref=='COMBINED' or ref[-1] in ['0','1','2'] else ref[:3]
-        if ref in ['COMBINEDcombblncd', 'COMBINEDcb', 'COMBINEDcomb']:
+        if 'COMBINED' in ref or 'COMB' in ref:
             ref_dataset = 'COMBINED'
         datafull = data_loader.load_processed_data(dataToLoad = dstr,
                                                    outputDir = outputDir,
@@ -192,8 +192,12 @@ def get_circGLM_slopes(
             ref_iterables = ['', 'Llead','Rlead']
         elif 'Rlead' in ref and 'Llead' in ref:
             ref_iterables = ['', 'Rlead']
+        elif 'Rlead' in ref and 'Llead' in ref and 'alt' in ref and 'sync' in ref:
+            ref_iterables = ['', 'Llead', 'sync', 'Rlead'] 
+        elif 'alt' in ref and 'advanced' in ref:
+            ref_iterables = ['', 'alt']
         else:
-            ref_iterables = ['', 'Llead', 'sync', 'Rlead']
+            raise ValueError("Condition not defined!")
     else:
         ref_iterables = ['']
     
@@ -266,7 +270,7 @@ def get_circGLM_slopes(
                mu1 += np.asarray(beta1[nonpreds[3]]).reshape(-1,1) * nonpred_dict[nonpreds[3]] #+\
                mu2 += np.asarray(beta2[nonpreds[3]]).reshape(-1,1) * nonpred_dict[nonpreds[3]]  
        
-            if (interaction == 'TRUE' or  interaction == 'TRUEthreeway' or interaction == 'TRUEfourway') and len(predictors)>=2:
+            if (interaction == 'TRUE' or  interaction == 'TRUEthreeway' or interaction == 'TRUEfourway' or  interaction == 'TRUE1st2nd4th') and len(predictors)>=2:
                 if pred in ['pred1', 'pred2']:
                     nonpred = np.setdiff1d(['pred1', 'pred2'], pred)[0]
                     mu1 += np.asarray(beta1["pred1:pred2"]).reshape(-1,1) @ (pred_range.reshape(-1,1).T * nonpred_dict[nonpred])
@@ -326,7 +330,7 @@ def get_circGLM_slopes(
                 else:
                     mu1 += np.asarray(beta1["pred1:pred2:pred4"]).reshape(-1,1) * nonpred_dict['pred1'] * nonpred_dict['pred2'] * nonpred_dict['pred4']
                     mu2 += np.asarray(beta2["pred1:pred2:pred4"]).reshape(-1,1) * nonpred_dict['pred1'] * nonpred_dict['pred2'] * nonpred_dict['pred4']
-            
+
                 if pred in ['pred1', 'pred3', 'pred4']:
                     nonpredlist = np.setdiff1d(['pred1', 'pred3', 'pred4'], pred)
                     if pred in ['pred3', 'pred4']:
@@ -355,7 +359,7 @@ def get_circGLM_slopes(
                 
                 mu1 += np.asarray(beta1["pred1:pred2:pred3:pred4"]).reshape(-1,1) @ (pred_range.reshape(-1,1).T * nonpred_dict[nonpreds[0]] * nonpred_dict[nonpreds[1]] * nonpred_dict[nonpreds[2]])
                 mu2 += np.asarray(beta2["pred1:pred2:pred3:pred4"]).reshape(-1,1) @ (pred_range.reshape(-1,1).T * nonpred_dict[nonpreds[0]] * nonpred_dict[nonpreds[1]] * nonpred_dict[nonpreds[2]])        
-            
+                
             if refLimb != ref_iterables[0] and len(ref_iterables)>1:
                 mu1 += np.asarray(beta1[f"pred{len(predictors)+1}{refLimb}"]).reshape(-1,1) #the mean of the third predictor (if present) is zero because it was centred before modelling
                 mu2 += np.asarray(beta2[f"pred{len(predictors)+1}{refLimb}"]).reshape(-1,1) 
@@ -434,7 +438,28 @@ def get_circGLM_slopes(
                         mu1 += np.asarray(beta1[f"pred1:pred2:pred3:pred4{refLimb}"]).reshape(-1,1) @ (pred_range.reshape(-1,1).T * nonpred_dict[nonpredlist[0]] * nonpred_dict[nonpredlist[1]] * 1) # including the 1 for categ_var clarity
                         mu2 += np.asarray(beta2[f"pred1:pred2:pred3:pred4{refLimb}"]).reshape(-1,1) @ (pred_range.reshape(-1,1).T * nonpred_dict[nonpredlist[0]] * nonpred_dict[nonpredlist[1]] * 1)
                     
-                         
+                    elif interaction == 'TRUE1st2nd4th' and len(predictors)==3: 
+                        # assumes that the categorical var is pred4, but that it is before pred3 in the equation
+                        nonpreds = np.setdiff1d(['pred1', 'pred2', 'pred3'], pred)
+                        
+                        if pred!='pred3': # if pred=='pred3', skip, because there is no pred3xpred4 interaction in 1st2nd4th
+                            mu1 += np.asarray(beta1[f"{pred}:pred4{refLimb}"]).reshape(-1,1) @ (pred_range.reshape(-1,1).T * 1) # including the 1 for categ_var clarity
+                            mu2 += np.asarray(beta2[f"{pred}:pred4{refLimb}"]).reshape(-1,1) @ (pred_range.reshape(-1,1).T * 1)
+                        
+                        for nonpred in nonpreds:
+                            if nonpred!='pred3': # if nonpred=='pred3', skip, because there is no pred3xpred4 interaction in 1st2nd4th
+                                mu1 += np.asarray(beta1[f"{nonpred}:pred4{refLimb}"]).reshape(-1,1) * nonpred_dict[nonpred] * 1 # including the 1 for categ_var clarity
+                                mu2 += np.asarray(beta2[f"{nonpred}:pred4{refLimb}"]).reshape(-1,1) * nonpred_dict[nonpred] * 1
+                        
+                        if pred in ['pred1', 'pred2']:
+                            nonpred = np.setdiff1d(['pred1', 'pred2'], pred)[0]
+                            mu1 += np.asarray(beta1[f"pred1:pred2:pred4{refLimb}"]).reshape(-1,1) @ (pred_range.reshape(-1,1).T * nonpred_dict[nonpred] * 1) # including the 1 for categ_var clarity
+                            mu2 += np.asarray(beta2[f"pred1:pred2:pred4{refLimb}"]).reshape(-1,1) @ (pred_range.reshape(-1,1).T * nonpred_dict[nonpred] * 1)
+                        else:
+                            mu1 += np.asarray(beta1[f"pred1:pred2:pred4{refLimb}"]).reshape(-1,1) * nonpred_dict['pred1'] * nonpred_dict['pred2'] * 1 # including the 1 for categ_var clarity
+                            mu2 += np.asarray(beta2[f"pred1:pred2:pred4{refLimb}"]).reshape(-1,1) * nonpred_dict['pred1'] * nonpred_dict['pred2'] * 1
+                            
+                        
                     else:
                         raise ValueError("Categorical variables are interacting with others, but do not meet any of the implemented conditions")
             

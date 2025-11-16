@@ -10,20 +10,27 @@ sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 from processing import data_loader, utils_processing, utils_math
 from processing.data_config import Config
 
-def compute_phase_lead_categorical(arr, phase_col, reflimb_col=None):
+def compute_phase_lead_categorical(arr, phase_col, reflimb_col=None, reflimb=None):
     """
     This assumes that phase_col is always right leg (hind or fore),
     i.e. left leg is the reference;
     and assigns Llead or Rlead accordingly
     
-    reflimb_col should only be assigned when ref-lH1 and ref-rH (or equivalent)
+    reflimb_col should only be assigned when ref-lH1 and ref-rH1 (or equivalent)
     are combined and there is a separate col specifying the reflimb for each row
     """
+    print("Cases where reflimb is a forelimb are currently not implemented!")
+    
     # get mice based on their injection side
     mice_Linj = Config.injection_config['left_inj_imp']
     mice_both = Config.injection_config['both_inj_left_imp']
     
-    def get_category(val, reflimb=None):
+    def get_category(val, reflimb, is_left_right_coord=True):
+        # determine the correct label type
+        right_asym = 'Rlead' if is_left_right_coord else 'advanced'
+        left_asym = 'Llead' if is_left_right_coord else 'delayed'
+        
+        # assign phase category
         if np.isnan(val):
             return np.nan
         if ((val>=-0.5)&(val<=-0.4))|((val>=0.4)&(val<=0.5)):
@@ -31,17 +38,19 @@ def compute_phase_lead_categorical(arr, phase_col, reflimb_col=None):
         elif (val>=-0.1)&(val<=0.1):
             return 'sync'
         elif (val>0.1)&(val<0.4): # rH0 stance onset after lH0
-            if reflimb==None:
-                return 'Rlead'
+            if ('lH' in reflimb and is_left_right_coord) or not is_left_right_coord: # LH ref + RH limb OR homolateral phase
+                return right_asym
+            elif 'rH' in reflimb and is_left_right_coord: # RH ref + LH limb 
+                return left_asym
             else:
-                categ = 'Rlead' if 'lH' in reflimb else 'Llead'
-                return categ
+                raise ValueError('Undefined condition!')
         elif (val>-0.4)&(val<-0.1): # rH0 stance onset before lH0
-            if reflimb==None:
-                return 'Llead'
+            if ('lH' in reflimb and is_left_right_coord) or not is_left_right_coord: # LH ref + RH limb OR homolateral phase
+                return left_asym
+            elif 'rH' in reflimb and is_left_right_coord: # RH ref + LH limb 
+                return right_asym
             else:
-                categ = 'Llead' if 'lH' in reflimb else 'Rlead'
-                return categ
+                raise ValueError('Undefined condition!')
         else:
             raise ValueError('Missed phases!')
             
@@ -52,28 +61,46 @@ def compute_phase_lead_categorical(arr, phase_col, reflimb_col=None):
             return 'Llead'
         else:
             return label
+        
+    # determine if the coordination of interest is left-right coord
+    if reflimb_col is not None:
+        # TRUE if reflimb is a hindlimb and phase_col contains 'homologous'
+        # we are not entertaining the possibility of reflimb being a forelimb and phase_col is the other forelimb
+        is_left_right_coord = True if np.all(['H' in x for x in arr[reflimb_col]]) and 'homologous' in phase_col else False
+    elif reflimb is not None:
+        is_left_right_coord = True if reflimb[0]!=phase_col[0] else False
+    else:
+        raise ValueError('Neither reflimb_col nor reflimb supplied!')
     
-    if reflimb_col==None:
-        arr[f'{phase_col}_categorical'] = arr[phase_col].apply(get_category)
+    if reflimb_col==None: # ref is a particular limb, not COMBINED
+        if reflimb==None:
+            raise ValueError('Neither reflimb_col nor reflimb supplied!')
+        arr[f'{phase_col}_categorical'] = arr.apply(
+            lambda row: get_category(row[phase_col], reflimb=reflimb, is_left_right_coord=is_left_right_coord), 
+            axis=1
+            )
     else:
         arr[f'{phase_col}_categorical'] = arr.apply(
-            lambda row: get_category(row[phase_col], row[reflimb_col]), axis=1
-            )
+            lambda row: get_category(row[phase_col], row[reflimb_col], is_left_right_coord=is_left_right_coord), 
+            axis=1
+            )   
     
     # remove bilaterally injected mice from this analysis
-    arr.loc[
-        (arr['mouseID'].isin(mice_both))&(arr[f'{phase_col}_categorical'].isin(['Rlead', 'Llead'])),
-        f'{phase_col}_categorical'
-        ] = np.nan
-    
-    # flip phase of left-injected mice (assume injection on right side)
-    arr.loc[
-        arr['mouseID'].isin(mice_Linj),
-        f'{phase_col}_categorical'
-        ] = arr.loc[
+    # do this only if the analysis concerns left-right coordination    
+    if is_left_right_coord:
+        arr.loc[
+            (arr['mouseID'].isin(mice_both))&(arr[f'{phase_col}_categorical'].isin(['Rlead', 'Llead'])),
+            f'{phase_col}_categorical'
+            ] = np.nan
+        
+        # flip phase of left-injected mice (assume injection on right side)
+        arr.loc[
             arr['mouseID'].isin(mice_Linj),
             f'{phase_col}_categorical'
-            ].apply(flip_classification)
+            ] = arr.loc[
+                arr['mouseID'].isin(mice_Linj),
+                f'{phase_col}_categorical'
+                ].apply(flip_classification)
     
     return arr
     
