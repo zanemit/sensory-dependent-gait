@@ -49,8 +49,8 @@ unique_traces = np.empty((0))
 
 ### PLOTTING
 ylim = (-0.7*np.pi,np.pi)
-yticks = [-0.5*np.pi, 0, 0.5*np.pi,np.pi]
-yticklabels = ["-0.5π", "0", "0.5π", "π"]  
+yticks = [-0.5*np.pi, 0, 0.5*np.pi,np.pi, 1.5*np.pi]
+yticklabels = ["-0.5π", "0", "0.5π", "π", "1.5π"]  
 xlim, xticks, xlabel = treadmill_circGLM.get_predictor_range(predictor)
 
 #---------------PER MOUSE--------------------

@@ -59,6 +59,7 @@ yticks = [-0.5*np.pi, 0, 0.5*np.pi,np.pi,1.5*np.pi]
 yticklabels = ["-0.5π", "0", "0.5π", "π", "1.5π"]  
 xlim, xticks, xlabel = treadmill_circGLM.get_predictor_range(predictor)
 xticks = [0,50,100,150]
+xlabel = ' '.join(xlabel.split(' ')[:-1]) + '\n' + xlabel.split(' ')[-1]
 
 fig, ax = plt.subplots(1,1,figsize = (1.35,1.35)) #1.6,1.4 for 4figs S2 bottom row
 
@@ -195,7 +196,7 @@ ax.set_xlabel(f"{xlabel}")
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_yticks(yticks)
 ax.set_yticklabels(yticklabels)
-ax.set_ylabel('Relative RH phase\n(rad)')
+ax.set_ylabel('Hindlimb phase\n(rad)')
 
 # -------------------------------LEGEND----------------------------------- 
 # fig.legend(loc = 'center right', bbox_to_anchor=(1,0.65), fontsize=5)
