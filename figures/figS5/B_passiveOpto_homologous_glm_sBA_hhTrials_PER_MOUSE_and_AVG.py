@@ -40,9 +40,7 @@ sba_str = 'sBAsplitFALSE_FLIPPED'
 
 mice_unilateral_inj = Config.injection_config['right_inj_imp'] + Config.injection_config['left_inj_imp'] 
 mouselist = np.intersect1d(Config.passiveOpto_config['mice'], mice_unilateral_inj)
-# mouselist = np.asarray(['FAA1034839', 'FAA1034868', 'FAA1034944', 'FAA1034945', 
-#                         'FAA1034947', 'FAA1034949', 'BAA1098955', 'FAA1034471', 
-#                         'FAA1034570', 'FAA1034572', 'FAA1034573', 'FAA1034575', 'FAA1034576'])
+
 
 #---------------HEAD HEIGHT TRIALS--------------------
 
@@ -151,7 +149,7 @@ ax.set_xlabel(f"Snout-hump angle\n(deg)")
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_yticks(yticks)
 ax.set_yticklabels(yticklabels)
-ax.set_ylabel('Hindlimb phase\n(rad)')
+ax.set_ylabel('Right hindlimb phase\n(rad)')
 
 # -------------------------------STATS-----------------------------------
 samples = 11812 

@@ -48,7 +48,7 @@ mouselist = np.intersect1d(Config.passiveOpto_config['mice'], mice_unilateral_in
 unique_traces = np.empty((0))
 
 ### PLOTTING
-ylim = (-0.7*np.pi,np.pi)
+ylim = (-0.5*np.pi,1.5*np.pi)
 yticks = [-0.5*np.pi, 0, 0.5*np.pi,np.pi, 1.5*np.pi]
 yticklabels = ["-0.5π", "0", "0.5π", "π", "1.5π"]  
 xlim, xticks, xlabel = treadmill_circGLM.get_predictor_range(predictor)
@@ -149,16 +149,21 @@ ax.set_xlabel("Surface slope\n(deg)")
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_yticks(yticks)
 ax.set_yticklabels(yticklabels)
-ax.set_ylabel('Hindlimb phase\n(rad)')
+ax.set_ylabel('Right hindlimb phase\n(rad)')
 
 # -------------------------------STATS-----------------------------------
+samples = 10859
+datafrac = 1 
+ref = 'lH1altadvanced'
+sba_str = 'sFLIPPED'
+categ_var = 'lF0_categorical'
 stat_dict = treadmill_circGLM.get_circGLM_stats(
         predictors = predictorlist,
         yyyymmdd = yyyymmdd,
         limb = limb,
         ref = ref,
-        categ_var = None,
-        samples = samplenum,
+        categ_var = categ_var,
+        samples = samples,
         interaction = interaction,
         appdx = appdx,
         datafrac = datafrac,

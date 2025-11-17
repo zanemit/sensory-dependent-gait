@@ -199,7 +199,7 @@ ax.set_xlabel(f"{xlabel}")
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_yticks(yticks)
 ax.set_yticklabels(yticklabels)
-ax.set_ylabel('Hindlimb phase\n(rad)')
+ax.set_ylabel('Right hindlimb phase\n(rad)')
 
 # -------------------------------LEGEND----------------------------------- 
 # fig.legend(loc = 'center right', bbox_to_anchor=(1,0.65), fontsize=5)
