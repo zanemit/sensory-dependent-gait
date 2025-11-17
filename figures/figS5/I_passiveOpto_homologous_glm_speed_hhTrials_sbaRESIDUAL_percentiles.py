@@ -29,7 +29,7 @@ tlt = 'Head height trials'
 yyyymmdd = '2022-08-18' #'2024-09-11' #'2022-08-18'
 slopes = ['pred2', 'pred3']
 limb = 'rH0'
-datafrac = 1
+datafrac = 1 #0.4 #0.5 <- non-unimodal + not using 2022-02-26
 ref = 'lH1altadvancedblncd'
 ref_simple = 'lH1'
 interaction = 'TRUEthreeway'
@@ -49,9 +49,9 @@ datafull = data_loader.load_processed_data(dataToLoad = 'strideParams',
                                            limb = ref_simple, 
                                            appdx = appdx)[0]
 
-sbas = [0.2,0.6,1]
+sbas = [-10,0,10]
 prcnts = []
-no_outliers_speed = utils_processing.remove_outliers(datafull['headHW'])
+no_outliers_speed = utils_processing.remove_outliers(datafull['sba_headHW_residuals'])
 for sp in sbas:
     prcnts.append(scipy.stats.percentileofscore(no_outliers_speed, sp))
 
@@ -61,12 +61,19 @@ yticks = [-0.5*np.pi, 0, 0.5*np.pi,np.pi,1.5*np.pi]
 yticklabels = ["-0.5π", "0", "0.5π", "π", "1.5π"]  
 xlim, xticks, xlabel = treadmill_circGLM.get_predictor_range(predictor)
 xticks = [0,50,100,150]
+xlabel = ' '.join(xlabel.split(' ')[:-1]) +'\n' + xlabel.split(' ')[-1]
 
 fig, ax = plt.subplots(1,1,figsize = (1.35,1.35)) #1.6,1.4 for 4figs S2 bottom row
 
 last_vals = [] # for stats
 
-for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts, 
+
+# plot each mouse (just default ref limb)
+# NB: I am reversing iteration order for iprcnt (and thus switching the -10 and 10 labels) to keep
+# the lighter colours and positive numbers associated with higher snout-hump angles
+# I think that would be a more intuitive representation even though I computed
+# the residuals the other way around
+for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts[::-1], 
                                                   sbas,
                                                   ['dotted', 'solid', 'dashed'])):
 
@@ -87,7 +94,7 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
             outputDir = Config.paths['passiveOpto_output_folder'],
             iterations = iters,
             mice = mouselist,
-            special_other_predictors = {'headHW': prcnt},
+            special_other_predictors = {'sba_headHW_residuals': prcnt},
             sBA_split_str = sba_str
                     ) 
     
@@ -101,9 +108,9 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
             pp[pp<0] = pp[pp<0]+2*np.pi
         if k == 2:
             pp[pp<np.pi] = pp[pp<np.pi]+2*np.pi
-            ax.hlines(ylim[1]-1.65, 40+35*iprcnt, 64+35*iprcnt, color = c, ls = lnst, lw = 1)
-            ax.text(xlim[0] + (0.26 * (xlim[1]-xlim[0])) + 37*iprcnt,
-                    ylim[1] - (0.24* (ylim[1]-ylim[0])),
+            ax.hlines(ylim[1]-1.01, 20+35*iprcnt, 44+35*iprcnt, color = c, ls = lnst, lw = 1)
+            ax.text(xlim[0] + (0.13 * (xlim[1]-xlim[0])) + 37*iprcnt,
+                    ylim[1] - (0.13* (ylim[1]-ylim[0])),
                     speed,
                     color=c,
                     fontsize=5)
@@ -133,6 +140,7 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
                     alpha = 1,
                     # label = lbl
                     )
+            print(speed, trace[0], trace[-1])
         
         # for stats
         if trace[-1] > ylim[0] and trace[-1] < ylim[1] and trace[-1] not in last_vals:
@@ -168,9 +176,9 @@ stat_dict = treadmill_circGLM.get_circGLM_stats(
 #         np.mean(last_vals),
 #         stat_dict[cat_coef_str])
 
-ax.text(xlim[0] + (0.15 * (xlim[1]-xlim[0])),
-        ylim[1] - (0.13* (ylim[1]-ylim[0])),
-        f"{predictorlist_str[0]} x height\nx angle res: {stat_dict['pred1:pred2:pred3']}",
+ax.text(xlim[0] + (0.05 * (xlim[1]-xlim[0])),
+        ylim[1] - (0.03* (ylim[1]-ylim[0])),
+        f"{predictorlist_str[0]} x angle res: {stat_dict['pred1:pred3']}",
         fontsize=5)
 # ax.text(xlim[0] + (0.4 * (xlim[1]-xlim[0])),
 #         ylim[1] - (0.13* (ylim[1]-ylim[0])),
@@ -178,8 +186,8 @@ ax.text(xlim[0] + (0.15 * (xlim[1]-xlim[0])),
 #         fontsize=5)
 
 ax.text(xlim[0] + (0.93 * (xlim[1]-xlim[0])),
-        ylim[1] - (0.24* (ylim[1]-ylim[0])),
-        "a.u.",
+        ylim[1] - (0.13* (ylim[1]-ylim[0])),
+        "deg",
         color="grey",
         fontsize=5)
 
@@ -196,7 +204,7 @@ ax.set_xlabel(f"{xlabel}")
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_yticks(yticks)
 ax.set_yticklabels(yticklabels)
-ax.set_ylabel('Relative RH phase\n(rad)')
+ax.set_ylabel('Hindlimb phase\n(rad)')
 
 # -------------------------------LEGEND----------------------------------- 
 # fig.legend(loc = 'center right', bbox_to_anchor=(1,0.65), fontsize=5)
