@@ -17,21 +17,22 @@ from processing.data_config import Config
 from figures.fig_config import Config as FigConfig
 from figures.fig_config import AnyObjectHandler
 
-predictorlist = ['speed', 'snoutBodyAngle']#['speed', 'snoutBodyAngle', 'incline']
-predictorlist_str = ['speed', 'snout-hump angle']
-predictor = 'snoutBodyAngle'#'incline' #'snoutBodyAngle'
+predictorlist = ['speed', 'snoutBodyAngle', 'incline']
+predictorlist_str = ['speed', 'snout-hump angle', 'incline']
+predictor = 'incline' #'snoutBodyAngle'
 predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
-appdx =  '' #'_incline'
-tlt = 'Level trials'
-yyyymmdd = '2021-10-23'
-slopes = ['pred2']#['pred2', 'pred3']
+appdx =  ''
+tlt = 'Slope trials'
+yyyymmdd = '2022-05-06'
+slopes = ['pred2', 'pred3']
 limb = 'homolateral0'
 ref = 'COMBINEDLleadRleadaltblncd'
 ref_simple = 'COMBINED'
-interaction = 'TRUE'#'TRUEsecondary'
-samples = 9684
-datafrac = 0.5#0.2
+interaction = 'TRUEthreeway'
+samples = 9597
+datafrac = 1
 iters = 1000
+sba_str = 's'
 
 unique_traces = np.empty((0))
 
@@ -59,11 +60,9 @@ fig, ax = plt.subplots(1,1,figsize = (1.35,1.4)) #1.6,1.4 for 4figs S2 bottom ro
 last_vals = [] # for stats
 
 
-# plot each mouse (just default ref limb)
 for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
                                                   speeds,
                                                   ['dotted', 'solid', 'dashed'])):
-
     c = FigConfig.colour_config['homolateral'][2*iprcnt]
     
     # get data for different speed percentiles
@@ -79,8 +78,9 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
             slopes = slopes,
             outputDir = Config.paths['mtTreadmill_output_folder'],
             iterations = iters,
-            mice = Config.mtTreadmill_config['mice_level'],
-            special_other_predictors = {'speed': prcnt}
+            mice = Config.mtTreadmill_config['mice_incline'],
+            special_other_predictors = {'speed': prcnt},
+            sBA_split_str=sba_str
                     ) 
    
     pp = phase_preds[:, :, predictor_id, 0, 0]
@@ -91,8 +91,8 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
             pp[pp<0] = pp[pp<0]+2*np.pi
         if k == 2:
             pp[pp<np.pi] = pp[pp<np.pi]+2*np.pi
-            ax.hlines(ylim[1]-1.01, 149.5+8*iprcnt, 154.5+8*iprcnt, color = c, ls = lnst, lw = 1)
-            ax.text(xlim[0] + (0.25 * (xlim[1]-xlim[0])) + 8*iprcnt,
+            ax.hlines(ylim[1]-1.01, -24+17*iprcnt, -15+17*iprcnt, color = c, ls = lnst, lw = 1)
+            ax.text(xlim[0] + (0.2 * (xlim[1]-xlim[0])) + 17*iprcnt,
                     ylim[1] - (0.235* (ylim[1]-ylim[0])),
                     speed,
                     color=c,
@@ -123,10 +123,8 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
                     alpha = 1,
                     # label = lbl
                     )
-            
-            # print(f"{trace[0]/np.pi:.2f}±{(higher[0]-lower[0])/(2*np.pi):.2f}π")
-            # print(f"{trace[-1]/np.pi:.2f}±{(higher[-1]-lower[-1])/(2*np.pi):.2f}π")
-            print(f"{speed} cm/s: {trace[0]/np.pi:.2f}, {trace[-1]/np.pi:.2f}")
+            # print(f"{prcnt:.0f}: {trace[0]:.4f}, {trace[-1]:.4f},\n{lower[0]:.4f}, {lower[-1]:.4f};\n{higher[0]:.4f}, {higher[-1]:.4f}")
+            print(f"{speed} cm/s: {trace[0]/np.pi:.2f}π, {trace[-1]/np.pi:.2f}π, difference: {abs(trace[-1]-trace[0])/np.pi:.2f}π, angle range: {x_range[:, predictor_id][-1]-x_range[:, predictor_id][0]:.2f}")
         
         # for stats
         if trace[-1] > ylim[0] and trace[-1] < ylim[1] and trace[-1] not in last_vals:
@@ -134,11 +132,11 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
 
 # -------------------------------STATS-----------------------------------
 limb = 'homolateral0'
-ref = 'COMBINEDLleadRleadalt'
-interaction = 'TRUE'
-samples = 15228
-datafrac = 0.2
-categ_var = 'homologous0_categorical_refLimb'
+ref = 'COMBLleadRleadalt'
+interaction = 'TRUEthreeway'#'TRUEsecondary'
+samples = 12906
+datafrac = 0.3
+categ_var = 'h0cat_refLimb'
 stat_dict = treadmill_circGLM.get_circGLM_stats(
         predictors = predictorlist,
         yyyymmdd = yyyymmdd,
@@ -152,20 +150,17 @@ stat_dict = treadmill_circGLM.get_circGLM_stats(
         slopes = slopes,
         outputDir = Config.paths['mtTreadmill_output_folder'],
         iterations = iters,
-        mice = Config.mtTreadmill_config['mice_level'],
-        sBA_split_str='s'
+        mice = Config.mtTreadmill_config['mice_incline'],
+        sBA_split_str=sba_str
                 ) 
 
 cont_coef_str = f"pred{predictor_id+1}"
-# ax.text(x_range[-1, 1] + ((xlim[1]-xlim[0])/100),
-#         np.mean(last_vals),
-#         stat_dict[cat_coef_str])
 
 ax.text(xlim[0] + (0.15 * (xlim[1]-xlim[0])),
         ylim[1] - (0.03* (ylim[1]-ylim[0])),
-        f"{predictorlist_str[0]} x angle: {stat_dict['pred1:pred2']}",
+        f"{predictorlist_str[0]} x slope: {stat_dict['pred1:pred3']}",
         fontsize=5)
-ax.text(xlim[0] + (0.4 * (xlim[1]-xlim[0])),
+ax.text(xlim[0] + (0.33 * (xlim[1]-xlim[0])),
         ylim[1] - (0.13* (ylim[1]-ylim[0])),
         f"{predictorlist_str[0]}: {stat_dict[cont_coef_str]}",
         fontsize=5)
@@ -183,9 +178,8 @@ ax.set_title(tlt)
     
 # axes 
 ax.set_xlim(xlim[0], xlim[1])
-ax.set_xticks(xticks[::2])
-xlabel = 'Snout-hump angle\n(deg)'
-ax.set_xlabel(f"{xlabel}†")
+ax.set_xticks(xticks)
+ax.set_xlabel("Surface slope\n(deg)")
 
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_yticks(yticks)

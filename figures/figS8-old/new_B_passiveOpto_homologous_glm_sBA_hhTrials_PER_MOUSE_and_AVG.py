@@ -27,13 +27,13 @@ predictorlist_str = ['speed', 'snout-hump angle']
 predictor = 'snoutBodyAngle'
 predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
 appdx = ''
-samplenum = 11109 #12504 #11109 # <- non-unimodal + not using 2022-02-26
+samplenum =9418 #9476
 tlt = 'Head height trials'
 yyyymmdd = '2022-08-18' #'2024-09-11' #'2022-08-18'
 slopes = ['pred2']
 limb = 'rH0'
-datafrac = 0.5 #0.4 #0.5 <- non-unimodal + not using 2022-02-26
-ref = 'lH1'
+datafrac = 1
+ref = 'lH1altadvancedblncd'
 interaction = 'TRUE'
 rfl_str = False
 sba_str = 'sBAsplitFALSE_FLIPPED'
@@ -49,9 +49,9 @@ mouselist = np.intersect1d(Config.passiveOpto_config['mice'], mice_unilateral_in
 unique_traces = np.empty((0))
 
 ### PLOTTING
-ylim = (-0.7*np.pi,np.pi)
-yticks = [-0.5*np.pi, 0, 0.5*np.pi,np.pi]
-yticklabels = ["-0.5π", "0", "0.5π", "π"]  
+ylim = (-0.5*np.pi,1.5*np.pi)
+yticks = [-0.5*np.pi, 0, 0.5*np.pi,np.pi, 1.5*np.pi]
+yticklabels = ["-0.5π", "0", "0.5π", "π", "1.5π"]  
 xlim, xticks, xlabel = treadmill_circGLM.get_predictor_range(predictor)
 
 #---------------PER MOUSE--------------------
@@ -118,6 +118,7 @@ xr_avg, phase_preds_avg = treadmill_circGLM.get_circGLM_slopes(
         sBA_split_str = sba_str
                 ) 
 
+plot_start = 10
 unique_traces = np.empty((0))           
 pp_avg = phase_preds_avg[:, :, predictor_id, 0, 0]            
 for k, (lo, hi) in enumerate(zip([-np.pi, 0, np.pi] , [np.pi, 2*np.pi, 3*np.pi])):
@@ -132,8 +133,8 @@ for k, (lo, hi) in enumerate(zip([-np.pi, 0, np.pi] , [np.pi, 2*np.pi, 3*np.pi])
     if round(trace_avg[-1],6) not in unique_traces and not np.any(abs(np.diff(trace_avg))>5):
         print('plotting...')    
         
-        ax.plot(xr_avg[:,predictor_id], 
-                trace_avg, 
+        ax.plot(xr_avg[:,predictor_id][plot_start:], 
+                trace_avg[plot_start:], 
                 color = main_clr,
                 linewidth = 1.5, 
                 alpha = 1
@@ -150,16 +151,21 @@ ax.set_xlabel(f"Snout-hump angle\n(deg)")
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_yticks(yticks)
 ax.set_yticklabels(yticklabels)
-ax.set_ylabel('Relative RH phase\n(rad)')
+ax.set_ylabel('Hindlimb phase\n(rad)')
 
 # -------------------------------STATS-----------------------------------
+samples = 11812 
+datafrac = 1 
+ref = 'lH1altadvanced'
+sba_str = 'sBAsplitFALSE_FLIPPED'
+categ_var = 'lF0_categorical'
 stat_dict = treadmill_circGLM.get_circGLM_stats(
         predictors = predictorlist,
         yyyymmdd = yyyymmdd,
         limb = limb,
         ref = ref,
-        categ_var = None,
-        samples = samplenum,
+        categ_var = categ_var,
+        samples = samples,
         interaction = interaction,
         appdx = appdx,
         datafrac = datafrac,
@@ -172,10 +178,11 @@ stat_dict = treadmill_circGLM.get_circGLM_stats(
 
 cont_coef_str = f"pred{predictor_id+1}"
 
-ax.text(xlim[0] + (0.1 * (xlim[1]-xlim[0])),
-        ylim[1] - (0.05* (ylim[1]-ylim[0])),
+ax.text(xlim[0] + (0.55 * (xlim[1]-xlim[0])),
+        ylim[1] - (0.15* (ylim[1]-ylim[0])),
         f"{predictorlist_str[predictor_id]}:\n{stat_dict[cont_coef_str]}",
         # color=c,
+        ha='center',
         fontsize=5)
 # -------------------------------STATS-----------------------------------
     

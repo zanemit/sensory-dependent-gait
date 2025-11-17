@@ -94,7 +94,7 @@ def get_circGLM_slopes(
     if 'trialType' in datafull.columns:
         if 'deg' in datafull['trialType'].iloc[-1] or 'deg' in datafull['trialType'][0]:
             datafull['incline'] = [-int(x[3:]) for x in datafull['trialType']]
-    
+   
     # load model coef files depending on the number of predictors & presence of slopes
     if len(predictors) == 5:
         beta1path = Path(outputDir) / f"{yyyymmdd}_beta1_{limb}_ref{ref}_{predictors[0]}_{predictors[1]}_{predictors[2]}_{predictors[3]}_{predictors[4]}{rfl_str}_interaction{interaction}_continuous_randMouse{slope_appdx}_{sBA_split_str}_{datafrac}data{samples}s_{iterations}its_100burn_3lag.csv"
@@ -739,15 +739,23 @@ def get_circGLM_slopes_per_mouse(
     else:
         pred_x_num = np.max([len(x) for x in x_pred_range.values()])
     
-    if ref == 'COMBINED' and categ_var=='refLimb':
+    if 'COMBINED' in ref and categ_var=='refLimb':
         ref_iterables = ['', 'rH1']
     elif categ_var=='trialType':
         ref_iterables = ['', 'slope']
     elif categ_var in ['rH0_categorical', 'lH0_categorical', 'rF0_categorical', 'lF0_categorical']:
         if 'comb' in ref:
             ref_iterables = ['', 'asym', 'sync']
-        else:
+        elif 'Rlead' in ref and 'Llead' in ref and 'alt' in ref:
+            ref_iterables = ['', 'Llead','Rlead']
+        elif 'Rlead' in ref and 'Llead' in ref:
             ref_iterables = ['', 'Rlead']
+        elif 'Rlead' in ref and 'Llead' in ref and 'alt' in ref and 'sync' in ref:
+            ref_iterables = ['', 'Llead', 'sync', 'Rlead'] 
+        elif 'alt' in ref and 'advanced' in ref:
+            ref_iterables = ['', 'alt']
+        else:
+            raise ValueError("Condition not defined!")
     else:
         ref_iterables = ['']
     

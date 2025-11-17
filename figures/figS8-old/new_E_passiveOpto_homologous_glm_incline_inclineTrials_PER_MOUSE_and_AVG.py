@@ -27,13 +27,13 @@ predictorlist_str = ['speed', 'snout-hump angle', 'incline']
 predictor = 'incline'
 predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
 appdx = '_incline'
-samplenum = 11048 #8880 #11048
+samplenum = 7790
 tlt = 'Slope trials'
 yyyymmdd = '2022-08-18' #'2024-09-11' #'2022-08-18'
 slopes = ['pred2', 'pred3']
 limb = 'rH0'
-datafrac = 0.8 #1 #0.8
-ref = 'lH1'
+datafrac = 1
+ref = 'lH1altadvancedblncd'
 interaction = 'TRUEthreeway'
 rfl_str = False
 sba_str = 'sBAsplitFALSE_FLIPPED'
@@ -149,7 +149,7 @@ ax.set_xlabel("Surface slope\n(deg)")
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_yticks(yticks)
 ax.set_yticklabels(yticklabels)
-ax.set_ylabel('Relative RH phase\n(rad)')
+ax.set_ylabel('Hindlimb phase\n(rad)')
 
 # -------------------------------STATS-----------------------------------
 stat_dict = treadmill_circGLM.get_circGLM_stats(
@@ -171,10 +171,10 @@ stat_dict = treadmill_circGLM.get_circGLM_stats(
 
 cont_coef_str = f"pred{predictor_id+1}"
 
-ax.text(xlim[0] + (0.1 * (xlim[1]-xlim[0])),
-        ylim[1] - (0.05* (ylim[1]-ylim[0])),
+ax.text(xlim[0] + (0.5 * (xlim[1]-xlim[0])),
+        ylim[1] - (0.2* (ylim[1]-ylim[0])),
         f"{predictorlist_str[predictor_id]}:\n{stat_dict[cont_coef_str]}",
-        # color=c,
+        ha='center',
         fontsize=5)
 # -------------------------------STATS-----------------------------------
     

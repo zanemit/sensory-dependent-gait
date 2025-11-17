@@ -24,13 +24,14 @@ predictorlist_str = ['speed', 'weight-adjusted head height', 'snout-hump angle r
 predictor = 'speed'
 predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
 appdx = ''
-samples = 11109
+samples = 9418
 tlt = 'Head height trials'
 yyyymmdd = '2022-08-18' #'2024-09-11' #'2022-08-18'
 slopes = ['pred2', 'pred3']
 limb = 'rH0'
-datafrac = 0.7 #0.4 #0.5 <- non-unimodal + not using 2022-02-26
-ref = 'lH1'
+datafrac = 1
+ref = 'lH1altadvancedblncd'
+ref_simple = 'lH1'
 interaction = 'TRUEthreeway'
 rfl_str = None
 sba_str = 'sBAsplitFALSE_FLIPPED'
@@ -45,7 +46,7 @@ mouselist = np.intersect1d(Config.passiveOpto_config['mice'], mice_unilateral_in
 datafull = data_loader.load_processed_data(dataToLoad = 'strideParams',
                                            outputDir = Config.paths['passiveOpto_output_folder'],
                                            yyyymmdd = yyyymmdd,
-                                           limb = ref, 
+                                           limb = ref_simple, 
                                            appdx = appdx)[0]
 
 sbas = [0.2,0.6,1]
@@ -138,6 +139,13 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
             last_vals.append(trace[-1])
 
 # -------------------------------STATS-----------------------------------
+samples = 11944
+datafrac = 1 #0.4 #0.5 <- non-unimodal + not using 2022-02-26
+ref = 'lH1altadvanced'
+ref_simple = 'lH1'
+interaction = 'TRUEthreeway'
+rfl_str = 'lF0cat'
+sba_str = 'sFLIPPED'
 stat_dict = treadmill_circGLM.get_circGLM_stats(
         predictors = predictorlist,
         yyyymmdd = yyyymmdd,

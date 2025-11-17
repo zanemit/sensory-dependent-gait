@@ -9,50 +9,58 @@ import os
 
 sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
 
-# PER-MOUSE, BUT A RESULT OF THE RANDOM SLOPE MODEL, NOT BETA12
-
 import scipy.stats
 from processing import data_loader, utils_math, utils_processing, treadmill_circGLM
 from processing.data_config import Config
 from figures.fig_config import Config as FigConfig
 from figures.fig_config import AnyObjectHandler
 
-predictorlist = ['speed', 'snoutBodyAngle']#['speed', 'snoutBodyAngle', 'incline']
-predictorlist_str = ['speed', 'snout-hump angle']
-predictor = 'snoutBodyAngle'#'incline' #'snoutBodyAngle'
+# sba_headHW_residuals are computed as y_pred - df['snoutBodyAngle']
+# so a value of -10 means that the angle exceed the head height-based prediction
+# by 10 degrees (i.e. it was more upward oriented)
+
+predictorlist = ['speed', 'headHW', 'sba_headHW_residuals']
+predictorlist_str = ['speed', 'weight-adjusted head height', 'snout-hump angle residuals']
+predictor = 'speed'
 predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
-appdx =  '' #'_incline'
+appdx = ''
+samples = 9418
 tlt = 'Head height trials'
-yyyymmdd = '2022-08-18'
-slopes = ['pred2']#['pred2', 'pred3']
-limb = 'homolateral0'
-ref = 'COMBINEDcombblncd'
-interaction = 'TRUE'#'TRUEsecondary'
-samples = 13222#12373
-datafrac = 0.7
+yyyymmdd = '2022-08-18' #'2024-09-11' #'2022-08-18'
+slopes = ['pred2', 'pred3']
+limb = 'rH0'
+datafrac = 1 #0.4 #0.5 <- non-unimodal + not using 2022-02-26
+ref = 'lH1altadvancedblncd'
+ref_simple = 'lH1'
+interaction = 'TRUEthreeway'
+rfl_str = None
+sba_str = 'sBAsplitFALSE_FLIPPED'
 iters = 1000
 
 unique_traces = np.empty((0))
 
+mice_unilateral_inj = Config.injection_config['right_inj_imp'] + Config.injection_config['left_inj_imp'] 
+mouselist = np.intersect1d(Config.passiveOpto_config['mice'], mice_unilateral_inj)
+
 ### LOAD FULL DATASET TO COMPUTE SPEED PERCENTILES
-datafull = data_loader.load_processed_data(dataToLoad = 'strideParamsMerged',
+datafull = data_loader.load_processed_data(dataToLoad = 'strideParams',
                                            outputDir = Config.paths['passiveOpto_output_folder'],
                                            yyyymmdd = yyyymmdd,
-                                           limb = 'COMBINED', 
+                                           limb = ref_simple, 
                                            appdx = appdx)[0]
 
-speeds = [20,50,80]
+sbas = [-10,0,10]
 prcnts = []
-no_outliers_speed = utils_processing.remove_outliers(datafull['speed'])
-for sp in speeds:
+no_outliers_speed = utils_processing.remove_outliers(datafull['sba_headHW_residuals'])
+for sp in sbas:
     prcnts.append(scipy.stats.percentileofscore(no_outliers_speed, sp))
 
 ### PLOTTING
-ylim = (0.3*np.pi,1.5*np.pi)
-yticks = [0.5*np.pi,np.pi,1.5*np.pi]
-yticklabels = ["0.5π", "π", "1.5π"]  
+ylim = (-0.5*np.pi,1.5*np.pi)
+yticks = [-0.5*np.pi, 0, 0.5*np.pi,np.pi,1.5*np.pi]
+yticklabels = ["-0.5π", "0", "0.5π", "π", "1.5π"]  
 xlim, xticks, xlabel = treadmill_circGLM.get_predictor_range(predictor)
-xlabel= 'Snout-hump angle\n(deg)'
+xticks = [0,50,100,150]
 
 fig, ax = plt.subplots(1,1,figsize = (1.35,1.35)) #1.6,1.4 for 4figs S2 bottom row
 
@@ -60,11 +68,15 @@ last_vals = [] # for stats
 
 
 # plot each mouse (just default ref limb)
-for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
-                                                  speeds,
+# NB: I am reversing iteration order for iprcnt (and thus switching the -10 and 10 labels) to keep
+# the lighter colours and positive numbers associated with higher snout-hump angles
+# I think that would be a more intuitive representation even though I computed
+# the residuals the other way around
+for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts[::-1], 
+                                                  sbas,
                                                   ['dotted', 'solid', 'dashed'])):
 
-    c = FigConfig.colour_config['homolateral'][2*iprcnt]
+    c = FigConfig.colour_config['homologous'][iprcnt + (1*(iprcnt//2))]
     
     # get data for different speed percentiles
     x_range, phase_preds = treadmill_circGLM.get_circGLM_slopes(
@@ -73,15 +85,19 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
             limb = limb,
             ref = ref,
             samples = samples,
+            categ_var = rfl_str,
             interaction = interaction,
             appdx = appdx,
             datafrac = datafrac,
             slopes = slopes,
             outputDir = Config.paths['passiveOpto_output_folder'],
             iterations = iters,
-            mice = Config.passiveOpto_config['mice'],
-            special_other_predictors = {'speed': prcnt}
+            mice = mouselist,
+            special_other_predictors = {'sba_headHW_residuals': prcnt},
+            sBA_split_str = sba_str
                     ) 
+    
+    x_range = x_range[4:]; phase_preds = phase_preds[:, 4:]
    
     pp = phase_preds[:, :, predictor_id, 0, 0]
     # compute and plot mean phases for three circular ranges so that the plots look nice and do not have lines connecting 2pi to 0
@@ -91,9 +107,9 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
             pp[pp<0] = pp[pp<0]+2*np.pi
         if k == 2:
             pp[pp<np.pi] = pp[pp<np.pi]+2*np.pi
-            ax.hlines(ylim[1]-1.01, 149.5+8*iprcnt, 154.5+8*iprcnt, color = c, ls = lnst, lw = 1)
-            ax.text(xlim[0] + (0.25 * (xlim[1]-xlim[0])) + 8*iprcnt,
-                    ylim[1] - (0.235* (ylim[1]-ylim[0])),
+            ax.hlines(ylim[1]-1.01, 20+35*iprcnt, 44+35*iprcnt, color = c, ls = lnst, lw = 1)
+            ax.text(xlim[0] + (0.13 * (xlim[1]-xlim[0])) + 37*iprcnt,
+                    ylim[1] - (0.13* (ylim[1]-ylim[0])),
                     speed,
                     color=c,
                     fontsize=5)
@@ -112,7 +128,7 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
             ax.fill_between(x_range[:, predictor_id], 
                                   lower, 
                                   higher, 
-                                  alpha = 0.15, 
+                                  alpha = 0.1, 
                                   facecolor = c
                                   )
             ax.plot(x_range[:, predictor_id], 
@@ -123,55 +139,54 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
                     alpha = 1,
                     # label = lbl
                     )
-            
-            print(f"{speed} cm/s: {trace[0]/np.pi:.2f}π, {trace[-1]/np.pi:.2f}π, difference: {abs(trace[-1]-trace[0])/np.pi:.2f}π, angle range: {x_range[:, predictor_id][-1]-x_range[:, predictor_id][0]:.2f}")
-       
+            print(speed, trace[0], trace[-1])
+        
         # for stats
         if trace[-1] > ylim[0] and trace[-1] < ylim[1] and trace[-1] not in last_vals:
             last_vals.append(trace[-1])
 
 # -------------------------------STATS-----------------------------------
-samplenum = 13766
-limb = 'homolateral0'
-datafrac = 0.4
-ref = 'COMBINEDcomb'
-categ_var='homologous0_categorical'
-interaction = 'TRUE'
-sba_split_str = 's'
+samples = 11944
+datafrac = 1 #0.4 #0.5 <- non-unimodal + not using 2022-02-26
+ref = 'lH1altadvanced'
+ref_simple = 'lH1'
+interaction = 'TRUEthreeway'
+rfl_str = 'lF0cat'
+sba_str = 'sFLIPPED'
 stat_dict = treadmill_circGLM.get_circGLM_stats(
         predictors = predictorlist,
         yyyymmdd = yyyymmdd,
         limb = limb,
         ref = ref,
-        samples = samplenum,
-        categ_var=categ_var,
+        samples = samples,
         interaction = interaction,
         appdx = appdx,
         datafrac = datafrac,
+        categ_var = rfl_str,
         slopes = slopes,
         outputDir = Config.paths['passiveOpto_output_folder'],
         iterations = iters,
-        mice = Config.passiveOpto_config['mice'],
-        sBA_split_str=sba_split_str
+        mice = mouselist,
+        sBA_split_str = sba_str
                 ) 
 
-cont_coef_str = f"pred{predictor_id+1}"
+# cont_coef_str = f"pred{predictor_id+1}"
 # ax.text(x_range[-1, 1] + ((xlim[1]-xlim[0])/100),
 #         np.mean(last_vals),
 #         stat_dict[cat_coef_str])
 
-ax.text(xlim[0] + (0.15 * (xlim[1]-xlim[0])),
+ax.text(xlim[0] + (0.05 * (xlim[1]-xlim[0])),
         ylim[1] - (0.03* (ylim[1]-ylim[0])),
-        f"{predictorlist_str[0]} x angle: {stat_dict['pred1:pred2']}",
+        f"{predictorlist_str[0]} x angle res: {stat_dict['pred1:pred3']}",
         fontsize=5)
-ax.text(xlim[0] + (0.4 * (xlim[1]-xlim[0])),
-        ylim[1] - (0.13* (ylim[1]-ylim[0])),
-        f"{predictorlist_str[0]}: {stat_dict[cont_coef_str]}",
-        fontsize=5)
+# ax.text(xlim[0] + (0.4 * (xlim[1]-xlim[0])),
+#         ylim[1] - (0.13* (ylim[1]-ylim[0])),
+#         f"{predictorlist_str[0]}: {stat_dict[cont_coef_str]}",
+#         fontsize=5)
 
-ax.text(xlim[0] + (0.8 * (xlim[1]-xlim[0])),
-        ylim[1] - (0.235* (ylim[1]-ylim[0])),
-        "cm/s",
+ax.text(xlim[0] + (0.93 * (xlim[1]-xlim[0])),
+        ylim[1] - (0.13* (ylim[1]-ylim[0])),
+        "deg",
         color="grey",
         fontsize=5)
 
@@ -182,13 +197,13 @@ ax.set_title(tlt)
     
 # axes 
 ax.set_xlim(xlim[0], xlim[1])
-ax.set_xticks(xticks[::2])
+ax.set_xticks(xticks)
 ax.set_xlabel(f"{xlabel}")
 
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_yticks(yticks)
 ax.set_yticklabels(yticklabels)
-ax.set_ylabel('Homolateral phase\n(rad)')
+ax.set_ylabel('Relative RH phase\n(rad)')
 
 # -------------------------------LEGEND----------------------------------- 
 # fig.legend(loc = 'center right', bbox_to_anchor=(1,0.65), fontsize=5)

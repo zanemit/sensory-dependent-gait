@@ -19,16 +19,17 @@ from figures.fig_config import AnyObjectHandler
 
 predictorlist = ['speed', 'snoutBodyAngle', 'incline']
 predictorlist_str = ['speed', 'snout-hump angle', 'slope']
-predictor = 'speed'
+predictor = 'snoutBodyAngle'
 predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
 appdx = '_incline'
-samples = 11048 #12504 #11109 # <- non-unimodal + not using 2022-02-26
+samples = 7726#7790
 tlt = 'Slope trials'
-yyyymmdd = '2022-08-18' #'2024-09-11' #'2022-08-18'
+yyyymmdd = '2022-08-18' 
 slopes = ['pred2', 'pred3']
 limb = 'rH0'
-datafrac = 0.8 #0.4 #0.5 <- non-unimodal + not using 2022-02-26
-ref = 'lH1'
+datafrac = 1
+ref = 'lH1altadvancedblncd'
+ref_simple = 'lH1'
 interaction = 'TRUEthreeway'
 rfl_str = None
 sba_str = 'sBAsplitFALSE_FLIPPED'
@@ -43,7 +44,7 @@ mouselist = np.intersect1d(Config.passiveOpto_config['mice'], mice_unilateral_in
 datafull = data_loader.load_processed_data(dataToLoad = 'strideParamsMerged',
                                            outputDir = Config.paths['passiveOpto_output_folder'],
                                            yyyymmdd = yyyymmdd,
-                                           limb = ref, 
+                                           limb = ref_simple, 
                                            appdx = appdx)[0]
 
 # convert incline metadata to numerical (+ positive value = uphill)
@@ -60,7 +61,7 @@ ylim = (-0.5*np.pi,1.5*np.pi)
 yticks = [-0.5*np.pi, 0, 0.5*np.pi,np.pi,1.5*np.pi]
 yticklabels = ["-0.5π", "0", "0.5π", "π", "1.5π"]  
 xlim, xticks, xlabel = treadmill_circGLM.get_predictor_range(predictor)
-xticks = [0,50,100,150]
+# xticks = [0,50,100,150]
 
 fig, ax = plt.subplots(1,1,figsize = (1.35,1.35)) #1.6,1.4 for 4figs S2 bottom row
 
@@ -103,8 +104,8 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
             pp[pp<0] = pp[pp<0]+2*np.pi
         if k == 2:
             pp[pp<np.pi] = pp[pp<np.pi]+2*np.pi
-            ax.hlines(ylim[1]-1.01, 40+35*iprcnt, 64+35*iprcnt, color = c, ls = lnst, lw = 1)
-            ax.text(xlim[0] + (0.25 * (xlim[1]-xlim[0])) + 35*iprcnt,
+            ax.hlines(ylim[1]-1.01, 150+10*iprcnt, 155+10*iprcnt, color = c, ls = lnst, lw = 1)
+            ax.text(xlim[0] + (0.25 * (xlim[1]-xlim[0])) + 10*iprcnt,
                     ylim[1] - (0.13* (ylim[1]-ylim[0])),
                     speed,
                     color=c,
@@ -142,6 +143,11 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
             last_vals.append(trace[-1])
 
 # -------------------------------STATS-----------------------------------
+samples = 10923
+datafrac = 1 
+ref = 'lH1altadvanced'
+sba_str = 'sFLIPPED'
+categ_var = 'lF0_categorical'
 stat_dict = treadmill_circGLM.get_circGLM_stats(
         predictors = predictorlist,
         yyyymmdd = yyyymmdd,
@@ -151,7 +157,7 @@ stat_dict = treadmill_circGLM.get_circGLM_stats(
         interaction = interaction,
         appdx = appdx,
         datafrac = datafrac,
-        categ_var = rfl_str,
+        categ_var = categ_var,
         slopes = slopes,
         outputDir = Config.paths['passiveOpto_output_folder'],
         iterations = iters,
@@ -166,7 +172,7 @@ stat_dict = treadmill_circGLM.get_circGLM_stats(
 
 ax.text(xlim[0] + (0.15 * (xlim[1]-xlim[0])),
         ylim[1] - (0.03* (ylim[1]-ylim[0])),
-        f"{predictorlist_str[0]} x slope: {stat_dict['pred1:pred2']}",
+        f"{predictorlist_str[predictor_id].split(' ')[-1]} x slope: {stat_dict['pred2:pred3']}",
         fontsize=5)
 # ax.text(xlim[0] + (0.4 * (xlim[1]-xlim[0])),
 #         ylim[1] - (0.13* (ylim[1]-ylim[0])),
@@ -186,8 +192,8 @@ ax.set_title(tlt)
     
 # axes 
 ax.set_xlim(xlim[0], xlim[1])
-ax.set_xticks(xticks)
-ax.set_xlabel(f"{xlabel}")
+ax.set_xticks(xticks[::2])
+ax.set_xlabel(f"{' '.join(xlabel.split(' ')[:-1])}\n{xlabel.split(' ')[-1]}")
 
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_yticks(yticks)

@@ -17,28 +17,29 @@ from processing.data_config import Config
 from figures.fig_config import Config as FigConfig
 from figures.fig_config import AnyObjectHandler
 
-predictorlist = ['speed', 'snoutBodyAngle']#['speed', 'snoutBodyAngle', 'incline']
+predictorlist = ['speed', 'snoutBodyAngle']
 predictorlist_str = ['speed', 'snout-hump angle']
-predictor = 'snoutBodyAngle'#'incline' #'snoutBodyAngle'
+predictor = 'snoutBodyAngle'
 predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
-appdx =  '' #'_incline'
-tlt = 'Head height trials'
-yyyymmdd = '2022-08-18'
-slopes = ['pred2']#['pred2', 'pred3']
+appdx =  ''
+tlt = 'Level trials'
+yyyymmdd = '2021-10-23'
+slopes = ['pred2']
 limb = 'homolateral0'
-ref = 'COMBINEDcombblncd'
-interaction = 'TRUE'#'TRUEsecondary'
-samples = 13222#12373
-datafrac = 0.7
+ref = 'COMBINEDLleadRleadaltblncd'
+ref_simple = 'COMBINED'
+interaction = 'TRUE'
+samples = 9684
+datafrac = 0.5
 iters = 1000
 
 unique_traces = np.empty((0))
 
 ### LOAD FULL DATASET TO COMPUTE SPEED PERCENTILES
-datafull = data_loader.load_processed_data(dataToLoad = 'strideParamsMerged',
-                                           outputDir = Config.paths['passiveOpto_output_folder'],
+datafull = data_loader.load_processed_data(dataToLoad = 'strideParams',
+                                           outputDir = Config.paths['mtTreadmill_output_folder'],
                                            yyyymmdd = yyyymmdd,
-                                           limb = 'COMBINED', 
+                                           limb = ref_simple, 
                                            appdx = appdx)[0]
 
 speeds = [20,50,80]
@@ -52,9 +53,8 @@ ylim = (0.3*np.pi,1.5*np.pi)
 yticks = [0.5*np.pi,np.pi,1.5*np.pi]
 yticklabels = ["0.5π", "π", "1.5π"]  
 xlim, xticks, xlabel = treadmill_circGLM.get_predictor_range(predictor)
-xlabel= 'Snout-hump angle\n(deg)'
 
-fig, ax = plt.subplots(1,1,figsize = (1.35,1.35)) #1.6,1.4 for 4figs S2 bottom row
+fig, ax = plt.subplots(1,1,figsize = (1.35,1.4)) #1.6,1.4 for 4figs S2 bottom row
 
 last_vals = [] # for stats
 
@@ -77,9 +77,9 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
             appdx = appdx,
             datafrac = datafrac,
             slopes = slopes,
-            outputDir = Config.paths['passiveOpto_output_folder'],
+            outputDir = Config.paths['mtTreadmill_output_folder'],
             iterations = iters,
-            mice = Config.passiveOpto_config['mice'],
+            mice = Config.mtTreadmill_config['mice_level'],
             special_other_predictors = {'speed': prcnt}
                     ) 
    
@@ -124,35 +124,36 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
                     # label = lbl
                     )
             
+            # print(f"{trace[0]/np.pi:.2f}±{(higher[0]-lower[0])/(2*np.pi):.2f}π")
+            # print(f"{trace[-1]/np.pi:.2f}±{(higher[-1]-lower[-1])/(2*np.pi):.2f}π")
             print(f"{speed} cm/s: {trace[0]/np.pi:.2f}π, {trace[-1]/np.pi:.2f}π, difference: {abs(trace[-1]-trace[0])/np.pi:.2f}π, angle range: {x_range[:, predictor_id][-1]-x_range[:, predictor_id][0]:.2f}")
-       
+        
         # for stats
         if trace[-1] > ylim[0] and trace[-1] < ylim[1] and trace[-1] not in last_vals:
             last_vals.append(trace[-1])
 
 # -------------------------------STATS-----------------------------------
-samplenum = 13766
 limb = 'homolateral0'
-datafrac = 0.4
-ref = 'COMBINEDcomb'
-categ_var='homologous0_categorical'
+ref = 'COMBINEDLleadRleadalt'
 interaction = 'TRUE'
-sba_split_str = 's'
+samples = 15228
+datafrac = 0.2
+categ_var = 'homologous0_categorical_refLimb'
 stat_dict = treadmill_circGLM.get_circGLM_stats(
         predictors = predictorlist,
         yyyymmdd = yyyymmdd,
         limb = limb,
         ref = ref,
-        samples = samplenum,
+        samples = samples,
         categ_var=categ_var,
         interaction = interaction,
         appdx = appdx,
         datafrac = datafrac,
         slopes = slopes,
-        outputDir = Config.paths['passiveOpto_output_folder'],
+        outputDir = Config.paths['mtTreadmill_output_folder'],
         iterations = iters,
-        mice = Config.passiveOpto_config['mice'],
-        sBA_split_str=sba_split_str
+        mice = Config.mtTreadmill_config['mice_level'],
+        sBA_split_str='s'
                 ) 
 
 cont_coef_str = f"pred{predictor_id+1}"
@@ -183,7 +184,8 @@ ax.set_title(tlt)
 # axes 
 ax.set_xlim(xlim[0], xlim[1])
 ax.set_xticks(xticks[::2])
-ax.set_xlabel(f"{xlabel}")
+xlabel = 'Snout-hump angle\n(deg)'
+ax.set_xlabel(f"{xlabel}†")
 
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_yticks(yticks)
@@ -196,7 +198,7 @@ ax.set_ylabel('Homolateral phase\n(rad)')
    
 plt.tight_layout()
 
-figtitle = f"passiveOpto_{limb}_ref{ref}_{'_'.join(predictorlist)}_SLOPE{''.join(slopes)}_{interaction}_{appdx}_AVERAGE_speed_percentiles.svg"
+figtitle = f"mtTreadmill_{limb}_ref{ref}_{'_'.join(predictorlist)}_SLOPE{''.join(slopes)}_{interaction}_{appdx}_AVERAGE_speed_percentiles.svg"
 plt.savefig(os.path.join(FigConfig.paths['savefig_folder'], figtitle), 
             dpi = 300, 
             bbox_inches = 'tight',
