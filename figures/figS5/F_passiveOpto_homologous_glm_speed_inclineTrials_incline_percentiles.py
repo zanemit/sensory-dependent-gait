@@ -137,7 +137,7 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
                     alpha = 1,
                     # label = lbl
                     )
-            print(trace[0], trace[-1])
+            print(f"{speed}: {trace[0]/np.pi:.2f}π, {trace[-1]/np.pi:.2f}π, difference: {abs(trace[-1]-trace[0])/np.pi:.2f}π")
         
         # for stats
         if trace[-1] > ylim[0] and trace[-1] < ylim[1] and trace[-1] not in last_vals:

@@ -17,21 +17,22 @@ from processing.data_config import Config
 from figures.fig_config import Config as FigConfig
 from figures.fig_config import AnyObjectHandler
 
-predictorlist = ['speed', 'snoutBodyAngle']
-predictorlist_str = ['speed', 'snout-hump angle']
+predictorlist = ['speed', 'snoutBodyAngle', 'incline']
+predictorlist_str = ['speed', 'snout-hump angle', 'slope']
 predictor = 'speed'
 predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
 appdx = ''
-samples = 11536#2223#2884 
-tlt = 'Level trials'
-yyyymmdd = '2023-09-25' #'2021-10-23'
-slopes = ['pred2']
+samples = 11890
+tlt = 'Slope trials'
+yyyymmdd = '2022-05-06'
+slopes = ['pred2', 'pred3']
 limb = 'rH0'
-datafrac = 0.4#0.06
-ref = 'lH1'
-interaction = 'TRUE'
+datafrac = 0.8
+ref = 'lH1altadvancedblncd'
+ref_simple = 'lH1'
+interaction = 'TRUEthreeway'
 rfl_str = None
-sba_str = 'sBAsplitFALSE_FLIPPED'
+sba_str = 'sFLIPPED'
 iters = 1000
 
 unique_traces = np.empty((0))
@@ -40,15 +41,17 @@ mice_unilateral_inj = Config.injection_config['right_inj_imp'] + Config.injectio
 mouselist = np.intersect1d(Config.passiveOpto_config['mice'], mice_unilateral_inj)
 
 ### LOAD FULL DATASET TO COMPUTE SPEED PERCENTILES
-datafull = data_loader.load_processed_data(dataToLoad = 'strideParamsMerged',
+datafull = data_loader.load_processed_data(dataToLoad = 'strideParams',
                                            outputDir = Config.paths['mtTreadmill_output_folder'],
                                            yyyymmdd = yyyymmdd,
-                                           limb = ref, 
+                                           limb = ref_simple, 
                                            appdx = appdx)[0]
 
-sbas = [140,153,166]
+datafull['incline'] = [int(d[3:])*-1 for d in datafull['trialType']]
+
+sbas = [-40,0,40]
 prcnts = []
-no_outliers_speed = utils_processing.remove_outliers(datafull['snoutBodyAngle'])
+no_outliers_speed = utils_processing.remove_outliers(datafull['incline'])
 for sp in sbas:
     prcnts.append(scipy.stats.percentileofscore(no_outliers_speed, sp))
 
@@ -57,10 +60,11 @@ ylim = (0.7*np.pi,1.3*np.pi)
 yticks = [0.7*np.pi,np.pi,1.3*np.pi]
 yticklabels = ["0.7π", "π", "1.3π"]  
 xlim, xticks, xlabel = treadmill_circGLM.get_predictor_range(predictor)
+xlabel = ' '.join(xlabel.split(' ')[:-1]) + '\n' + xlabel.split(' ')[-1]
 xlim = [0,100]
 xticks = [0,50,100]
 
-fig, ax = plt.subplots(1,1,figsize = (1.45,1.35)) #1.6,1.4 for 4figs S2 bottom row
+fig, ax = plt.subplots(1,1,figsize = (1.35,1.35)) #1.6,1.4 for 4figs S2 bottom row
 
 last_vals = [] # for stats
 
@@ -87,7 +91,7 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
             outputDir = Config.paths['mtTreadmill_output_folder'],
             iterations = iters,
             mice = mouselist,
-            special_other_predictors = {'snoutBodyAngle': prcnt},
+            special_other_predictors = {'incline': prcnt},
             sBA_split_str = sba_str
                     ) 
    
@@ -99,7 +103,7 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
             pp[pp<0] = pp[pp<0]+2*np.pi
         if k == 2:
             pp[pp<np.pi] = pp[pp<np.pi]+2*np.pi
-            ax.hlines(ylim[1]-0.3, 16+25*iprcnt, 30+25*iprcnt, color = c, ls = lnst, lw = 1)
+            ax.hlines(ylim[1]-0.3, 15+25*iprcnt, 28+25*iprcnt, color = c, ls = lnst, lw = 1)
             ax.text(xlim[0] + (0.15 * (xlim[1]-xlim[0])) + 25*iprcnt,
                     ylim[1] - (0.13* (ylim[1]-ylim[0])),
                     speed,
@@ -120,7 +124,7 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
             ax.fill_between(x_range[:, predictor_id], 
                                   lower, 
                                   higher, 
-                                  alpha = 0.15, 
+                                  alpha = 0.1, 
                                   facecolor = c
                                   )
             ax.plot(x_range[:, predictor_id], 
@@ -131,13 +135,16 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
                     alpha = 1,
                     # label = lbl
                     )
-            print(speed, trace[0], trace[-1])
         
         # for stats
         if trace[-1] > ylim[0] and trace[-1] < ylim[1] and trace[-1] not in last_vals:
             last_vals.append(trace[-1])
 
 # -------------------------------STATS-----------------------------------
+samples = 12409
+ref = 'lH1altadvanced'
+rfl_str = 'lF0_categorical'
+datafrac = 0.6
 stat_dict = treadmill_circGLM.get_circGLM_stats(
         predictors = predictorlist,
         yyyymmdd = yyyymmdd,
@@ -158,8 +165,9 @@ stat_dict = treadmill_circGLM.get_circGLM_stats(
 
 ax.text(xlim[0] + (0.15 * (xlim[1]-xlim[0])),
         ylim[1] - (0.03* (ylim[1]-ylim[0])),
-        f"{predictorlist_str[0]} x angle†: {stat_dict['pred1:pred2']}",
+        f"{predictorlist_str[0]} x slope: {stat_dict['pred1:pred3']}",
         fontsize=5)
+
 
 ax.text(xlim[0] + (0.83 * (xlim[1]-xlim[0])),
         ylim[1] - (0.13* (ylim[1]-ylim[0])),
@@ -180,7 +188,7 @@ ax.set_xlabel(f"{xlabel}")
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_yticks(yticks)
 ax.set_yticklabels(yticklabels)
-ax.set_ylabel('Relative RH phase\n(rad)')
+ax.set_ylabel('Right hindlimb phase\n(rad)')
 
 # -------------------------------LEGEND----------------------------------- 
 # fig.legend(loc = 'center right', bbox_to_anchor=(1,0.65), fontsize=5)
@@ -188,7 +196,7 @@ ax.set_ylabel('Relative RH phase\n(rad)')
    
 plt.tight_layout()
 
-figtitle = f"mtTreadmill{limb}_ref{ref}_{'_'.join(predictorlist)}_SLOPE{''.join(slopes)}_{interaction}_{appdx}_AVERAGE_speed_percentiles.svg"
+figtitle = f"mtTreadmill_{limb}_ref{ref}_{'_'.join(predictorlist)}_SLOPE{''.join(slopes)}_{interaction}_{appdx}_AVERAGE_speed_percentiles.svg"
 plt.savefig(os.path.join(FigConfig.paths['savefig_folder'], figtitle), 
             dpi = 300, 
             bbox_inches = 'tight',

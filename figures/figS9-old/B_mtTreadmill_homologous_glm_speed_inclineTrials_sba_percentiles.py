@@ -22,16 +22,17 @@ predictorlist_str = ['speed', 'snout-hump angle', 'slope']
 predictor = 'speed'
 predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
 appdx = ''
-samples = 10762
+samples = 11890
 tlt = 'Slope trials'
 yyyymmdd = '2022-05-06'
 slopes = ['pred2', 'pred3']
 limb = 'rH0'
-datafrac = 0.5#0.06
-ref = 'lH1'
+datafrac = 0.8
+ref = 'lH1altadvancedblncd'
+ref_simple = 'lH1'
 interaction = 'TRUEthreeway'
 rfl_str = None
-sba_str = 'sBAsplitFALSE_FLIPPED'
+sba_str = 'sFLIPPED'
 iters = 1000
 
 unique_traces = np.empty((0))
@@ -43,7 +44,7 @@ mouselist = np.intersect1d(Config.passiveOpto_config['mice'], mice_unilateral_in
 datafull = data_loader.load_processed_data(dataToLoad = 'strideParams',
                                            outputDir = Config.paths['mtTreadmill_output_folder'],
                                            yyyymmdd = yyyymmdd,
-                                           limb = ref, 
+                                           limb = ref_simple, 
                                            appdx = appdx)[0]
 
 datafull['incline'] = [int(d[3:])*-1 for d in datafull['trialType']]
@@ -59,10 +60,11 @@ ylim = (0.7*np.pi,1.3*np.pi)
 yticks = [0.7*np.pi,np.pi,1.3*np.pi]
 yticklabels = ["0.7π", "π", "1.3π"]  
 xlim, xticks, xlabel = treadmill_circGLM.get_predictor_range(predictor)
+xlabel = ' '.join(xlabel.split(' ')[:-1]) + '\n' + xlabel.split(' ')[-1] 
 xlim = [0,100]
 xticks = [0,50,100]
 
-fig, ax = plt.subplots(1,1,figsize = (1.45,1.35)) #1.6,1.4 for 4figs S2 bottom row
+fig, ax = plt.subplots(1,1,figsize = (1.35,1.35)) #1.6,1.4 for 4figs S2 bottom row
 
 last_vals = [] # for stats
 
@@ -72,7 +74,7 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
                                                   sbas,
                                                   ['dotted', 'solid', 'dashed'])):
 
-    c = FigConfig.colour_config['homologous'][iprcnt]#+(2*iprcnt)]
+    c = FigConfig.colour_config['homologous'][iprcnt+(1*iprcnt//2)]
     
     # get data for different speed percentiles
     x_range, phase_preds = treadmill_circGLM.get_circGLM_slopes(
@@ -139,6 +141,10 @@ for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
             last_vals.append(trace[-1])
 
 # -------------------------------STATS-----------------------------------
+samples = 12409
+ref = 'lH1altadvanced'
+rfl_str = 'lF0_categorical'
+datafrac = 0.6
 stat_dict = treadmill_circGLM.get_circGLM_stats(
         predictors = predictorlist,
         yyyymmdd = yyyymmdd,
@@ -181,7 +187,7 @@ ax.set_xlabel(f"{xlabel}")
 ax.set_ylim(ylim[0], ylim[1])
 ax.set_yticks(yticks)
 ax.set_yticklabels(yticklabels)
-ax.set_ylabel('Relative RH phase\n(rad)')
+ax.set_ylabel('Right hindlimb phase\n(rad)')
 
 # -------------------------------LEGEND----------------------------------- 
 # fig.legend(loc = 'center right', bbox_to_anchor=(1,0.65), fontsize=5)
