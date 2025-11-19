@@ -24638,7 +24638,9 @@
        d=""
        transform="matrix(0.35277779,0,0,0.35277779,120.5388,113.73574)" />
     <g
-       id="g48822">
+       id="g48822"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300">
       <path
          d="m 134.96022,136.75345 h 15.85842 v -16.75271 h -15.85842 z"
          style="fill:none;stroke-width:0.352778"
@@ -25849,7 +25851,9 @@
        id="LineCollection_3-6"
        transform="matrix(0.35277779,0,0,0.35277779,164.94811,132.47833)" />
     <g
-       id="g53770">
+       id="g53770"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300">
       <g
          id="patch_2-25"
          transform="matrix(0.35277779,0,0,0.35277779,165.34665,113.73574)">
