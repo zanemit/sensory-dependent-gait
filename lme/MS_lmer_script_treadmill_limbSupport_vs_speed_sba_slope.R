@@ -23,66 +23,6 @@ library(lme4)
 library(MuMIn)
 library(lmerTest)
 
-### LIMB SUPPORT PC vs SLOPE, SBA, SPEED, TRIAL TYPE - VGLUT2
-yyyymmdd = '2022-08-18'
-outcome_variable = 'limbSupportPC3'
-#outcome_variable = 'frac2hmlt'
-cont_predictors = c('speed', 'snoutBodyAngle', 'incline')
-cat_predictors = c('trialType') 
-outputDir = "C:\\Users\\MurrayLab\\Documents\\PassiveOptoTreadmill\\"
-filename = "_strideParamsMerged_incline_COMBINEDtrialType_"
-refLimb = 'lH1'
-mice = c('FAA1034836', 'FAA1034839', 'FAA1034840', 'FAA1034842', 'FAA1034867', 'FAA1034868', 'FAA1034869', 'FAA1034942', 'FAA1034944', 'FAA1034945', 'FAA1034947', 'FAA1034949')
-slope=TRUE
-slope_type='pred2pred3'
-interaction=TRUE
-interaction_type='threeway'
-
-#cont_predictors=c('speed', 'snoutBodyAngle')
-#cat_predictors = c() 
-#slope_type='pred2'
-#interaction_type=''
-
-cont_predictors=c('speed', 'snoutBodyAngle', 'incline')
-cat_predictors = c() 
-slope_type='pred2pred3'
-interaction_type='threeway'
-
-#------------------------------------------------------------
-### LIMB SUPPORT PC vs SLOPE, SBA, SPEED, TRIAL TYPE - VGLUT2 - STRATIFIED BY SPEED
-
-# FIG 4 
-fit_limbSupportPC_vs_predictors(yyyymdd='2022-08-18', 
-                                outcome_variable='limbSupportPC4', 
-                                cont_predictors=c('speed', 'snoutBodyAngle'), 
-                                cat_predictors=c(), 
-                                filename="_strideParamsMerged_", 
-                                speed_str='rHRlead_',
-                                refLimb='lH1', 
-                                mice=c('FAA1034836', 'FAA1034839', 'FAA1034840', 'FAA1034842', 'FAA1034867', 'FAA1034868', 'FAA1034869', 'FAA1034942', 'FAA1034944', 'FAA1034945', 'FAA1034947', 'FAA1034949'),
-                                interaction=TRUE,
-                                interaction_type='',
-                                slope=TRUE,
-                                slope_type='pred2',
-                                outputDir = "C:\\Users\\MurrayLab\\Documents\\PassiveOptoTreadmill\\"
-)
-
-# FIG 4
-fit_limbSupportPC_vs_predictors(yyyymdd='2022-08-18', 
-                                outcome_variable='limbSupportPC1', 
-                                cont_predictors=c('speed', 'snoutBodyAngle', 'incline'), 
-                                cat_predictors=c(), 
-                                filename="_strideParamsMerged_incline_", 
-                                speed_str='rHRlead_',
-                                refLimb='lH1', 
-                                mice=c('FAA1034836', 'FAA1034839', 'FAA1034840', 'FAA1034842', 'FAA1034867', 'FAA1034868', 'FAA1034869', 'FAA1034942', 'FAA1034944', 'FAA1034945', 'FAA1034947', 'FAA1034949'),
-                                interaction=TRUE,
-                                interaction_type='threeway',
-                                slope=TRUE,
-                                slope_type='pred2pred3',
-                                outputDir = "C:\\Users\\MurrayLab\\Documents\\PassiveOptoTreadmill\\"
-)
-
 
 #------------------------------------------------------------
 ### LIMB SUPPORT PC vs SLOPE, SBA, SPEED, TRIAL TYPE - MOTORISED TREADMILL vGLUT2 LEVEL
@@ -142,7 +82,7 @@ slope=TRUE
 slope_type='pred2pred3'
 #---------------------------------------------------------------
 
-fit_limbSupportPC_vs_predictors <- function(yyyymdd, 
+fit_limbSupportPC_vs_predictors <- function(yyyymmdd, 
                              outcome_variable, 
                              cont_predictors, 
                              cat_predictors, 
@@ -189,14 +129,14 @@ fit_limbSupportPC_vs_predictors <- function(yyyymdd,
           modelLinear = lmer(outcome_centred ~ pred1_centred + pred2_centred + (1|mouseID), data = df)
           
         } else{
-          modelLinear = lmer(outcome_centred ~ pred1_centred + pred2_centred + (pred2_centred|mouseID), data = df)
+          modelLinear = lmer(outcome_centred ~ pred1_centred + pred2_centred + (pred1_centred+pred2_centred|mouseID), data = df)
         }
       } else{
         if (slope==FALSE){
           modelLinear = lmer(outcome_centred ~ pred1_centred * pred2_centred + (1|mouseID), data = df)
           
         } else{
-          modelLinear = lmer(outcome_centred ~ pred1_centred * pred2_centred + (pred2_centred|mouseID), data = df)
+          modelLinear = lmer(outcome_centred ~ pred1_centred * pred2_centred + (pred1_centred+pred2_centred|mouseID), data = df)
         }
       }
     } else if (length(cont_predictors)==3 & length(cat_predictors)==0){
@@ -207,28 +147,28 @@ fit_limbSupportPC_vs_predictors <- function(yyyymdd,
           modelLinear = lmer(outcome_centred ~ pred1_centred + pred2_centred + pred3_centred + (1|mouseID), data = df)
           
         } else{ # slope type must be updated manually!
-          modelLinear = lmer(outcome_centred ~ pred1_centred + pred2_centred + pred3_centred + (pred2_centred+pred3_centred|mouseID), data = df)
+          modelLinear = lmer(outcome_centred ~ pred1_centred + pred2_centred + pred3_centred + (pred1_centred+pred2_centred+pred3_centred|mouseID), data = df)
         }
       } else if (interaction_type=='threeway'){
         if (slope==FALSE){
           modelLinear = lmer(outcome_centred ~ pred1_centred * pred2_centred * pred3_centred + (1|mouseID), data = df)
           
         } else{ # slope type must be updated manually!
-          modelLinear = lmer(outcome_centred ~ pred1_centred * pred2_centred * pred3_centred + (pred2_centred+pred3_centred|mouseID), data = df)
+          modelLinear = lmer(outcome_centred ~ pred1_centred * pred2_centred * pred3_centred + (pred1_centred+pred2_centred+pred3_centred|mouseID), data = df)
         }
       } else if (interaction_type=='secondary'){
         if (slope==FALSE){
           modelLinear = lmer(outcome_centred ~ pred1_centred + pred2_centred * pred3_centred + (1|mouseID), data = df)
           
         } else{ # slope type must be updated manually!
-          modelLinear = lmer(outcome_centred ~ pred1_centred + pred2_centred * pred3_centred + (pred2_centred+pred3_centred|mouseID), data = df)
+          modelLinear = lmer(outcome_centred ~ pred1_centred + pred2_centred * pred3_centred + (pred1_centred+pred2_centred+pred3_centred|mouseID), data = df)
         }
       } else { # interaction TRUE, type =''
         if (slope==FALSE){
           modelLinear = lmer(outcome_centred ~ pred1_centred * pred2_centred + pred3_centred + (1|mouseID), data = df)
           
         } else{ # slope type must be updated manually!
-          modelLinear = lmer(outcome_centred ~ pred1_centred * pred2_centred + pred3_centred + (pred2_centred+pred3_centred|mouseID), data = df)
+          modelLinear = lmer(outcome_centred ~ pred1_centred * pred2_centred + pred3_centred + (pred1_centred+pred2_centred+pred3_centred|mouseID), data = df)
         }
       }
     } else if (length(cont_predictors)==3 & length(cat_predictors)==1){
@@ -239,7 +179,7 @@ fit_limbSupportPC_vs_predictors <- function(yyyymdd,
           modelLinear = lmer(outcome_centred ~ pred1_centred + pred2_centred + pred3_centred + trialType +(1|mouseID), data = df)
           
         } else{ # slope type must be updated manually!
-          modelLinear = lmer(outcome_centred ~ pred1_centred + pred2_centred + pred3_centred + trialType +(pred2_centred+pred3_centred|mouseID), data = df)
+          modelLinear = lmer(outcome_centred ~ pred1_centred + pred2_centred + pred3_centred + trialType +(pred1_centred+pred2_centred+pred3_centred|mouseID), data = df)
         }
       } else if (interaction_type=='threeway'){
         if (slope==FALSE){
@@ -247,21 +187,21 @@ fit_limbSupportPC_vs_predictors <- function(yyyymdd,
           
         } else{ # slope type must be updated manually!
           print('fitting here!')
-          modelLinear = lmer(outcome_centred ~ pred1_centred * pred2_centred * pred3_centred + trialType +(pred2_centred+pred3_centred|mouseID), data = df)
+          modelLinear = lmer(outcome_centred ~ pred1_centred * pred2_centred * pred3_centred + trialType +(pred1_centred+pred2_centred+pred3_centred|mouseID), data = df)
         }
       } else if (interaction_type=='secondary'){
         if (slope==FALSE){
           modelLinear = lmer(outcome_centred ~ pred1_centred + pred2_centred * pred3_centred + trialType +(1|mouseID), data = df)
           
         } else{ # slope type must be updated manually!
-          modelLinear = lmer(outcome_centred ~ pred1_centred + pred2_centred * pred3_centred + trialType +(pred2_centred+pred3_centred|mouseID), data = df)
+          modelLinear = lmer(outcome_centred ~ pred1_centred + pred2_centred * pred3_centred + trialType +(pred1_centred+pred2_centred+pred3_centred|mouseID), data = df)
         }
       } else if (interaction_type=='fourway'){
         if (slope==FALSE){
           modelLinear = lmer(outcome_centred ~ pred1_centred * pred2_centred * pred3_centred * trialType +(1|mouseID), data = df)
           
         } else{ # slope type must be updated manually!
-          modelLinear = lmer(outcome_centred ~ pred1_centred * pred2_centred * pred3_centred * trialType +(pred2_centred+pred3_centred|mouseID), data = df)
+          modelLinear = lmer(outcome_centred ~ pred1_centred * pred2_centred * pred3_centred * trialType +(pred1_centred+pred2_centred+pred3_centred|mouseID), data = df)
         }
       }
       
@@ -270,7 +210,7 @@ fit_limbSupportPC_vs_predictors <- function(yyyymdd,
           modelLinear = lmer(outcome_centred ~ pred1_centred * pred2_centred + pred3_centred + trialType +(1|mouseID), data = df)
           
         } else{ # slope type must be updated manually!
-          modelLinear = lmer(outcome_centred ~ pred1_centred * pred2_centred + pred3_centred + trialType +(pred2_centred+pred3_centred|mouseID), data = df)
+          modelLinear = lmer(outcome_centred ~ pred1_centred * pred2_centred + pred3_centred + trialType +(pred1_centred+pred2_centred+pred3_centred|mouseID), data = df)
         }
       }
       
@@ -279,6 +219,44 @@ fit_limbSupportPC_vs_predictors <- function(yyyymdd,
     write.csv(summary(modelLinear)$coefficients,paste(outputDir, yyyymmdd, "_contCoefficients",file_ext, sep=""))
     write.csv(ranef(modelLinear)$mouseID, paste(outputDir, yyyymmdd, "_randCoefficients", file_ext, sep=""))
 }
+
+# FIG 4 B-D
+fit_limbSupportPC_vs_predictors(yyyymmdd='2022-08-18', 
+                                outcome_variable='limbSupportPC4', 
+                                cont_predictors=c('speed', 'snoutBodyAngle'), 
+                                cat_predictors=c(), 
+                                filename="_strideParamsMerged_", 
+                                speed_str='rHRlead_',
+                                refLimb='lH1', 
+                                mice=c('FAA1034836', 'FAA1034839', 'FAA1034840', 'FAA1034842', 'FAA1034867', 'FAA1034868', 'FAA1034869', 'FAA1034942', 'FAA1034944', 'FAA1034945', 'FAA1034947', 'FAA1034949'),
+                                interaction=TRUE,
+                                interaction_type='',
+                                slope=TRUE,
+                                slope_type='pred2',
+                                outputDir = "C:\\Users\\MurrayLab\\Documents\\PassiveOptoTreadmill\\"
+)
+
+# FIG 4 E-G
+fit_limbSupportPC_vs_predictors(yyyymmdd='2022-08-18', 
+                                outcome_variable='limbSupportPC2', 
+                                cont_predictors=c('speed', 'snoutBodyAngle', 'incline'), 
+                                cat_predictors=c(), 
+                                filename="_strideParamsMerged_incline_", 
+                                speed_str='rHsync_',
+                                refLimb='lH1', 
+                                mice=c('FAA1034836', 'FAA1034839', 'FAA1034840', 'FAA1034842', 'FAA1034867', 'FAA1034868', 'FAA1034869', 'FAA1034942', 'FAA1034944', 'FAA1034945', 'FAA1034947', 'FAA1034949'),
+                                interaction=TRUE,
+                                interaction_type='threeway',
+                                slope=TRUE,
+                                slope_type='pred1pred2pred3',
+                                outputDir = "C:\\Users\\MurrayLab\\Documents\\PassiveOptoTreadmill\\"
+)
+
+
+
+
+
+
 
 
 # ------------------------------------------------------

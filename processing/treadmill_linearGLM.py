@@ -87,7 +87,7 @@ def get_linear_slopes(
    
     contCoefficients = pd.read_csv(contpath, index_col=0)
     randCoefficients = pd.read_csv(randpath, index_col=0)
-    
+
     # add "_centred" to slopes now that the files have been loaded
     if len(slopes)>0:
         slopes = [f"{s}_centred" for s in slopes]

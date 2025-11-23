@@ -14,8 +14,12 @@ from figures.fig_config import Config as FigConfig
 
 phase_bounds = [-0.1, 0.1, 0.4, 0.6, 0.9]
 
-mt_path = r"C:\Users\MurrayLab\Documents\MotorisedTreadmill\2021-10-23_strideParams_lH1.csv"
-df = pd.read_csv(mt_path)
+yyyymmdd = '2021-10-23'
+df, _, _ = data_loader.load_processed_data(dataToLoad = 'strideParams', 
+                                               yyyymmdd = yyyymmdd,
+                                               appdx = '',
+                                               outputDir = Config.paths["mtTreadmill_output_folder"],
+                                               limb = 'lH1')
 
 mice = Config.mtTreadmill_config["mice_level"]
 

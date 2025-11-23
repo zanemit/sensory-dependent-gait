@@ -82,6 +82,7 @@ for trial_type in ['head height', 'surface slope']: #<- one extra predictor
                 outputDir, 
                 f"{yyyymmdd}_contCoefficients_mixedEffectsModel_linear_rH{rH_category}_limbSupportPC{pc_num}_vs_{predictor_str}_randSlopes{slopes_str}_interaction{interaction}.csv"
                 )
+      
             if os.path.exists(path):
                 mod = pd.read_csv(path, index_col=0)
                 row = {
@@ -139,7 +140,7 @@ for appdx, trial_type in zip(['', 'incline_'], ['head height', 'surface slope'])
     datafull_path = os.path.join(outputDir, f"{yyyymmdd}_strideParamsMerged_{appdx}lH1.csv")
     datafull_full = pd.read_csv(datafull_path)
     datafull_full = datafull_full[datafull_full['mouseID'].isin(Config.passiveOpto_config["mice"])].copy()
-    
+
     # subset RH category
     for category, category_str in zip(
             [['alt'], ['sync'], ['Rlead', 'Llead']],

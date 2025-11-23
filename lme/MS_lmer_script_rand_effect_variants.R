@@ -55,20 +55,6 @@ generate_simple_LINEAR_mixed_effects_models <- function(yyyymmdd,
   } else{
     slope_enforced_str = 'BEST'
   }
-  file_ext = paste(dep_var_str, indep_var, slope_enforced_str,  sep='_')
-  
-  # TRIM!
-  if (length(trim)>1){
-    n_top = trim[1]
-    n_bottom = trim[2]
-    df = df[order(df[[dep_var]]),]
-    remove_idx = c(1:n_bottom, (nrow(df)-n_top+1):nrow(df))
-    df = df[-remove_idx,]
-    file_ext = paste0(file_ext, '_TRIMMED_')
-  }
-  
-  # CENTRE THE VARIABLES ("param" column in df is the same as indep_var due to the way meanParamDF is created)
-  df$indep_var_centred = df$param-mean(df$param, na.rm = TRUE) # headHW, snoutBodyAngle, or levels (rl or deg depending on yyyymmdd)
   
   predictor_str_dict = list(
     'hind_frac' = 'hindfrac',
@@ -88,8 +74,11 @@ generate_simple_LINEAR_mixed_effects_models <- function(yyyymmdd,
     'duty_lH' = 'duty_lH'
   )
   
-  #dep_var_id = which(predictors == dep_var)
   dep_var_str = predictor_str_dict[dep_var]
+  file_ext = paste(dep_var_str, indep_var, slope_enforced_str,  sep='_')
+  
+  # CENTRE THE VARIABLES ("param" column in df is the same as indep_var due to the way meanParamDF is created)
+  df$indep_var_centred = df$param-mean(df$param, na.rm = TRUE) # headHW, snoutBodyAngle, or levels (rl or deg depending on yyyymmdd)
   
   if (dep_var=='headplate_weight_frac'){
     df[[dep_var]] = -(df[[dep_var]]-1)*100
@@ -178,6 +167,7 @@ generate_simple_LINEAR_mixed_effects_models <- function(yyyymmdd,
   
   if (optimal_model_id %in% c(2,3)){ #random effects models
     cat("\nThe optimal model has random effects. Intercept STDEV is", attr(summary(models[[optimal_model_id]])$varcor$mouseID, "stddev"))
+    print(paste(outputDir, yyyymmdd, "_mixedEffectsModel_linear_randomEffects_", file_ext,"_rand", model_strs[[optimal_model_id]],".csv", sep=""))
     write.csv(ranef(models[[optimal_model_id]])[["mouseID"]], paste(outputDir, yyyymmdd, "_mixedEffectsModel_linear_randomEffects_", file_ext,"_rand", model_strs[[optimal_model_id]],".csv", sep=""))
   }
   
@@ -188,32 +178,74 @@ generate_simple_LINEAR_mixed_effects_models <- function(yyyymmdd,
   qqline(resid(models[[optimal_model_id]]), col='red')
 }
 
-# Fig 1F
-generate_simple_LINEAR_mixed_effects_models(yyyymmdd='2022-04-04', indep_var='levels', dep_var='CoMy_mean', slope_enforced=TRUE)
-
-# Fig S1H
-generate_simple_LINEAR_mixed_effects_models(yyyymmdd='2022-04-04', indep_var='levels', dep_var='hind_weight_frac',slope_enforced=TRUE)
-
-# Fig S1G
-generate_simple_LINEAR_mixed_effects_models(yyyymmdd='2022-04-04', indep_var='levels', dep_var='fore_weight_frac',slope_enforced=TRUE)
-
-# Fig 1G
-generate_simple_LINEAR_mixed_effects_models(yyyymmdd='2022-04-04', indep_var='levels', dep_var='headplate_weight_frac', slope_enforced=TRUE)
-
-#generate_simple_LINEAR_mixed_effects_models(yyyymmdd='2022-04-04', indep_var='levels', dep_var='snoutBodyAngle', filename = 'forceplateAngleParamsR')
-
-# Fig S1B
-generate_simple_LINEAR_mixed_effects_models(yyyymmdd='2021-10-26', indep_var='headHW', dep_var='hind_weight_frac',slope_enforced=TRUE) 
-
-# Fig S1E
-generate_simple_LINEAR_mixed_effects_models(yyyymmdd='2021-10-26', indep_var='headHW', dep_var='CoMx_mean',slope_enforced=TRUE) 
-
 # Fig 1D
-generate_simple_LINEAR_mixed_effects_models(yyyymmdd='2021-10-26', indep_var='snoutBodyAngle', dep_var='CoMy_mean', slope_enforced=TRUE)
+generate_simple_LINEAR_mixed_effects_models(yyyymmdd='2021-10-26', 
+                                            indep_var='snoutBodyAngle', 
+                                            dep_var='CoMy_mean', 
+                                            slope_enforced=TRUE)
 
 # Fig 1E
-generate_simple_LINEAR_mixed_effects_models(yyyymmdd='2021-10-26', indep_var='snoutBodyAngle', dep_var='headplate_weight_frac', slope_enforced=TRUE) 
+generate_simple_LINEAR_mixed_effects_models(yyyymmdd='2021-10-26', 
+                                            indep_var='snoutBodyAngle', 
+                                            dep_var='headplate_weight_frac', 
+                                            slope_enforced=TRUE) 
 
+# Fig 1F
+generate_simple_LINEAR_mixed_effects_models(yyyymmdd='2022-04-04', 
+                                            indep_var='levels', 
+                                            dep_var='CoMy_mean', 
+                                            slope_enforced=TRUE)
+
+# Fig 1G
+generate_simple_LINEAR_mixed_effects_models(yyyymmdd='2022-04-04', 
+                                            indep_var='levels', 
+                                            dep_var='headplate_weight_frac', 
+                                            slope_enforced=TRUE)
+
+# Fig S1B
+generate_simple_LINEAR_mixed_effects_models(yyyymmdd='2021-10-26', 
+                                            indep_var='headHW', 
+                                            dep_var='hind_weight_frac',
+                                            slope_enforced=TRUE) 
+
+# Fig S1E
+generate_simple_LINEAR_mixed_effects_models(yyyymmdd='2021-10-26', 
+                                            indep_var='headHW', 
+                                            dep_var='CoMx_mean',
+                                            slope_enforced=TRUE) 
+
+# Fig S1G
+generate_simple_LINEAR_mixed_effects_models(yyyymmdd='2022-04-04', 
+                                            indep_var='levels', 
+                                            dep_var='fore_weight_frac',
+                                            slope_enforced=TRUE)
+
+# Fig S1H
+generate_simple_LINEAR_mixed_effects_models(yyyymmdd='2022-04-04', 
+                                            indep_var='levels', 
+                                            dep_var='hind_weight_frac',
+                                            slope_enforced=TRUE)
+
+# Fig 2D right
+generate_simple_LINEAR_mixed_effects_models(yyyymmdd = '2022-08-18', 
+                                            indep_var = 'stimFreq',
+                                            dep_var = 'maxSpeed',
+                                            filename = "locomParamsAcrossMice",
+                                            outputDir = "C:\\Users\\MurrayLab\\Documents\\passiveOptoTreadmill\\",
+                                            slope_enforced=TRUE)
+
+# Fig 2D left
+generate_simple_LINEAR_mixed_effects_models(yyyymmdd = '2022-08-18', 
+                                            indep_var = 'stimFreq',
+                                            dep_var = 'meanSpeed',
+                                            filename = "locomParamsAcrossMice",
+                                            outputDir = "C:\\Users\\MurrayLab\\Documents\\passiveOptoTreadmill\\",
+                                            slope_enforced=TRUE)
+
+
+
+
+#
 generate_simple_LINEAR_mixed_effects_models(yyyymmdd = '2022-08-18', 
                                             indep_var = 'incline',
                                             dep_var = 'snoutBodyAngle',
@@ -256,19 +288,6 @@ generate_simple_LINEAR_mixed_effects_models(yyyymmdd = '2022-04-04',
                                             filename = "limbPositionRegressionArray",
                                             outputDir = "C:\\Users\\MurrayLab\\Documents\\Forceplate\\")
 
-# Fig 2D
-generate_simple_LINEAR_mixed_effects_models(yyyymmdd = '2022-08-18', 
-                                            indep_var = 'stimFreq',
-                                            dep_var = 'maxSpeed',
-                                            filename = "locomParamsAcrossMice",
-                                            outputDir = "C:\\Users\\MurrayLab\\Documents\\passiveOptoTreadmill\\",
-                                            slope_enforced=TRUE)
-generate_simple_LINEAR_mixed_effects_models(yyyymmdd = '2022-08-18', 
-                                            indep_var = 'stimFreq',
-                                            dep_var = 'meanSpeed',
-                                            filename = "locomParamsAcrossMice",
-                                            outputDir = "C:\\Users\\MurrayLab\\Documents\\passiveOptoTreadmill\\",
-                                            slope_enforced=TRUE)
 
 generate_simple_LINEAR_mixed_effects_models(yyyymmdd = '2022-08-18', 
                                             indep_var = 'speed',

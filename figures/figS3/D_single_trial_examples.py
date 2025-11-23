@@ -73,6 +73,8 @@ def get_trial_data(summary_df, limb_dict, row_of_interest, incline=False):
     
     inpath2 = f'G:\\{folder}\\{trial["expDate"]}\\{videoL_file}'
     inpath3 = f'G:\\{folder}\\{trial["expDate"]}\\{videoR_file}'
+    
+    print(f"{inpath}\n{inpath2}\n{inpath3}")
 
     d = np.fromfile(inpath, dtype = np.double).reshape(-1,7)
     on_frame, off_frame, _, _ = treadmill_data_manager.get_opto_triggers(d)

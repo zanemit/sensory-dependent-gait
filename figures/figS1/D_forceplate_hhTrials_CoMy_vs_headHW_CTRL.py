@@ -47,8 +47,6 @@ for im, m in enumerate(mice):
 print(f"Average standard deviation: {np.mean(np.nanmean(stds, axis=1))}")
 print(f"Mean change over 80 degrees: {np.mean(diffs):.3f} ± {scipy.stats.sem(diffs):.3f}")
 
-modQDR = pd.read_csv(Path(Config.paths["forceplate_output_folder"]) / f"{yyyymmdd}_mixedEffectsModel_quadratic_{variable_str}_{param}.csv")
-
 x_centered = df['param'] - np.nanmean(df['param'])
 x_pred = np.linspace(np.nanmin(x_centered), np.nanmax(x_centered), endpoint=True)
 

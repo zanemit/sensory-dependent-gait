@@ -48,7 +48,7 @@ limb = 'homolateral0'
 ref = 'COMBINEDcb'
 ref_plain = 'COMBINED'
 interaction = 'TRUEthreeway'
-samples = 13454#15618
+samples = 13454
 datafrac = 0.9
 iters = 1000
 

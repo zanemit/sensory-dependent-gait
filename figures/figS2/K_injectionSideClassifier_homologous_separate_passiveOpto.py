@@ -22,11 +22,15 @@ mice_po = np.concatenate((Config.passiveOpto_config['mice'], Config.passiveOpto_
 # ########## rH0 ########## 
 features = ['rH0']
 limbRef = 'lH1'
-df, _, _ = data_loader.load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"], 
-                                           dataToLoad = "strideParams", 
-                                           yyyymmdd = yyyymmdd,
-                                           appdx = appdx,
-                                           limb = limbRef)
+dfs = []
+for yyyymmdd in ['2022-08-18', '2022-02-26']:
+    df, _, _ = data_loader.load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"], 
+                                               dataToLoad = "strideParams", 
+                                               yyyymmdd = yyyymmdd,
+                                               appdx = appdx,
+                                               limb = limbRef)
+    dfs.append(df)
+df = pd.concat(dfs)
 
 df_sub = isc.prepare_data(df, target_col='injection', dataToClassify=features, mice=mice_po)
 fprPO_rH, tprPO_rH, _ = isc.classify_injection_side(df_sub, 
@@ -39,11 +43,15 @@ fprPO_rH, tprPO_rH, _ = isc.classify_injection_side(df_sub,
 # ########## rF0 ########## 
 features2 = ['rF0']
 limbRef2 = 'lF1'
-df2, _, _ = data_loader.load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"], 
-                                           dataToLoad = "strideParams", 
-                                           yyyymmdd = yyyymmdd,
-                                           appdx = appdx,
-                                           limb = limbRef2)
+dfs2 = []
+for yyyymmdd in ['2022-08-18', '2022-02-26']:
+    df2, _, _ = data_loader.load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"], 
+                                               dataToLoad = "strideParams", 
+                                               yyyymmdd = yyyymmdd,
+                                               appdx = appdx,
+                                               limb = limbRef2)
+    dfs2.append(df2)
+df2 = pd.concat(dfs2)    
 
 df_sub2 = isc.prepare_data(df2, target_col='injection', dataToClassify=features2, mice=mice_po)
 fprPO_rF, tprPO_rF, _ = isc.classify_injection_side(df_sub2, 

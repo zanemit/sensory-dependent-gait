@@ -31,7 +31,7 @@ def get_angles_vs_param(outputDir=Config.paths["forceplate_output_folder"],
             angles_df.columns = angles_df.columns.droplevel(0)
     else:
         raise ValueError("The supplied output directory does not exist!")
-        #TODO need to check if weight calibration is required here!
+
     if param == 'headHW':
         headHW_df, _ = data_loader.load_processed_data(outputDir, 
                                                        dataToLoad='forceplateHeadHW', 
@@ -147,8 +147,8 @@ def group_data_by_param(outputDir=Config.paths["forceplate_output_folder"],
         angles_df, _ = data_loader.load_processed_data(outputDir, dataToLoad='forceplateAngles', yyyymmdd= yyyymmdd)
         if int(yyyymmdd[:4])>=2023:
             angles_df.columns = angles_df.columns.droplevel(0)
-        paramCont_noOutliers = angles_noOutliers = utils_processing.remove_outliers(angles_df.mean())
-        paramCont_num = 3
+        # paramCont_noOutliers = angles_noOutliers = utils_processing.remove_outliers(angles_df.mean())
+        # paramCont_num = 3
     elif param == 'headHW':
         if not 'rl' in levels[0]:
             raise ValueError("param == 'headHW' is allowed only for head height datasets!")     
@@ -159,14 +159,13 @@ def group_data_by_param(outputDir=Config.paths["forceplate_output_folder"],
             headHW_df.columns = headHW_df.columns.droplevel(0)
         paramCont_noOutliers = utils_processing.remove_outliers(headHW_df.mean())
         mice = np.unique(paramCont_noOutliers.index.get_level_values(0)) # repeated because some mice get lost here <_<
-        paramCont_num = 3
+        # paramCont_num = 3
     else:
         raise ValueError("Invalid param supplied!")
         
     # paramCont_split = np.linspace(paramCont_noOutliers.min(), paramCont_noOutliers.max(), paramCont_num+1)
-    paramCont_split = [0.12844037, 0.44404985, 0.75965933, 1.07526882] # natural split for egr3
-    # paramCont_split = [0.12844037, 0.37665906, 0.62487775, 0.87309645] # natural split for egr3...? (added Oct2024)
-    # paramCont_split = [0.04255319, 0.41035078, 0.77814836, 1.14594595] # natural split for hhmice
+    # paramCont_split = [0.12844037, 0.44404985, 0.75965933, 1.07526882] # natural split for egr3
+    paramCont_split = [0.04255319, 0.41035078, 0.77814836, 1.14594595] # natural split for hhmice
     print(paramCont_split)
     
     slices = (slice(None), slice(None), slice(None))
@@ -220,10 +219,7 @@ def group_data_by_param(outputDir=Config.paths["forceplate_output_folder"],
                 grouped_dict_hind[key] = pd.DataFrame(np.empty((hind_frac.shape[0],0)))
                 grouped_dict_total[key] = pd.DataFrame(np.empty((total_df.shape[0],0)))
                 grouped_dict_foreV[key] = pd.DataFrame(np.empty((fore_v.shape[0],0)))
-        # grouped_dict_fore = {key: fore_frac[mouse].loc[:, val] for key, val in group_col_ids.items()}
-        # grouped_dict_hind = {key: hind_frac[mouse].loc[:, val] for key, val in group_col_ids.items()}
-        # grouped_dict_total = {key: total_df[mouse].loc[:, val] for key, val in group_col_ids.items()}
-        # grouped_dict_foreV = {key: fore_v[mouse].loc[:, val] for key, val in group_col_ids.items()}
+
         hind_v.columns = pd.MultiIndex.from_tuples([(x,y,z,'rF') for x,y,z,e in hind.columns], names = hind.columns.names) # change 'rH' to 'rF'
         headplate_df.columns = pd.MultiIndex.from_tuples([(x,y,z,'rF') for x,y,z,e in headplate_df.columns], names = headplate_df.columns.names) # change 'headplate' to 'rF'
         grouped_dict_hindV = {key: hind_v[mouse].loc[:, val] for key, val in group_col_ids.items()}
@@ -367,7 +363,6 @@ def compute_mean_params(outputDir=Config.paths["forceplate_output_folder"],
     PLOT TITLES ARE CHANGED SUCH THAT DEG-40 (upward incline) IS 40 DEG
     AND RL2 IS 0 mm, RL17 IS -15 mm, AND RL-13 IS 15 mm
     (nothing is changed in the original data arrays -- except in the new means_df dataframe)
-    this is trickier in the regression plots - the changed values are used as numericals!
     """
     outputDir = Path(outputDir).resolve()
     if outputDir.exists():

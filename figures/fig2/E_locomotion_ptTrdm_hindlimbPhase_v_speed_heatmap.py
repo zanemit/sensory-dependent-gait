@@ -17,8 +17,12 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # phase_bounds = [-0.125, 0.125, 0.375, 0.625, 0.875]
 phase_bounds = [-0.1, 0.1, 0.4, 0.6, 0.9]
 
-pt_path = r"C:\Users\MurrayLab\Documents\PassiveOptoTreadmill\2022-08-18_strideParams_lH1.csv"
-df = pd.read_csv(pt_path)
+yyyymmdd = '2022-08-18'
+df, _, _ = data_loader.load_processed_data(dataToLoad = 'strideParams', 
+                                               yyyymmdd = yyyymmdd,
+                                               appdx = '',
+                                               outputDir = Config.paths["passiveOpto_output_folder"],
+                                               limb = 'lH1')
 
 mice = Config.passiveOpto_config['mice']
 

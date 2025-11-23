@@ -19,16 +19,16 @@ from figures.fig_config import AnyObjectHandler
 
 predictorlist = ['speed', 'snoutBodyAngle']#['speed', 'snoutBodyAngle', 'incline']
 predictorlist_str = ['speed', 'snout-hump angle']
-predictor = 'snoutBodyAngle'#'incline' #'snoutBodyAngle'
+predictor = 'snoutBodyAngle'
 predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
-appdx =  '' #'_incline'
+appdx =  '' 
 tlt = 'Passive treadmill'
 yyyymmdd = '2022-08-18'
-slopes = ['pred2']#['pred2', 'pred3']
+slopes = ['pred2']
 limb = 'lF0'
 ref = 'lH1comb'
-interaction = 'TRUEthreeway'#'TRUEsecondary'
-samples = 13741#12373
+interaction = 'TRUEthreeway'
+samples = 13741
 datafrac = 0.8
 iters = 1000
 categ_var='rH0_categorical'

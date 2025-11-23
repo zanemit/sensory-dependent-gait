@@ -55,14 +55,7 @@ for i, (setup, clr, lnst, lbl) in enumerate(zip(['FP', 'TRDMstat'],
     y_pred = exp_decay(x_pred, *popt)
     
     ids = np.linspace(0, len(x_pred)-1, group_num, dtype=int)
-    # for k in range(df_sub['indep_bins'].max()+1):
-    #     df_sub_k = df_sub[df_sub['indep_bins'] == k][dep_var].values
-    #     ax.boxplot(df_sub_k[~np.isnan(df_sub_k)],
-    #                positions = [x_pred[ids][k]+(i*0.05)],
-    #                widths = 0.03,
-    #                medianprops = dict(color = clr, linewidth = 1, alpha = 0.4),
-    #                            boxprops = dict(color = clr, linewidth = 1, alpha = 0.4), capprops = dict(color = clr, linewidth = 1, alpha = 0.4),
-    #                            whiskerprops = dict(color = clr, linewidth = 1, alpha = 0.4), flierprops = dict(mec = clr, linewidth = 1, alpha = 0.4, ms=2))
+    
     # 95% confidence intervals
     ids = np.linspace(0, len(x_pred)-1, group_num, dtype=int)
     summary['ci95_hi'] = y_pred[ids] + summary['std']  + 1.96*summary['sem']
@@ -76,7 +69,7 @@ for i, (setup, clr, lnst, lbl) in enumerate(zip(['FP', 'TRDMstat'],
         edgecolor = None
         )
     
-    ax.plot(x_pred,#+(i*0.05), 
+    ax.plot(x_pred, 
                   y_pred, 
                   linewidth=1.5, 
                   linestyle = lnst,

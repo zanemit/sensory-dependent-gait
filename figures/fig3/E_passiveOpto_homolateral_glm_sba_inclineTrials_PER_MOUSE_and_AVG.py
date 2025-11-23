@@ -167,12 +167,12 @@ ax.set_yticklabels(yticklabels)
 ax.set_ylabel('Left homolateral phase\n(rad)')
 
 # -------------------------------STATS-----------------------------------
-samplenum = 15002
+samplenum = 12001
 limb = 'lF0'
-datafrac = 1
+datafrac = 0.8
 ref = 'lH1comb'
 categ_var='rH0_categorical'
-interaction = 'TRUEfourway'
+interaction = 'TRUEthreeway'
 stat_dict = treadmill_circGLM.get_circGLM_stats(
         predictors = predictorlist,
         yyyymmdd = yyyymmdd,

@@ -36,8 +36,6 @@ df1, _, _ = data_loader.load_processed_data(outputDir = Config.paths["passiveOpt
                                            limb = limbRef)
 
 df1 = df1[np.asarray([m in Config.passiveOpto_config["mice"] for m in df1["mouseID"]])]
-# df = df[(df['rH0']>0.4) | (df['rH0']<-0.4)].reset_index(drop=True)
-# df =df[(df['rH0']<0.1) & (df['rH0']>-0.1)].reset_index(drop=True)
 
 yyyymmdd2 = '2022-02-26'
 df2, _, _ = data_loader.load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"], 
@@ -52,8 +50,6 @@ mouselist = np.asarray([ 'FAA1034842','FAA1034868', 'FAA1034869', 'FAA1034942',
           'FAA1034944', 'FAA1034945', 'FAA1034947', 'FAA1034949','FAA1034573',
           'FAA1034471', 'FAA1034572', 'FAA1034575', 'FAA1034576'])
 
-# mouselist = np.asarray(['FAA1034836','FAA1034839', 'FAA1034840', 'FAA1034967'])
-# mouselist = np.asarray(['BAA1098955', 'FAA1034469', 'FAA1034570'])
 
 df = df1[['mouseID', 'snoutBodyAngle', dataToPlot]]
 df = pd.concat([df, df2[['mouseID', 'snoutBodyAngle', dataToPlot]]], ignore_index=True)
@@ -61,8 +57,6 @@ df = pd.concat([df, df2[['mouseID', 'snoutBodyAngle', dataToPlot]]], ignore_inde
 conditions = np.unique(df[param])
 
 # split data into group_num groups
-# data_split = np.asarray([141,147,154,161,167,174])
-# data_split = np.asarray([141,152,163,174])
 data_split = np.asarray([141,149,166,174])
 
 kappa = 10

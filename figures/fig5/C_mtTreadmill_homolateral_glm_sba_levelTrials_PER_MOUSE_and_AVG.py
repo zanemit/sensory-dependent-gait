@@ -27,16 +27,16 @@ predictorlist_str = ['speed', 'snout-hump angle']
 predictor = 'snoutBodyAngle'
 predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
 appdx = ''
-samplenum = 9189#6787
+samplenum = 9189
 tlt = 'Level trials'
-yyyymmdd = '2021-10-23'#'2023-09-25' 
+yyyymmdd = '2021-10-23'
 slopes = ['pred2']
 limb = 'lF0'
 ref = 'lH1LleadRleadaltblncd'
 interaction = 'TRUE'
-mouselist = Config.mtTreadmill_config['mice_level'] #Config.mtTreadmill_config['egr3_ctrl_mice']
+mouselist = Config.mtTreadmill_config['mice_level'] 
 rfl_str = False
-datafrac = 1#0.3
+datafrac = 1
 
 #---------------HEAD HEIGHT TRIALS--------------------
 

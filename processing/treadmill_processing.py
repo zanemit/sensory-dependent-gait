@@ -901,7 +901,89 @@ def compute_locomotor_params(outputDir = Config.paths["passiveOpto_output_folder
                       columns = ['mouseID', 'expDate', 'stimFreq', 'headLVL', 'snoutBodyAngle', 'snoutBodyAngle_preOpto', 'duration', 'latency', 'distance', 'meanSpeed', 'medianSpeed', 'maxSpeed','locomYES'])
     
     df.to_csv(os.path.join(outputDir, yyyymmdd + f'_locomParams{appdx}.csv'))    
+
+def compute_locomotor_params_across_mice(outputDir = Config.analysis_config["output_folder"], ablationType = None):
+    """
+    computes a mean value of each locomotor parameter stored in the locomParams.csv file
+    (produced by compute_locomotor_params) for every stimFreq-headLVL combination per mouse!
+    """
+    if ablationType != None:
+        appdx = f"_{ablationType}"
+    else:
+        appdx = ""
         
+    locomParamsDF, yyyymmdd = data_loader.load_processed_data(outputDir, dataToLoad = 'locomParams', appdx = appdx)
+    
+    mouseID = []
+    stimFreq = []
+    headLVL = []
+    duration = []
+    latency = []
+    distance = []
+    meanSpeed =[]
+    locomProb = []
+    snoutBodyAngle = []
+    medianSpeed = []
+    maxSpeed = []
+    duration_norm = []
+    latency_norm = []
+    distance_norm = []
+    meanSpeed_norm = []
+    locomProb_norm = []
+    headHW = []
+    
+    for m in np.unique(locomParamsDF['mouseID']):
+        print(m)
+        locomParamsDF_m = locomParamsDF[locomParamsDF['mouseID'] == m]
+        for h in np.unique(locomParamsDF_m['headLVL']):
+            locomParamsDF_mh = locomParamsDF_m[locomParamsDF_m['headLVL']==h]
+            
+            #NORMALISATION FACTORS
+            locomParamsDF_NORM = locomParamsDF_mh[locomParamsDF_mh['stimFreq'] == '10Hz']
+            duration10Hz = np.nanmean(locomParamsDF_NORM['duration'])
+            latency10Hz = np.nanmean(locomParamsDF_NORM['latency'])
+            distance10Hz = np.nanmean(locomParamsDF_NORM['distance'])
+            meanSpeed10Hz = np.nanmean(locomParamsDF_NORM['meanSpeed'])
+            locomProb10Hz = np.nanmean(locomParamsDF_NORM['locomYES'])
+            
+            for f in np.unique(locomParamsDF_mh['stimFreq']):
+                locomParamsDF_mhf = locomParamsDF_mh[locomParamsDF_mh['stimFreq']==f]
+
+                # append metadata
+                mouseID.append(m)
+                stimFreq.append(f)
+                headLVL.append(h)
+                if 'rl' in h:
+                    headHW.append(np.nanmean(locomParamsDF_mhf['headHW']))
+                else:
+                    headHW.append(np.nan)
+                
+                # append means of regular data
+                duration.append(np.nanmean(locomParamsDF_mhf['duration']))
+                latency.append(np.nanmean(locomParamsDF_mhf['latency']))
+                distance.append(np.nanmean(locomParamsDF_mhf['distance']))
+                meanSpeed.append(np.nanmean(locomParamsDF_mhf['meanSpeed']))
+                locomProb.append(np.nanmean(locomParamsDF_mhf['locomYES']))
+                snoutBodyAngle.append(np.nanmean(locomParamsDF_mhf['snoutBodyAngle']))
+                medianSpeed.append(np.nanmean(locomParamsDF_mhf['medianSpeed']))
+                maxSpeed.append(np.nanmean(locomParamsDF_mhf['maxSpeed']))
+                
+                # append means of normalised data
+                duration_norm.append(np.nanmean(locomParamsDF_mhf['duration'])/duration10Hz)
+                latency_norm.append(np.nanmean(locomParamsDF_mhf['latency'])/latency10Hz)
+                distance_norm.append(np.nanmean(locomParamsDF_mhf['distance'])/distance10Hz)
+                meanSpeed_norm.append(np.nanmean(locomParamsDF_mhf['meanSpeed'])/meanSpeed10Hz)
+                locomProb_norm.append(np.nanmean(locomParamsDF_mhf['locomYES'])/locomProb10Hz)
+                
+    df = pd.DataFrame(np.vstack((mouseID, stimFreq, headLVL, headHW, duration, latency, 
+                                 distance, meanSpeed, medianSpeed, maxSpeed, snoutBodyAngle, locomProb, duration_norm,
+                                 latency_norm, distance_norm, meanSpeed_norm, locomProb_norm)).T, 
+                      columns = ['mouseID', 'stimFreq', 'headLVL', 'headHW','duration','latency', 
+                                 'distance', 'meanSpeed','medianSpeed', 'maxSpeed', 'snoutBodyAngle',
+                                 'locomProb', 'duration_norm','latency_norm', 
+                                 'distance_norm', 'meanSpeed_norm','locomProb_norm'])
+    df.to_csv(os.path.join(outputDir, yyyymmdd + f'_locomParamsAcrossMice{appdx}.csv'))
+       
 def cot_wrapper(param,
                 dataToPlot,
                 data_split = None,  

@@ -22,7 +22,8 @@ x_data_comb = np.empty(0)
 y_data_comb = np.empty(0)
 n_data = []
 ssrs = []
-for i, (yyyymmdd, otp_dir, appdx, indep_var, appdx2, clr, lnst, lbl, cfg) in enumerate(zip(
+B_FP = []; B_TRDM = []
+for i, (yyyymmdd, otp_dir, appdx, indep_var, appdx2, clr, lnst, lbl, cfg, B_list) in enumerate(zip(
                                 ['2022-04-04', '2022-08-18'], # yyyymmdd
                                 ['forceplate', 'passiveOpto'], # otp_dir
                                 ['', '_preOpto_levels_incline'], # appdx
@@ -31,7 +32,8 @@ for i, (yyyymmdd, otp_dir, appdx, indep_var, appdx2, clr, lnst, lbl, cfg) in enu
                                 [FigConfig.colour_config['headbars'], FigConfig.colour_config['homolateral'][2]], 
                                 ['dashed', 'solid'],
                                 ['Force sensors', 'Treadmill'],
-                                [Config.forceplate_config, Config.passiveOpto_config]
+                                [Config.forceplate_config, Config.passiveOpto_config],
+                                [B_FP, B_TRDM]
                                 )):
     df = pd.read_csv(os.path.join(Config.paths[f"{otp_dir}_output_folder"], yyyymmdd + f'_limbPositionRegressionArray{appdx}.csv'))
     modLIN = pd.read_csv(os.path.join(Config.paths[f"{otp_dir}_output_folder"], yyyymmdd + f'_limbPositionRegressionArray_MIXEDMODEL_linear_{appdx2}.csv'), index_col=0)
@@ -52,11 +54,26 @@ for i, (yyyymmdd, otp_dir, appdx, indep_var, appdx2, clr, lnst, lbl, cfg) in enu
         df[dep_var] = (df[dep_var] - model_Yzero)/cfg["px_per_cm"][dep_var[:-1]] # convert to cm
 
     df['indep_bins'], bin_edges = pd.cut(df[indep_var], bins=bin_edges, retbins = True, labels = False)
-    # df_sub['indep_bins'] = pd.cut(df_sub[indep_var], bins = bin_edges, labels = False)
+    
     summary = df.groupby('indep_bins')[dep_var].agg(['std', 'sem']).reset_index()
     summary['bin_x'] = [np.mean((bin_edges[i],bin_edges[i+1])) for i in range(bin_edges.shape[0]-1)]
     
     x_pred = np.linspace(summary['bin_x'].min(), summary['bin_x'].max(), endpoint=True)
+    
+    # PER-MOUSE
+    for m in df['mouseID'].unique():
+        df_sub = df.loc[df['mouseID']==m, :].copy()
+        mask_sub = ~np.isnan(df_sub[dep_var].values)
+        popt_sub,_ = curve_fit(linear, 
+                              df_sub[indep_var].values[mask_sub], 
+                              df_sub[dep_var].values[mask_sub], 
+                              p0=(np.nanmean(df_sub[dep_var].values),
+                        (np.nanmax(df_sub[dep_var].values)-np.nanmin(df_sub[dep_var].values))/(np.nanmax(df_sub[indep_var].values)-np.nanmin(df_sub[indep_var].values)),
+                        ))
+        _, B_fit_sub = popt_sub
+        B_list.append(B_fit_sub)
+  
+    
     mask = ~np.isnan(df[dep_var].values)
     popt,pcov = curve_fit(linear, df[indep_var].values[mask], df[dep_var].values[mask], p0=(np.nanmean(df[dep_var].values),
                                                                                   (np.nanmax(df[dep_var].values)-np.nanmin(df[dep_var].values))/(np.nanmax(df[indep_var].values)-np.nanmin(df[indep_var].values)),
@@ -64,16 +81,6 @@ for i, (yyyymmdd, otp_dir, appdx, indep_var, appdx2, clr, lnst, lbl, cfg) in enu
     A_fit, B_fit = popt
     print(f"Linear fitted params: A = {A_fit:.3f}, B = {B_fit:.3f}")
     y_pred = linear(x_pred, *popt)
-    
-    # ids = np.linspace(0, len(x_pred)-1, group_num, dtype=int)
-    # for k in range(df['indep_bins'].max()+1):
-    #     df_sub = df[df['indep_bins'] == k][dep_var].values
-    #     ax.boxplot(df_sub[~np.isnan(df_sub)],
-    #                 positions = [x_pred[ids][k]+(i*5)],
-    #                 widths = 2,
-    #                 medianprops = dict(color = clr, linewidth = 1, alpha = 0.4),
-    #                             boxprops = dict(color = clr, linewidth = 1, alpha = 0.4), capprops = dict(color = clr, linewidth = 1, alpha = 0.4),
-    #                             whiskerprops = dict(color = clr, linewidth = 1, alpha = 0.4), flierprops = dict(mec = clr, linewidth = 1, alpha = 0.4, ms=2))
     
     # 95% confidence intervals
     ids = np.linspace(0, len(x_pred)-1, group_num, dtype=int)
@@ -117,20 +124,12 @@ for i, (yyyymmdd, otp_dir, appdx, indep_var, appdx2, clr, lnst, lbl, cfg) in enu
     
 plt.tight_layout()
 
-# COMPUTE F STATISTIC
-def log_likelihood(ssr,n):
-    return -n/2 * (np.log(2 * np.pi * ssr/n)+1)
-n_data1, n_data2 = n_data
-ssr1, ssr2 = ssrs
-logL1 = log_likelihood(ssr1, n_data1)
-logL2 = log_likelihood(ssr2, n_data2)
+# COMPUTE WILCOXON RANK SUM TEST STATISTIC
+from scipy.stats import mannwhitneyu
 
-from scipy.stats import chi2
-logL_comb = log_likelihood(ssr1+ssr2, n_data1+n_data2)
-lr_stat = -2 * (logL_comb - (logL1+logL2))
-dof = len(popt)
-p_value = chi2.sf(lr_stat,dof)
-print(f"Comparison p-value: {p_value}")
+stat, p_value = mannwhitneyu(B_FP, B_TRDM)
+print(stat, p_value)
+
 
 ax.text(-45,2, "treadmill ", ha = 'left', 
         color = FigConfig.colour_config['homolateral'][2], 

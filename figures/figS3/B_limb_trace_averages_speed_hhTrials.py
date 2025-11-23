@@ -14,15 +14,21 @@ from processing import data_loader, utils_processing, treadmill_data_manager
 from processing.data_config import Config
 from figures.fig_config import Config as FigConfig
 
-df = pd.read_csv(r"C:\Users\MurrayLab\Documents\PassiveOptoTreadmill\2022-08-18_strideParamsMerged_lH1.csv")
-
 outputDir = Config.paths['passiveOpto_output_folder']
 yyyymmdd = '2022-08-18'
 appdx = ''
+
+df, _, _ = data_loader.load_processed_data(outputDir = outputDir, 
+                                            dataToLoad = "strideParamsMerged", 
+                                            yyyymmdd = yyyymmdd,
+                                            appdx = appdx,
+                                            limb = 'lH1')
+
+
 passiveOptoData, _ = data_loader.load_processed_data(outputDir, dataToLoad = 'passiveOptoData', yyyymmdd = yyyymmdd, appdx = appdx)
 speedData, _ = data_loader.load_processed_data(outputDir, dataToLoad = 'beltSpeedData', yyyymmdd = yyyymmdd, appdx = appdx)
 bodyAngleData, _ = data_loader.load_processed_data(outputDir, dataToLoad = 'bodyAngles', yyyymmdd = yyyymmdd, appdx = appdx)
-#%%
+
 speed_range = [20,40]
 # speed_range = [80,100]
 mice=np.intersect1d(Config.passiveOpto_config['mice'],Config.injection_config['left_inj_imp'])

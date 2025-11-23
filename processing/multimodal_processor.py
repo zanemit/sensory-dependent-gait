@@ -23,7 +23,9 @@ def compute_bimodal_peaks(dir, yyyymmdd, limb, reflimb, mouselist,pred,
         filepath2 = Path(dir) / f"{yyyymmdd2}_BAMBI_{limb}_ref{reflimb}_{pred}_{lower_bound}_{upper_bound}_chains3_iters10000.csv"
         bambi2 = pd.read_csv(filepath2, index_col=0)
         bambi = pd.concat([bambi, bambi2])
+        # print(filepath)
     
+    # print(filepath)
     bambi = bambi[np.asarray([m in mouselist for m in bambi["mouse"]])].reset_index(drop=True)
     
     if flip:
