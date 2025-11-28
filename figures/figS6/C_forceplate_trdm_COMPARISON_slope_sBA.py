@@ -27,7 +27,8 @@ x_data_comb = np.empty(0)
 y_data_comb = np.empty(0)
 n_data = []
 ssrs = []
-for i, (yyyymmdd, otp_dir, appdx, data_str, indep_var, clr, lnst, lbl) in enumerate(zip(
+B_FP = []; B_TRDM = []
+for i, (yyyymmdd, otp_dir, appdx, data_str, indep_var, clr, lnst, lbl, B_list) in enumerate(zip(
                                 ['2022-04-04', '2022-08-18'], 
                                 [Config.paths["forceplate_output_folder"], Config.paths["passiveOpto_output_folder"]],
                                 ['_levels', '_incline'],
@@ -35,7 +36,8 @@ for i, (yyyymmdd, otp_dir, appdx, data_str, indep_var, clr, lnst, lbl) in enumer
                                 ['headLVL', 'incline'],
                                 [FigConfig.colour_config['headbars'], FigConfig.colour_config['homolateral'][2]], 
                                 ['dashed', 'solid'],
-                                ['Force sensors', 'Treadmill']
+                                ['Force sensors', 'Treadmill'],
+                                [B_FP, B_TRDM]
                                 )):
     df, _ = data_loader.load_processed_data(outputDir = otp_dir, 
                                                    dataToLoad=data_str, 
@@ -98,12 +100,13 @@ for i, (yyyymmdd, otp_dir, appdx, data_str, indep_var, clr, lnst, lbl) in enumer
     ssrs.append(np.sum((df[dep_var].values[mask] - linear(df[indep_var].values[mask], *popt))**2))
     
     # FIT LINES PER MOUSE
-    p_list = []
+    p_list=[]
     for m in df['mouseID'].unique():
         df_sub = df[df['mouseID']==m].copy()
         mask_m = ~np.isnan(df_sub[dep_var].values)
         popt_m, pcov_m = curve_fit(linear, df_sub[indep_var].values[mask_m], 
                                    df_sub[dep_var].values[mask_m], p0=(A_fit, B_fit), maxfev=10000)
+        B_list.append(popt_m[1])
         p_list.append(popt_m)
     
     params = np.array(p_list) #(n_subjects, n_params)
@@ -131,14 +134,11 @@ ax.set_yticks([140,150,160,170,180])
 plt.tight_layout()
 
 
-# COMPUTE STATS
-stats_path = os.path.join(otp_dir, f"{yyyymmdd}_mixedEffectsModel_linear_snoutBodyAngle_vs_incline_FP_TRDMstat_COMPARISON_m3.csv")
-stats_df = pd.read_csv(stats_path, index_col=0)
+# COMPUTE WILCOXON RANK SUM TEST STATISTIC
+from scipy.stats import mannwhitneyu
 
-# COMPARISON STAT
-p_value = stats_df.loc['setupTRDMstat', 'Pr(>|t|)']
-t_value = stats_df.loc['setupTRDMstat', 't value']
-print(f"slope: mean={stats_df.loc['setupTRDMstat', 'Estimate']:.4g}, SEM={stats_df.loc['setupTRDMstat', 'Std. Error']:.4g}, t_value2({stats_df.loc['setupTRDMstat', 'df']:.0f})={t_value:.3f}, p={p_value:.3g}")
+stat, p_value = mannwhitneyu(B_FP, B_TRDM)
+print(stat, p_value)
 
 ax.text(-45,179, "treadmill ", ha = 'left', 
         color = FigConfig.colour_config['homolateral'][2], 

@@ -214,6 +214,9 @@ def get_circGLM_slopes(
                              len(predictors),
                              ))
     x_range[:] = np.nan
+    
+    if interaction=='TRUE4way':
+        interaction = 'TRUEfourway'
 
     for b, predictor in enumerate(predictors):
 

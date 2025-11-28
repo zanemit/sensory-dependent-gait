@@ -2,7 +2,7 @@ import os
 import sys
 import pandas as pd
 import numpy as np
-import neo
+# import neo
 from pathlib import Path
 
 sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
@@ -61,8 +61,7 @@ def preprocess_smr_file(filepath,
                 'signal': signal, 'time': times, 'fps': fs}
     return signals, camTrig
 
-def get_data(dataDir = Config.paths["forceplate_data_folder"], 
-             videoDir = Config.paths["forceplate_video_folder"],
+def get_data(baseDir = Config.root, 
              outputDir = Config.paths["forceplate_output_folder"], 
              yyyymmdd = None):
     """
@@ -80,15 +79,15 @@ def get_data(dataDir = Config.paths["forceplate_data_folder"],
         index (multiIndex object) : a list of all indices across levels
         fps (float) : sampling rate
     """
-    if os.path.isdir(dataDir):
-        csv_files = [f for f in os.listdir(dataDir) if f.endswith('.csv')]
-        dlc_files = [f for f in os.listdir(videoDir) if f.endswith('.h5')]
+    if os.path.isdir(outputDir):
+        csv_files = [f for f in os.listdir(outputDir) if f.endswith('.csv')]
+        dlc_files = [f for f in os.listdir(outputDir) if f.endswith('.h5')]
     else:
         raise ValueError("Invalid directory entered!")
 
     # mouse weights reorganised with the passiveOpto code and moved to the forceplate dir
-    metadata_df = data_loader.load_processed_data(outputDir, dataToLoad='metadataProcessed')
-    fps_db = pd.read_hdf(os.path.join(dataDir, 'fps_database.h5'))
+    metadata_df = data_loader.load_processed_data(baseDir, dataToLoad='metadataProcessed')
+    fps_db = pd.read_hdf(os.path.join(outputDir, 'fps_database.h5'))
 
     # check if all files have the same frame rate
     if not np.all(np.diff(fps_db["fps"].astype(float)) == 0):
@@ -110,7 +109,7 @@ def get_data(dataDir = Config.paths["forceplate_data_folder"],
     dlc_column = 0
     for f in csv_files:
         print("Grabbing data from file: ", f[:-4])
-        path = os.path.join(dataDir, f)
+        path = os.path.join(outputDir, f)
         signals = pd.read_csv(path)
         fps = fps_db[fps_db['filename'] == f[:-3] + 'smr']['fps'].iloc[0]
         if type(fps) == float:
@@ -142,7 +141,7 @@ def get_data(dataDir = Config.paths["forceplate_data_folder"],
 
         # process videos
         f_dlc = [d for d in dlc_files if f[:-4] in d][0]
-        path_dlc = os.path.join(videoDir, f_dlc)
+        path_dlc = os.path.join(outputDir, f_dlc)
         dlc, _ = utils_processing.preprocess_dlc_data(path_dlc)
 
         if 'camTrig' in signals.columns:
@@ -220,7 +219,7 @@ def get_data(dataDir = Config.paths["forceplate_data_folder"],
     csv_df = pd.DataFrame(csv_data, columns=csv_index)
     csv_df.to_csv(os.path.join(outputDir,  yyyymmdd + '_forceplateData.csv'))
 
-    if type(dataDir) == str:
+    if type(outputDir) == str:
         if int(yyyymmdd[:4])>=2023:
             dlc_index = pd.MultiIndex.from_tuples(dlc_tuples, names=["expDate", "mouse", "level", "trial", "limb"])
         else:
@@ -310,7 +309,7 @@ def weight_calibration(yyyymmdd = '2022-05-25',
     
     if '2023-11' in yyyymmdd or '2023-12' in yyyymmdd or '2024-02' in yyyymmdd:
         yymmdd = "".join(yyyymmdd.split("-"))[2:]
-        dataDir = Path(Config.paths['forceplate_data_folder'])/ f'calibration2023' / f'{yymmdd}_dcBNC_gain5000'
+        dataDir = Path(Config.paths['forceplate_output_folder'])/ f'calibration2023' / f'{yymmdd}_dcBNC_gain5000'
         calibfile = [f for f in os.listdir(outputDir) if 'load_cell_calibration.csv' in f and yyyymmdd[:4] in f]
         weight_df = pd.read_csv(Path(outputDir) / calibfile[0])        
         for f in weight_df['filename']:
@@ -437,7 +436,8 @@ def weight_calibrate_dataframe(df,
          
     headplate_df = df.loc[:, (slice(None), slice(None), slice(None), 'rF')]
     headplate_df.columns = pd.MultiIndex.from_tuples([(x,y,z,'headplate') for x,y,z,e in headplate_df.columns], names = headplate_df.columns.names) # change 'rF' to 'headplate'
-    headplate_df.loc[:,:] = np.nan
+    headplate_df = headplate_df.copy()
+    headplate_df[:] = np.nan
     unique_trials = np.unique(np.asarray(df.columns.to_list())[:,:-1], axis = 0)
     for unt in unique_trials:
         detected_weight = np.sum(df.loc[:, (unt[0],unt[1],unt[2], slice(None))], axis = 1)

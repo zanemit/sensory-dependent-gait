@@ -27,7 +27,7 @@ predictorlist_str = ['speed', 'snout-hump angle', 'incline']
 predictor = 'incline'
 predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
 appdx = '_incline'
-samplenum = 7790
+samplenum = 7726
 tlt = 'Slope trials'
 yyyymmdd = '2022-08-18' #'2024-09-11' #'2022-08-18'
 slopes = ['pred2', 'pred3']
@@ -152,7 +152,7 @@ ax.set_yticklabels(yticklabels)
 ax.set_ylabel('Right hindlimb phase\n(rad)')
 
 # -------------------------------STATS-----------------------------------
-samples = 10859
+samples = 10923
 datafrac = 1 
 ref = 'lH1altadvanced'
 sba_str = 'sFLIPPED'

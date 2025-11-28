@@ -98,8 +98,9 @@ generate_mixed_effects_model_xpos <- function(yyyymmdd, ablationType, param = 'l
   }
   rownames(dfOutputLIN) = rowsLIN
   rownames(dfOutputQDR) = rowsQDR
-  write.csv(dfOutputLIN, paste(outputDir, yyyymmdd, "_limbPositionRegressionArray_MIXEDMODEL_linear_", data,"_", param, appdx, sep=""))
-  write.csv(dfOutputQDR, paste(outputDir, yyyymmdd, "_limbPositionRegressionArray_MIXEDMODEL_quadratic_", data,"_", param, appdx, sep=""))
+#  write.csv(dfOutputLIN, paste(outputDir, yyyymmdd, "_limbPositionRegressionArray_MIXEDMODEL_linear_", data,"_", param, appdx, sep=""))
+#  write.csv(dfOutputQDR, paste(outputDir, yyyymmdd, "_limbPositionRegressionArray_MIXEDMODEL_quadratic_", data,"_", param, appdx, sep=""))
+  print(paste(outputDir, yyyymmdd, "_limbPositionRegressionArray_MIXEDMODEL_linear_", data,"_", param, appdx, sep=""))
   
   metric =  rep(c('R2marginal', 'R2total','AIC'),2*length(limbs))
   AICsq_df = data.frame('Model'  = model, 'Metric' = metric, 'Value' = values)
@@ -120,4 +121,19 @@ generate_mixed_effects_model_xpos(yyyymmdd = '2022-04-04',
                                   data = 'forceplate', 
                                   outputDir = "C:\\Users\\MurrayLab\\Documents\\Forceplate\\", 
                                   filename = "_limbPositionRegressionArray")
+
+# Fig S8F
+generate_mixed_effects_model_xpos(yyyymmdd = '2022-08-18', 
+                                  ablationType = 'incline', 
+                                  param = 'levels', 
+                                  data = 'locom', 
+                                  outputDir = "C:\\Users\\MurrayLab\\Documents\\PassiveOptoTreadmill\\", 
+                                  filename = "_limbPositionRegressionArray")
+
+generate_mixed_effects_model_xpos(yyyymmdd = '2022-05-06', 
+                                  ablationType = '', 
+                                  param = 'levels', 
+                                  data = 'mtTreadmill', 
+                                  outputDir = "C:\\Users\\MurrayLab\\Documents\\MotorisedTreadmill\\", 
+                                  filename = "_limbPositionRegressionArray_egocentric")
 

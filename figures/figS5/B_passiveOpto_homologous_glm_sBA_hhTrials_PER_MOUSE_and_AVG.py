@@ -152,7 +152,7 @@ ax.set_yticklabels(yticklabels)
 ax.set_ylabel('Right hindlimb phase\n(rad)')
 
 # -------------------------------STATS-----------------------------------
-samples = 11812 
+samples = 11944
 datafrac = 1 
 ref = 'lH1altadvanced'
 sba_str = 'sBAsplitFALSE_FLIPPED'

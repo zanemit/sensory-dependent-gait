@@ -40,7 +40,7 @@ class Config:
     rcParams['patch.linewidth'] = 0.5
     
     paths = {
-        "savefig_folder": r"C:\Users\MurrayLab\Documents\PaperFIGURES\figures\updated_ms"
+        "savefig_folder": r"C:\Users\MurrayLab\sensory-dependent-gait\images\raw_figures"
         }
     
     p_thresholds = [0.05, 0.01, 0.001]

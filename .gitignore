@@ -9,6 +9,9 @@ __pycache__/
 # large file
 images/fig2.svg
 
+# generated figures
+images/raw_figures
+
 # Distribution / packaging
 .Python
 build/
