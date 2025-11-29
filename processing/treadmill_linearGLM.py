@@ -23,7 +23,7 @@ def get_linear_slopes(
         appdx = '_egr3', #appdx='_incline_COMBINEDtrialType'
         slopes = ['pred2'],
         outputDir = Config.paths['passiveOpto_output_folder'],
-        mice = Config.passiveOpto_config['egr3_mice'],
+        mice = Config.passiveOpto_config['mice'],
         x_pred_range = None,
         special_other_predictors = {},
         merged = True,

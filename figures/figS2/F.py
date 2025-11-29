@@ -1,0 +1,133 @@
+from pathlib import Path
+import pandas as pd
+import os
+import numpy as np
+from matplotlib import pyplot as plt
+from processing.data_config import Config
+from figures.fig_config import Config as FigConfig
+
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+def plot_figS2F(phase_bounds):
+    phase_bounds = np.array(phase_bounds)*2*np.pi
+    
+    df = pd.read_csv(r"G:\strideParams_escape.csv")
+    
+    # fix numbering after dropping nan rows
+    df_clean = df.dropna(subset=['rH0']).copy()
+    df_clean['stride_num'] = df_clean.groupby(['mouseID','escape_num']).cumcount()
+    df = df_clean.copy()
+    
+    mice = Config.passiveOpto_config['escape_mice']
+
+    num_strides = 6
+    
+    hmlg_fracs = np.empty((len(phase_bounds)-1,num_strides, len(mice)))*np.nan
+    hmlg_counts = hmlg_fracs.copy()
+    
+    for im, m in enumerate(mice):
+        df_m = df[df['mouseID'] == m]
+        for sp in range(num_strides):
+            df_sub = df_m[df_m['stride_num']==sp]
+            hmlg_phases = df_sub['rH0']
+            hmlg_phases = hmlg_phases.copy()
+            # hmlg_phases.loc[hmlg_phases<0] +=1
+            # hmlg_phases.loc[hmlg_phases>0.875] -=1
+            hmlg_sums = np.empty(len(phase_bounds)-1)
+            
+            for i in range(len(phase_bounds)-1):
+               hmlg_sums[i] = ((hmlg_phases>=phase_bounds[i]) & (hmlg_phases<phase_bounds[i+1])).sum() 
+             
+            hmlg_counts[:, sp, im] = hmlg_sums
+            hmlg_fracs[:, sp, im] = hmlg_sums/hmlg_sums.sum()
+        overall_prevalences = hmlg_counts.mean(axis=2)/hmlg_counts.mean(axis=2).sum()
+        
+    # DEFINE A COLOUR MAP
+    from matplotlib.colors import LinearSegmentedColormap
+    c1 = '#142c2c'#'#492020'
+    c2 = '#62b7b7'
+    c4 = '#e5b3bb'#'#80c7c7'
+    c3 = '#ddcc77'
+    n_bins = 100
+    cmap_name = 'teal_cmap'
+    cm = LinearSegmentedColormap.from_list(cmap_name, [c1,c2,c3,c4], N=n_bins)
+    
+    # PLOT HEATMAP
+    fontsize = 6
+    fig, ax = plt.subplots(figsize = (1.8,1.6))
+    divider = make_axes_locatable(ax)
+    # cax = divider.append_axes('right', size = '5%', pad = 0.05)
+    cax = divider.append_axes('bottom', size = '5%', pad = 0.12)
+    data_to_plot = np.nanmean(hmlg_fracs,axis=2)
+    im = ax.imshow(data_to_plot, 
+                   cmap = cm, 
+                    vmin = 0, vmax = 1, 
+                   aspect = 0.7)
+    
+    # marginal frequencies of limb phase bounds
+    counts_per_phase_bound = hmlg_counts.sum(axis=1)  # (phase bounds, mice)
+    freqs_per_phase_bound = counts_per_phase_bound #/ counts_per_phase_bound.sum(axis=0)  # (phase bounds, mice)
+    phase_freqs_mean = freqs_per_phase_bound.mean(axis=1)
+    phase_freqs_err = freqs_per_phase_bound.std(axis=1)/ np.sqrt(freqs_per_phase_bound.shape[1])
+    for i, (mean, se) in enumerate(zip(phase_freqs_mean, phase_freqs_err)):
+        ax.text(data_to_plot.shape[1]-0.4,
+                i,
+                f"{mean:.0f}±{se:.0f}",
+                va='center', ha='left',
+                fontsize=fontsize-1,
+                color='grey'
+                )
+        
+    # marginal frequencies of speed quintiles
+    counts_per_speed_quintile = hmlg_counts.sum(axis=0)  # (speed quintiles, mice)
+    freqs_per_speed_quintile = counts_per_speed_quintile #/ counts_per_speed_quintile.sum(axis=0)  # (speed quintiles, mice)
+    speed_freqs_mean = freqs_per_speed_quintile.mean(axis=1)
+    speed_freqs_err = freqs_per_speed_quintile.std(axis=1)/ np.sqrt(freqs_per_speed_quintile.shape[1])
+    for i, (mean, se) in enumerate(zip(speed_freqs_mean, speed_freqs_err)):
+        ax.text(i,
+                -1,
+                f"{mean:.0f}\n±{se:.0f}",
+                va='center', ha='center',
+                fontsize=fontsize-1,
+                color='grey'
+                )
+    ax.text(data_to_plot.shape[1]+0.1, -1, 'escape\ncounts', 
+            ha='center', va='center',fontsize=fontsize-1,
+            color='grey')            
+    
+    # prevalences
+    for i in range(data_to_plot.shape[0]):
+        for j in range(data_to_plot.shape[1]):
+            clr = 'white' if data_to_plot[i,j]<0.3 else 'black'
+            ax.text(j, i, f"{data_to_plot[i,j]:.2f}",
+                    va='center', ha='center', color=clr,
+                    fontsize=fontsize-1.5)
+    
+    # ticks and tick labels
+    ax.set_yticks(np.arange(len(phase_bounds)-1))
+    ax.set_yticklabels(labels = ["synchrony","R-leading","alternation","L-leading"], size =fontsize)
+    ax.set_xticks(np.arange(0,num_strides,1))
+    ax.set_xticklabels(np.arange(num_strides)+1, size =fontsize)
+    
+    # axis labels
+    ax.set_ylabel("Hindlimb phase", size = fontsize)
+    ax.set_xlabel("Stride number", size = fontsize)
+    
+    # colourbar
+    cbar = fig.colorbar(im, cax=cax, orientation = 'horizontal')
+    cbar.ax.tick_params(length=2, width=0.5, direction='out')
+    cbar.ax.set_xticks([0,0.2,0.4,0.6, 0.8, 1])
+    cbar.ax.set_xticklabels(labels = [0,0.2,0.4,0.6, 0.8, 1], size = fontsize)
+    cbar.ax.set_xlabel("Fraction of strides\nwithin a stride number", size = fontsize)
+
+    # save fig
+    os.makedirs(FigConfig.paths['savefig_folder'], exist_ok=True)
+    savepath =Path(FigConfig.paths['savefig_folder']) / "escape_hindlimbPhase_heatmap.svg"
+    fig.savefig(savepath,
+                transparent = True,
+                dpi =300)
+    print(f"FIGURE SAVED AT {savepath}")
+
+if __name__=="__main__":    
+    phase_bounds = [-0.1, 0.1, 0.4, 0.6, 0.9]
+    plot_figS2F(phase_bounds)

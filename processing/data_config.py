@@ -2,7 +2,7 @@ from pathlib import Path
 
 class Config:
     # path to the data downloaded from Figshare
-    root = Path(r"C:\Users\MurrayLab\sensory-dependent-gait-data")
+    root = Path(r"D:\sdgait-data")
     
     # paths derived from root
     paths = { 

@@ -1,18 +1,9 @@
-import sys
 from pathlib import Path
 import pandas as pd
 import numpy as np
-from matplotlib import pyplot as plt
-import scipy.stats
 import copy
-
-sys.path.append(r"C:\Users\MurrayLab\sensory-dependent-gait")
-
-import scipy.stats
-from processing import data_loader, utils_math, utils_processing
+from processing import data_loader, utils_processing
 from processing.data_config import Config
-from figures.fig_config import Config as FigConfig
-from figures.fig_config import AnyObjectHandler
 
 def get_circGLM_slopes(
         predictors,
@@ -27,7 +18,7 @@ def get_circGLM_slopes(
         slopes = ['pred2'],
         outputDir = Config.paths['passiveOpto_output_folder'],
         iterations = 1000,
-        mice = Config.passiveOpto_config['egr3_mice'],
+        mice = Config.passiveOpto_config['mice'],
         x_pred_range = None,
         special_other_predictors = {},
         sBA_split_str = 'sBAsplitFALSE',
@@ -564,7 +555,7 @@ def get_circGLM_stats(
         slopes = ['pred2'],
         outputDir = Config.paths['passiveOpto_output_folder'],
         iterations = 1000,
-        mice = Config.passiveOpto_config['egr3_mice'],
+        mice = Config.passiveOpto_config['mice'],
         sBA_split_str = 'sBAsplitFALSE'
         ):
   
@@ -624,7 +615,7 @@ def get_circGLM_slopes_per_mouse(
         slopes = ['pred2'],
         outputDir = Config.paths['passiveOpto_output_folder'],
         iterations = 1000,
-        mice = Config.passiveOpto_config['egr3_mice'],
+        mice = Config.passiveOpto_config['mice'],
         x_pred_range = None,
         sBA_split_str = 'sBAsplitFALSE'
                 ):

@@ -113,8 +113,6 @@ for i_exp, exp_row in unique_exps.iterrows():
                                   (exp_row['mouseID'], str(exp_row['expDate']), exp_row['stimFreq'], exp_row['headLVL'], 'snoutBody')]
                     )
         
-        # print(speed)
-        # if not ((speed>speed_range[0])and(speed<=speed_range[1])) or not ((sba>sba_range[0])and(sba<=sba_range[1])):
         if not ((sba>sba_range[0])and(sba<=sba_range[1])) and not (speed>5):
             continue
         
