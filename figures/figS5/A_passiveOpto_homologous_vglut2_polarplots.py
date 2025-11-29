@@ -50,7 +50,6 @@ df2, _, _ = data_loader.load_processed_data(outputDir = Config.paths["passiveOpt
                                            appdx = appdx,
                                            limb = limbRef)
 df2 = df2[np.asarray([m in Config.passiveOpto_config['mice_pilot'] for m in df2["mouseID"]])].reset_index(drop=True)
-# mouselist = np.union1d(mouselist, Config.passiveOpto_config['mice_pilot'])
 
 df = df1[['mouseID', 'snoutBodyAngle', dataToPlot]]
 df = pd.concat([df, df2[['mouseID', 'snoutBodyAngle', dataToPlot]]], ignore_index=True)
@@ -62,10 +61,7 @@ df.loc[left_inj, dataToPlot] = df.loc[left_inj, dataToPlot] *-1
 conditions = np.unique(df[param])
 
 # split data into group_num groups
-# data_split = np.asarray([141,147,154,161,167,174])
-# data_split = np.asarray([141,152,163,174])
 data_split = np.asarray([141,149,166,174])
-# data_split = np.asarray([0,2,4,5])
 
 # these mice have unimodal distributions
 mouselist = np.asarray([ 'BAA1098955', 'FAA1034469', 'FAA1034471', 'FAA1034570',
@@ -101,13 +97,6 @@ for im, m in enumerate(mouselist):
         ax[i].fill_between(kde_bins_points, np.repeat(0,len(kde_points)), kde_points, facecolor = FigConfig.colour_config[dataToPlot_type][2], alpha = 0.2)
         histAcrossMice2[im,:, i] = kde_points
     
-    # from pycircstat.tests import rayleigh
-    # values = df_sub[dataToPlot]*2*np.pi
-    # values[values<0] = values[values<0]+(2*np.pi)
-    # values = values[~np.isnan(values)].to_numpy()
-    # p_value, statistic = rayleigh(values)
-    # print(f"{m}: {p_value}")
-
 print(dataToPlot, 
       f"{(scipy.stats.circmean(means[:,0], high= 2*np.pi, low=0)/np.pi):.2f}", 
       f"{(scipy.stats.circstd(means[:,0], high = 2*np.pi, low=0)/np.pi):.2f}")    
@@ -115,8 +104,7 @@ print(dataToPlot,
       f"{(scipy.stats.circmean(means[:,1], high= 2*np.pi, low=0)/np.pi):.2f}", 
       f"{(scipy.stats.circstd(means[:,1], high = 2*np.pi, low=0)/np.pi):.2f}")      
 histAcrossMice2_mean = np.nanmean(histAcrossMice2, axis = 0)
-# histAcrossMice2_mean = scipy.stats.circmean(histAcrossMice2, axis=0, high = 0.5, low=-0.5)
-#
+
 for i, gkey in enumerate(keys[[0,group_num-1]]):    
     ax[i].spines['polar'].set_visible(False)
     ax[i].grid(color = 'lightgrey', linewidth = 0.5)
@@ -142,7 +130,6 @@ for i, gkey in enumerate(keys[[0,group_num-1]]):
     ax[i].plot(kde_bins_points, polar_points, color = FigConfig.colour_config[dataToPlot_type][0],linestyle = lnst, linewidth = 1)
 
     ax[i].set_title(f'({gkey.left:.0f},{gkey.right:.0f}] deg', size = 6)
-# ax[0].text(2.6,y_maxlim + (y_maxlim/0.9),dataToPlot_type,size=6, weight = 'bold')
 
 plt.tight_layout(h_pad = 6)    
 plt.text(0.05, 0.15, 'Probability\ndensity', ha = 'center', color = 'lightgrey', size = 6, transform = plt.gcf().transFigure)

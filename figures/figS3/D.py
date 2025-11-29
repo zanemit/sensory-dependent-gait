@@ -13,12 +13,6 @@ from processing import data_loader, utils_processing, treadmill_data_manager
 from processing.data_config import Config
 from figures.fig_config import Config as FigConfig
 
-param = 'speed'
-strideparam = 'strideLength'
-limbRef = 'lH1'
-configs = {"passiveOpto": Config.passiveOpto_config, 
-           "mtTreadmill": Config.mtTreadmill_config}
-limb_dict = {'rF1': 'RIGHT FORE', 'rH1': 'RIGHT HIND', 'lF1': 'LEFT FORE', 'lH1': 'LEFT HIND'}
 
 def get_trial_summaries(df):
     # count number of trials
@@ -74,7 +68,7 @@ def get_trial_data(summary_df, limb_dict, row_of_interest, incline=False):
     inpath2 = f'G:\\{folder}\\{trial["expDate"]}\\{videoL_file}'
     inpath3 = f'G:\\{folder}\\{trial["expDate"]}\\{videoR_file}'
     
-    print(f"{inpath}\n{inpath2}\n{inpath3}")
+    # print(f"{inpath}\n{inpath2}\n{inpath3}")
 
     d = np.fromfile(inpath, dtype = np.double).reshape(-1,7)
     on_frame, off_frame, _, _ = treadmill_data_manager.get_opto_triggers(d)
@@ -189,8 +183,8 @@ def get_xcoord_data(summary_df, df, limb_dict, row_of_interest, xlims, incline=F
             if i<len(speeds):
                 speeds_list.append(speeds[i_phase])
                 indep_var_list.append(indep_var[i_phase])
-    print(indep_var_list)
-    print(speeds_list)
+    # print(indep_var_list)
+    # print(speeds_list)
     ax.set_ylim(-15,15)
     ax.set_yticks(np.arange(-10,10.5,5))#, labels = ["-3","","","0","","","3"])
     ax.text(xmin-55,14,"anterior", color='black', size=5)
@@ -214,38 +208,45 @@ def get_xcoord_data(summary_df, df, limb_dict, row_of_interest, xlims, incline=F
     fig.savefig(Path(FigConfig.paths['savefig_folder'])/figtitle,
                 dpi=300,
                 transparent=True)
-#%%
-# HEAD HEIGHT
-df, _, _ = data_loader.load_processed_data(outputDir = Config.paths[f"{list(configs.keys())[0]}_output_folder"], 
-                                            dataToLoad = "strideParams", 
-                                            yyyymmdd = '2022-08-18',
-                                            appdx = "",
-                                            limb = "lH1")
-summary_df = get_trial_summaries(df)
 
-low_hh = ['rl17', 'rl12']
-low_rows = summary_df[summary_df['headLVL'].isin(low_hh)].index
-get_xcoord_data(summary_df, df, row_of_interest=low_rows[0], xlims=(65,475), limb_dict={'lF1': 'LEFT FORE', 'lH1': 'LEFT HIND', 'rH1': 'RIGHT HIND', 'rF1': 'RIGHT FORE'})
+def plot_head_height(yyyymmdd, limbRef):
+    df, _, _ = data_loader.load_processed_data(outputDir = Config.paths["passiveOpto_output_folder"], 
+                                                dataToLoad = "strideParams", 
+                                                yyyymmdd = yyyymmdd,
+                                                appdx = "",
+                                                limb = limbRef)
+    summary_df = get_trial_summaries(df)
+    
+    low_hh = ['rl17', 'rl12']
+    low_rows = summary_df[summary_df['headLVL'].isin(low_hh)].index
+    get_xcoord_data(summary_df, df, row_of_interest=low_rows[0], xlims=(65,475), limb_dict={'lF1': 'LEFT FORE', 'lH1': 'LEFT HIND', 'rH1': 'RIGHT HIND', 'rF1': 'RIGHT FORE'})
+    
+    
+    high_hh = ['rl-8', 'rl-3']
+    high_rows = summary_df[summary_df['headLVL'].isin(high_hh)].index
+    get_xcoord_data(summary_df, df, row_of_interest=high_rows[77], xlims=(530,940), limb_dict={'lF1': 'LEFT FORE', 'lH1': 'LEFT HIND', 'rH1': 'RIGHT HIND', 'rF1': 'RIGHT FORE'})
 
 
-high_hh = ['rl-8', 'rl-3']
-high_rows = summary_df[summary_df['headLVL'].isin(high_hh)].index
-get_xcoord_data(summary_df, df, row_of_interest=high_rows[77], xlims=(530,940), limb_dict={'lF1': 'LEFT FORE', 'lH1': 'LEFT HIND', 'rH1': 'RIGHT HIND', 'rF1': 'RIGHT FORE'})
+def plot_surface_slope(yyyymmdd, limbRef):
+    df, _, _ = data_loader.load_processed_data(outputDir = Config.paths[f"passiveOpto_output_folder"], 
+                                                dataToLoad = "strideParams", 
+                                                yyyymmdd = yyyymmdd,
+                                                appdx = "_incline",
+                                                limb = "lH1")
+    summary_df = get_trial_summaries(df)
+    
+    low_inc = ['deg40', 'deg35', 'deg30']
+    low_rows = summary_df[summary_df['headLVL'].isin(low_inc)].index
+    get_xcoord_data(summary_df, df, row_of_interest=low_rows[59], xlims=(80,490), limb_dict={'lF1': 'LEFT FORE', 'lH1': 'LEFT HIND', 'rH1': 'RIGHT HIND', 'rF1': 'RIGHT FORE'}, incline=True)
+    
+    high_inc = ['deg-40', 'deg-35', 'deg-30']
+    high_rows = summary_df[summary_df['headLVL'].isin(high_inc)].index 
+    get_xcoord_data(summary_df, df, row_of_interest=high_rows[40], xlims=(425,835), limb_dict={'lF1': 'LEFT FORE', 'lH1': 'LEFT HIND', 'rH1': 'RIGHT HIND', 'rF1': 'RIGHT FORE'}, incline=True)
 
-
-#%%
-# INCLINE
-df, _, _ = data_loader.load_processed_data(outputDir = Config.paths[f"{list(configs.keys())[0]}_output_folder"], 
-                                            dataToLoad = "strideParams", 
-                                            yyyymmdd = '2022-08-18',
-                                            appdx = "_incline",
-                                            limb = "lH1")
-summary_df = get_trial_summaries(df)
-
-low_inc = ['deg40', 'deg35', 'deg30']
-low_rows = summary_df[summary_df['headLVL'].isin(low_inc)].index
-get_xcoord_data(summary_df, df, row_of_interest=low_rows[59], xlims=(80,490), limb_dict={'lF1': 'LEFT FORE', 'lH1': 'LEFT HIND', 'rH1': 'RIGHT HIND', 'rF1': 'RIGHT FORE'}, incline=True)
-
-high_inc = ['deg-40', 'deg-35', 'deg-30']
-high_rows = summary_df[summary_df['headLVL'].isin(high_inc)].index 
-get_xcoord_data(summary_df, df, row_of_interest=high_rows[40], xlims=(425,835), limb_dict={'lF1': 'LEFT FORE', 'lH1': 'LEFT HIND', 'rH1': 'RIGHT HIND', 'rF1': 'RIGHT FORE'}, incline=True)
+if __name__=="__main__":
+    # param = 'speed'
+    # strideparam = 'strideLength'
+    yyyymmdd = '2022-08-18'
+    limbRef = 'lH1'
+    plot_head_height(yyyymmdd, limbRef)
+    plot_surface_slope(yyyymmdd, limbRef)
