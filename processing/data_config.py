@@ -6,9 +6,9 @@ class Config:
     
     # paths derived from root
     paths = { 
-        "passiveOpto_output_folder": root / "passive_treadmill_data", 
-        "forceplate_output_folder": root / "force_sensor_data", 
-        "mtTreadmill_output_folder": root / "motorised_treadmill_data",
+        "passiveOpto_output_folder": root / "passive_treadmill", 
+        "forceplate_output_folder": root / "force_sensors", 
+        "mtTreadmill_output_folder": root / "motorised_treadmill",
         }
     
     passiveOpto_config = {

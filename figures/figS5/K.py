@@ -2,78 +2,99 @@ import numpy as np
 from matplotlib import pyplot as plt
 import scipy.stats
 import os
-from processing import utils_math, treadmill_circGLM
+from processing import data_loader, utils_math, utils_processing, treadmill_circGLM
 from processing.data_config import Config
 from figures.fig_config import Config as FigConfig
 
-def plot_figS7A():
-    predictorlist = ['strideLength', 'snoutBodyAngle', 'incline']
-    predictorlist_str = ['strideLength', 'snout-hump angle', 'slope']
-    predictor = 'strideLength'
+def plot_figS5K():
+    predictorlist = ['speed', 'snoutBodyAngle']
+    predictorlist_str = ['speed', 'snout-hump angle']
+    predictor = 'speed'
     predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
-    appdx =  '_incline'
-    tlt = 'All trials'
-    yyyymmdd = '2022-08-18'
-    slopes = ['pred2', 'pred3']
-    limb = 'lF0'
-    ref = 'lH1combblncd'
-    interaction = 'TRUEthreeway'
-    samples =  10512 #10407
-    datafrac = 0.8 #0.3
+    appdx = ''
+    samples = 11702 
+    tlt = 'Level trials'
+    yyyymmdd = '2021-10-23'
+    slopes = ['pred2']
+    limb = 'rH0'
+    datafrac = 0.7
+    ref = 'lH1altadvancedblncd'
+    ref_simple = 'lH1'
+    interaction = 'TRUE'
+    rfl_str = None
+    sba_str = 'sBAsplitFALSE_FLIPPED'
     iters = 1000
-    sbaSPLITstr = 's' #'sBAsplitFALSE'
+    
+    unique_traces = np.empty((0))
+    
+    mice_unilateral_inj = Config.injection_config['right_inj_imp'] + Config.injection_config['left_inj_imp'] 
+    mouselist = np.intersect1d(Config.passiveOpto_config['mice'], mice_unilateral_inj)
+    
+    ### LOAD FULL DATASET TO COMPUTE SPEED PERCENTILES
+    datafull = data_loader.load_processed_data(dataToLoad = 'strideParamsMerged',
+                                               outputDir = Config.paths['mtTreadmill_output_folder'],
+                                               yyyymmdd = yyyymmdd,
+                                               limb = ref_simple, 
+                                               appdx = appdx)[0]
+    
+    sbas = [140,153,166]
+    prcnts = []
+    no_outliers_speed = utils_processing.remove_outliers(datafull['snoutBodyAngle'])
+    for sp in sbas:
+        prcnts.append(scipy.stats.percentileofscore(no_outliers_speed, sp))
     
     ### PLOTTING
-    ylim = (0.3*np.pi,1.5*np.pi)
-    yticks = [0.5*np.pi,np.pi,1.5*np.pi]
-    yticklabels = ["0.5π", "π", "1.5π"]  
+    ylim = (0.7*np.pi,1.3*np.pi)
+    yticks = [0.7*np.pi,np.pi,1.3*np.pi]
+    yticklabels = ["0.7π", "π", "1.3π"]  
     xlim, xticks, xlabel = treadmill_circGLM.get_predictor_range(predictor)
-    xlim = (0,8)
-    xticks = (0,2,4,6,8)
+    xlabel = ' '.join(xlabel.split(' ')[:-1]) + '\n' + xlabel.split(' ')[-1] 
+    xlim = [0,100]
+    xticks = [0,50,100]
     
-    fig, ax = plt.subplots(1,1,figsize = (1.45,1.35)) #1.6,1.4 for 4figs S2 bottom row
+    fig, ax = plt.subplots(1,1,figsize = (1.35,1.35)) #1.6,1.4 for 4figs S2 bottom row
     
     last_vals = [] # for stats
     
-    for ref_id, (lnst, clr, lbl, xr) in enumerate(zip(['dashed', 'solid'],
-                                                ['greys', 'homolateral'],
-                                                ['head h.', 'slope'],
-                                                [(143,173), (152,167)])):
+    
+    # plot each mouse (just default ref limb)
+    for iprcnt, (prcnt, speed, lnst) in enumerate(zip(prcnts,
+                                                      sbas,
+                                                      ['dotted', 'solid', 'dashed'])):
+    
+        c = FigConfig.colour_config['homologous'][iprcnt+(1*iprcnt//2)]
         
+        # get data for different speed percentiles
         x_range, phase_preds = treadmill_circGLM.get_circGLM_slopes(
                 predictors = predictorlist,
                 yyyymmdd = yyyymmdd,
                 limb = limb,
                 ref = ref,
-                categ_var = 'trialType',
                 samples = samples,
+                categ_var = rfl_str,
                 interaction = interaction,
                 appdx = appdx,
                 datafrac = datafrac,
                 slopes = slopes,
-                outputDir = Config.paths['passiveOpto_output_folder'],
+                outputDir = Config.paths['mtTreadmill_output_folder'],
                 iterations = iters,
-                x_pred_range = {"snoutBodyAngle": np.linspace(xr[0],xr[1],100)},
-                mice = Config.passiveOpto_config['mice'],
-                sBA_split_str =sbaSPLITstr,
-                merged=True
+                mice = mouselist,
+                special_other_predictors = {'snoutBodyAngle': prcnt},
+                sBA_split_str = sba_str
                         ) 
-        
-        c = FigConfig.colour_config[clr][1+ref_id]
-        pp = phase_preds[:, :, predictor_id, 0, ref_id]
-        
+       
+        pp = phase_preds[:, :, predictor_id, 0, 0]
         # compute and plot mean phases for three circular ranges so that the plots look nice and do not have lines connecting 2pi to 0
-        unique_traces = np.empty((0))
         for k, (lo, hi) in enumerate(zip([-np.pi, 0, np.pi] , [np.pi, 2*np.pi, 3*np.pi])):
             print(f"Working on data range {k}...")
             if k == 1:
                 pp[pp<0] = pp[pp<0]+2*np.pi
             if k == 2:
                 pp[pp<np.pi] = pp[pp<np.pi]+2*np.pi
-                ax.hlines(ylim[1]-0.3, 0.1+3.65*ref_id, 2+3.65*ref_id, color = c, ls = lnst, lw = 1)
-                ax.text(xlim[0] + (0.01 * (xlim[1]-xlim[0])) + 3.65*ref_id,
-                        ylim[1] - (0.05* (ylim[1]-ylim[0])),
-                        lbl,
+                ax.hlines(ylim[1]-0.3, 16+25*iprcnt, 30+25*iprcnt, color = c, ls = lnst, lw = 1)
+                ax.text(xlim[0] + (0.15 * (xlim[1]-xlim[0])) + 25*iprcnt,
+                        ylim[1] - (0.13* (ylim[1]-ylim[0])),
+                        speed,
                         color=c,
                         fontsize=5)
                 
@@ -88,13 +109,13 @@ def plot_figS7A():
             if round(trace[-1],6) not in unique_traces and not np.any(abs(np.diff(trace))>5):
                 unique_traces = np.append(unique_traces, round(trace[-1],6))
                 print('plotting...')    
-                ax.fill_between(x_range[:,predictor_id], 
+                ax.fill_between(x_range[:, predictor_id], 
                                       lower, 
                                       higher, 
-                                      alpha = 0.25, 
+                                      alpha = 0.15, 
                                       facecolor = c
                                       )
-                ax.plot(x_range[:,predictor_id], 
+                ax.plot(x_range[:, predictor_id], 
                         trace, 
                         color = c,
                         linewidth = 1,
@@ -102,47 +123,47 @@ def plot_figS7A():
                         alpha = 1,
                         # label = lbl
                         )
+                print(f"{speed}, {trace[0]/np.pi:.2f}π, {trace[-1]/np.pi:.2f}π, difference: {abs(trace[-1]-trace[0])/np.pi:.2f}π")
             
             # for stats
             if trace[-1] > ylim[0] and trace[-1] < ylim[1] and trace[-1] not in last_vals:
                 last_vals.append(trace[-1])
     
     # -------------------------------STATS-----------------------------------
-    samplenum =12871
+    samples = 13700
+    rfl_str = 'lF0_categorical'
+    interaction = 'TRUE'
     datafrac = 0.4
-    ref = 'lH1comb'
-    categ_var='rH0_categorical_trialType'
-    sba_str = 's'
+    ref = 'lH1altadvanced'
     stat_dict = treadmill_circGLM.get_circGLM_stats(
             predictors = predictorlist,
             yyyymmdd = yyyymmdd,
             limb = limb,
             ref = ref,
-            categ_var = categ_var,
-            samples = samplenum,
+            samples = samples,
             interaction = interaction,
             appdx = appdx,
             datafrac = datafrac,
+            categ_var = rfl_str,
             slopes = slopes,
-            outputDir = Config.paths['passiveOpto_output_folder'],
+            outputDir = Config.paths['mtTreadmill_output_folder'],
             iterations = iters,
-            mice = Config.passiveOpto_config['mice'],
-            sBA_split_str =sbaSPLITstr
+            mice = mouselist,
+            sBA_split_str = sba_str
                     ) 
     
-    cat_coef_str = f"pred{len(predictorlist)+2}slope"
-    cont_coef_str = f"pred{predictor_id+2}"
     
-    ax.text(xlim[0] + (0.05 * (xlim[1]-xlim[0])),
-            ylim[1] - (0.20* (ylim[1]-ylim[0])),
-            f"Stride length: {stat_dict[cont_coef_str]}",
-            # color=c,
+    ax.text(xlim[0] + (0.15 * (xlim[1]-xlim[0])),
+            ylim[1] - (0.03* (ylim[1]-ylim[0])),
+            f"{predictorlist_str[0]} x angle†: {stat_dict['pred1:pred2']}",
             fontsize=5)
     
-    ax.text(xlim[0] + (0.35 * (xlim[1]-xlim[0])),
-            ylim[1] - (0.05* (ylim[1]-ylim[0])),
-            f"vs          trials: {stat_dict[cat_coef_str]}",
+    ax.text(xlim[0] + (0.83 * (xlim[1]-xlim[0])),
+            ylim[1] - (0.13* (ylim[1]-ylim[0])),
+            "deg",
+            color="grey",
             fontsize=5)
+    
     
     # -------------------------------STATS-----------------------------------
     
@@ -151,12 +172,12 @@ def plot_figS7A():
     # axes 
     ax.set_xlim(xlim[0], xlim[1])
     ax.set_xticks(xticks)
-    ax.set_xlabel("Stride length (cm)")
+    ax.set_xlabel(f"{xlabel}")
     
     ax.set_ylim(ylim[0], ylim[1])
     ax.set_yticks(yticks)
     ax.set_yticklabels(yticklabels)
-    ax.set_ylabel('Left homolateral phase\n(rad)')
+    ax.set_ylabel('Right hindlimb phase\n(rad)')
     
     # -------------------------------LEGEND----------------------------------- 
     # fig.legend(loc = 'center right', bbox_to_anchor=(1,0.65), fontsize=5)
@@ -166,13 +187,16 @@ def plot_figS7A():
     
     # save fig
     os.makedirs(FigConfig.paths['savefig_folder'], exist_ok=True)
-    figtitle = "passiveOpto_combined_trialType_strideLength.svg"
+    figtitle = f"mtTreadmill{limb}_ref{ref}_{'_'.join(predictorlist)}_SLOPE{''.join(slopes)}_{interaction}_{appdx}_AVERAGE_speed_percentiles.svg"
     savepath = os.path.join(FigConfig.paths['savefig_folder'], figtitle)
-    plt.savefig(savepath, 
+    plt.savefig(savepath,  
                 dpi = 300, 
                 bbox_inches = 'tight',
                 transparent = True)
     print(f"FIGURE SAVED AT {savepath}")
-    
+
 if __name__=="__main__":
-    plot_figS7A()
+    plot_figS5K()
+        
+    
+        
