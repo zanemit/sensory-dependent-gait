@@ -124,11 +124,11 @@ def plot_fig5F():
     
     # -------------------------------STATS-----------------------------------
     limb = 'homolateral0'
-    ref = 'COMBINEDLleadRleadalt'
+    ref = 'COMBLleadRleadalt'
     interaction = 'TRUE'
     samples = 15228
     datafrac = 0.2
-    categ_var = 'homologous0_categorical_refLimb'
+    categ_var = 'hmlg0_categ_refLimb'
     stat_dict = treadmill_circGLM.get_circGLM_stats(
             predictors = predictorlist,
             yyyymmdd = yyyymmdd,
