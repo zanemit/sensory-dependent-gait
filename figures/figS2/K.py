@@ -28,7 +28,7 @@ def plot_figS2K():
     df = pd.concat(dfs)
     
     df_sub = isc.prepare_data(df, target_col='injection', dataToClassify=features, mice=mice_po)
-    fprPO_rH, tprPO_rH, _ = isc.classify_injection_side(df_sub, 
+    fprPO_rH, tprPO_rH, accuracyHIND, _ = isc.classify_injection_side(df_sub, 
                                                         dataToClassify=features, 
                                                         target_col='injection', 
                                                         # crossvalidation=True # pval=0.0000 (takes ages to run)
@@ -49,7 +49,7 @@ def plot_figS2K():
     df2 = pd.concat(dfs2)    
     
     df_sub2 = isc.prepare_data(df2, target_col='injection', dataToClassify=features2, mice=mice_po)
-    fprPO_rF, tprPO_rF, _ = isc.classify_injection_side(df_sub2, 
+    fprPO_rF, tprPO_rF, accuracyFORE, _ = isc.classify_injection_side(df_sub2, 
                                                         dataToClassify=features2, 
                                                         target_col='injection', 
                                                         # crossvalidation=True # pval = 0.0000 (takes ages to run)
@@ -66,10 +66,25 @@ def plot_figS2K():
     df_sub = isc.prepare_data(df_cleaned, target_col='injection', dataToClassify=features_comb, mice=mice_po)
     
     df_shuffle = df_sub.copy()
-    df_shuffle['injection'] = df_shuffle['injection'].sample(frac=1).reset_index(drop=True)
+    shuffled_accuracies = []
+    num_permutations=1000
+    for i in range(num_permutations):
+        print(f"PERMUTATION: {i+1}")
+        df_shuffle['injection'] = df_shuffle['injection'].sample(frac=1, random_state=i).reset_index(drop=True)
     
-    fprPO_shuffled, tprPO_shuffled, _ = isc.classify_injection_side(df_shuffle, dataToClassify=features_comb, target_col='injection')#, crossvalidation=True)
+        fprPO_shuffled, tprPO_shuffled, accuracy_shuffled, _ = isc.classify_injection_side(df_shuffle, dataToClassify=features_comb, target_col='injection')#, crossvalidation=True)
+        shuffled_accuracies.append(accuracy_shuffled)
     
+    # statistical significance
+    hind_p =  ((np.asarray(shuffled_accuracies)>accuracyHIND).sum()+1)/(num_permutations+1)
+    print(f"HIND p: {hind_p}")
+    hind_p = (hind_p<np.asarray(FigConfig.p_thresholds)).sum()
+    hind_p_str = 'n.s.' if hind_p==0 else '*'*hind_p
+    
+    fore_p =  ((np.asarray(shuffled_accuracies)>accuracyFORE).sum()+1)/(num_permutations+1)
+    print(f"FORE p: {fore_p}")
+    fore_p = (fore_p<np.asarray(FigConfig.p_thresholds)).sum()
+    fore_p_str = 'n.s.' if fore_p==0 else '*'*fore_p
     
     # ########## PLOTTING ###########
     fig, ax = plt.subplots(1,1,figsize=(1.3,1.3))
@@ -84,8 +99,8 @@ def plot_figS2K():
     ax.set_xticks([0,0.5,1.0])
     ax.set_yticks([0,0.5,1.0])
     
-    ax.text(0.05, 1.1, "hind: ***", color=FigConfig.colour_config['homologous'][3], fontsize=5)
-    ax.text(0.05, 0.95, "fore: ***", color=FigConfig.colour_config['diagonal'][2], fontsize=5)
+    ax.text(0.05, 1.1, f"hind: {hind_p_str}", color=FigConfig.colour_config['homologous'][3], fontsize=5)
+    ax.text(0.05, 0.95, f"fore: {fore_p_str}", color=FigConfig.colour_config['diagonal'][2], fontsize=5)
     ax.text(0.65, 1.1, "shuffled", color=FigConfig.colour_config['greys'][1], fontsize=5)
     ax.hlines(1.065, 0.06, 0.25, color=FigConfig.colour_config['homologous'][3], lw=1)
     ax.hlines(0.915, 0.06, 0.25, color=FigConfig.colour_config['diagonal'][2], lw=1, linestyle='dashdot')

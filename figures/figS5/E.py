@@ -14,7 +14,7 @@ def plot_figS5E():
     
     #---------------HEAD HEIGHT TRIALS--------------------
     predictorlist = ['speed', 'snoutBodyAngle', 'incline']
-    predictorlist_str = ['speed', 'snout-hump angle', 'incline']
+    predictorlist_str = ['speed', 'snout-hump angle', 'slope']
     predictor = 'incline'
     predictor_id = np.where(np.asarray(predictorlist) == predictor)[0][0]
     appdx = '_incline'
@@ -166,8 +166,8 @@ def plot_figS5E():
     cont_coef_str = f"pred{predictor_id+1}"
     
     ax.text(xlim[0] + (0.5 * (xlim[1]-xlim[0])),
-            ylim[1] - (0.2* (ylim[1]-ylim[0])),
-            f"{predictorlist_str[predictor_id]}:\n{stat_dict[cont_coef_str]}",
+            ylim[1] - (0.1* (ylim[1]-ylim[0])),
+            f"{predictorlist_str[predictor_id]}: {stat_dict[cont_coef_str]}",
             ha='center',
             fontsize=5)
     # -------------------------------STATS-----------------------------------

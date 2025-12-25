@@ -105,7 +105,7 @@ def classify_injection_side(df, dataToClassify, target_col = 'injection', crossv
             print(f"Permutation p-value: {p_val:.4f}")
             
                   
-        return fpr, tpr, cv_scores
+        return fpr, tpr, accuracy, cv_scores
     
 def prepare_data(df, target_col, dataToClassify, mice, mouse_col = 'mouseID', 
                  left_inj_mice = Config.injection_config['left_inj_imp'],

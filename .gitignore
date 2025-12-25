@@ -11,6 +11,7 @@ images/fig2.svg
 
 # generated figures
 images/raw_figures
+videos/
 
 # Distribution / packaging
 .Python
